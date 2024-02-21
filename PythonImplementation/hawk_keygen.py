@@ -3,6 +3,10 @@ import numpy as np
 import secrets
 
 ### High level overview of hawk key-generation ###
+
+# Polynomials will be represented as a list of coefficients, ordered from least significant to most significant term.
+# e.g. x^3 + x -1 = [-1, 1, 0, 1]
+
 def encode_int(x, k):
     bin_rep = bin(x)[2:].zfill(k)
     print(f"{int(bin_rep, 2)}")
