@@ -4,21 +4,32 @@ import secrets
 
 ### High level overview of hawk key-generation ###
 def encode_int(x, k):
-    pass
+    bin_rep = bin(x)[2:].zfill(k)
+    print(f"{int(bin_rep, 2)}")
+    return bin_rep
 
 def decode_int(bits, k):
-    pass
+    return int(bits, 2)
 
 # step 1: sample coefficients of f, g through Bin(n)
-def sample_coefficients(n) -> tuple:
-    centred_samples = np.random.binomial(n,p=0.5,size=10) - n*0.5
+def sample_coefficients(eta, kseed):
+    np.random.seed(kseed)
+    centred_samples = np.random.binomial(eta,p=0.5,size=n) - eta/2
     
-    print(f"Samples: {centred_samples}")
-    pass
+    return centred_samples
+
+def generate_f_g(eta):
+    kseed_f = 13
+    f = sample_coefficients(eta, kseed_f)
+    kseed_g = 27
+    g = sample_coefficients(eta, kseed_g)
+
+    # restart with a new seed if conditions are not fulfilled
+    return (f, g) if f_g_conditions else generate_f_g(eta)
 
 # step 2: check conditions for f, g
 def f_g_conditions(f, g) -> bool:
-    pass
+    return True
 
 # step 3: get r = NTRUSolve(f, g)
 def NTRU_solve(f, g):
@@ -48,6 +59,9 @@ if __name__ == "__main__":
     # degree n
     n = 256
 
+    # for hawk256, Bin(eta) param is 2
+    eta = 2
     # use 'secrets' module for CSPRNG
-    kseed = secrets.randbits(5)
-    sample_coefficients(n)
+    #kseed = secrets.randbits(5)
+    kseed = 13
+    sample_coefficients(eta, kseed)
