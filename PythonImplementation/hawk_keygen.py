@@ -45,6 +45,9 @@ def verify_f_g(f, g) -> bool:
     if f_norm > 20 or g_norm > 20:
         print(f"Norm too big!")
         return False
+
+    #TODO check some other properties aswell
+
     return True
 
 # step 3: get r = NTRUSolve(f, g)
