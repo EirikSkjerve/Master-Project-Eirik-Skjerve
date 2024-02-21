@@ -25,10 +25,10 @@ def generate_f_g(eta):
     g = sample_coefficients(eta, kseed_g)
 
     # restart with a new seed if conditions are not fulfilled
-    return (f, g) if f_g_conditions else generate_f_g(eta)
+    return (f, g) if verify_f_g else generate_f_g(eta)
 
 # step 2: check conditions for f, g
-def f_g_conditions(f, g) -> bool:
+def verify_f_g(f, g) -> bool:
     return True
 
 # step 3: get r = NTRUSolve(f, g)
