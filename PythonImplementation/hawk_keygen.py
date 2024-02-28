@@ -2,6 +2,7 @@ import numpy as np
 from numpy import linalg as LA
 import secrets
 from polynomial_arithmetic import *
+from utils import *
 
 ### High level overview of hawk key-generation ###
 
@@ -52,9 +53,19 @@ def verify_f_g(f, g, norm_cond) -> bool:
 
     return True
 
-# step 3: get r = NTRUSolve(f, g)
+# step 3: get r = NTRUSolve(f, g) = F, G s.t. fG -gF = 1 mod ideal. This is the NTRU-equation
+# see https://github.com/hawk-sign/hawk-py/blob/main/ntrugen/ntrugen_hawk.py
 def NTRU_solve(f, g):
-    pass
+
+    n = len(f)
+    if n == 1:
+        f0 = f[0]
+        g0 = g[0]
+        d, u, v = x_gcd(f0, g0)
+        if d != 1:
+            raise ValueError
+        else:
+            return [-q * v], [q * u]
 
 # step 4: check orthogonality. If r is orthogonal, restart
 def check_orth(r) -> bool:
@@ -79,6 +90,7 @@ if __name__ == "__main__":
 
     # degree n
     n = 256
+    q = 1
     ideal = np.array([1] + ([0]* (n-2)) + [1], dtype=np.uint8)
     print(f"Ideal: {ideal}")
 
