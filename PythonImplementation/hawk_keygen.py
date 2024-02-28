@@ -1,7 +1,8 @@
 import numpy as np
 from numpy import linalg as LA
-#from Crypto.Hash import SHAKE256
+from Crypto import SHAKE256
 import secrets
+from polynomial_arithmetic import *
 
 ### High level overview of hawk key-generation ###
 
@@ -20,7 +21,7 @@ def decode_int(bits, k):
 def sample_coefficients(eta, kseed):
     np.random.seed(kseed)
     # numpy's binomial distribution. Stored as np-array of type int
-    centred_samples = np.array(np.random.binomial(eta,p=0.5,size=n) - eta/2, dtype=int)
+    centred_samples = np.array(np.random.binomial(eta,p=0.5,size=n) - eta/2, dtype=np.uint8)
     
     return centred_samples
 
@@ -77,6 +78,8 @@ if __name__ == "__main__":
 
     # degree n
     n = 256
+    ideal = np.array([1] + ([0]* (n-2)) + [1], dtype=np.uint8)
+    print(f"Ideal: {ideal}")
 
     # for hawk256, Bin(eta) param is 2
     eta = 2
