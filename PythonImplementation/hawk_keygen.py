@@ -18,7 +18,10 @@ def decode_int(bits, k):
 
 # step 1: sample coefficients of f, g through Bin(n)
 def sample_coefficients(eta, kgseed):
+    
+    # set a seed for the sampling
     np.random.seed(kgseed)
+
     # numpy's binomial distribution. Stored as np-array of type int
     # samples are centered with -eta/2
     centred_samples = np.array(np.random.binomial(eta,p=0.5,size=n) - eta/2, dtype=np.int8)
