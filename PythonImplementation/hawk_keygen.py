@@ -1,6 +1,5 @@
 import numpy as np
 from numpy import linalg as LA
-from Crypto import SHAKE256
 import secrets
 from polynomial_arithmetic import *
 
@@ -18,32 +17,31 @@ def decode_int(bits, k):
     return int(bits, 2)
 
 # step 1: sample coefficients of f, g through Bin(n)
-def sample_coefficients(eta, kseed):
-    np.random.seed(kseed)
+def sample_coefficients(eta, kgseed):
+    np.random.seed(kgseed)
     # numpy's binomial distribution. Stored as np-array of type int
-    centred_samples = np.array(np.random.binomial(eta,p=0.5,size=n) - eta/2, dtype=np.uint8)
+    # samples are centered with -eta/2
+    centred_samples = np.array(np.random.binomial(eta,p=0.5,size=n) - eta/2, dtype=np.int8)
     
     return centred_samples
 
-def generate_f_g():
-    kseed_f = 13
-    f = sample_coefficients(eta, kseed_f)
-    kseed_g = 27
-    g = sample_coefficients(eta, kseed_g)
+def generate_f_g(eta):
+    kgseed_f = 13
+    f = sample_coefficients(eta, kgseed_f)
+    kgseed_g = 27
+    g = sample_coefficients(eta, kgseed_g)
 
     print(f"f: {f}\ng:{g}")
-    verify_f_g(f, g)
     # restart with a new seed if conditions are not fulfilled
-    return (f, g) if verify_f_g else generate_f_g(eta)
+    return (f, g) if verify_f_g(f, g, 20) else generate_f_g(eta)
 
 # step 2: check conditions for f, g
-def verify_f_g(f, g) -> bool:
+def verify_f_g(f, g, norm_cond) -> bool:
     
     f_norm = LA.norm(f)
     g_norm = LA.norm(g)
     
-    # values only for testing
-    if f_norm > 20 or g_norm > 20:
+    if f_norm > norm_cond or g_norm > norm_cond:
         print(f"Norm too big!")
         return False
 
@@ -84,6 +82,6 @@ if __name__ == "__main__":
     # for hawk256, Bin(eta) param is 2
     eta = 2
     # use 'secrets' module for CSPRNG
-    #kseed = secrets.randbits(5)
+    #kgseed = secrets.randbits(5)
 
-    f, g = generate_f_g()
+    f, g = generate_f_g(eta)
