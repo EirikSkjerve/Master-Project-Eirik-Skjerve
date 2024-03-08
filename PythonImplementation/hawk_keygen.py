@@ -3,6 +3,7 @@ from numpy import linalg as LA
 import secrets
 from polynomial_arithmetic import *
 from utils import *
+from rich import print
 
 ### High level overview of hawk key-generation ###
 
@@ -17,7 +18,7 @@ def encode_int(x, k):
 def decode_int(bits, k):
     return int(bits, 2)
 
-# step 1: sample coefficients of f, g through Bin(n)
+# step 1: sample coefficients of f, g through Bin(n). Seed shoud be provided
 def sample_coefficients(eta, kgseed):
     
     # set a seed for the sampling
@@ -29,6 +30,7 @@ def sample_coefficients(eta, kgseed):
     
     return centred_samples
 
+# generate f and g
 def generate_f_g(eta):
     kgseed_f = 13
     f = sample_coefficients(eta, kgseed_f)
