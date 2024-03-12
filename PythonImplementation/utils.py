@@ -14,6 +14,10 @@ def x_gcd(a, b):
 
     return gcd, x, y
 
+# reduce polynomial f by polynomial g
+def poly_mod(f, g):
+    pass
+
 # returns -1*f
 def negate_poly(f):
     return [-f[i] for i in range(len(f))]
@@ -44,3 +48,29 @@ def poly_add(f, g, n=None):
 
 def poly_sub(f,g):
     return poly_add(f, negate_poly(g))
+
+# straight-forward multiplication of polynomials f and g mod ideal x^n + 1
+# should use e.g. karatsuba multiplication
+# params: 
+# polynomials f, g
+# n is degree of ideal x^n +1
+def poly_mult(f, g, n):
+    len_f = len(f)
+    len_g = len(g)
+
+    len_fg = len_f+len_g
+    f_g = np.full(len_fg, 0)
+
+    for i in range(len_f):
+        for j in range(len_g):
+            f_g[i+j] += f[i]*g[i]
+
+    # trim zeroes
+    f_g = np.trim_zeros(f_g, trim='b')
+    #TODO reduce mod x^n +1
+    return f_g
+
+test_f = np.array([1,1,1,1])
+test_g = np.array([0,0,1,0])
+
+test_fg = poly_mult(test_f, test_g, 5)
