@@ -65,6 +65,8 @@ def verify_f_g(f, g) -> bool:
 # see https://github.com/hawk-sign/hawk-py/blob/main/ntrugen/ntrugen_hawk.py
 def NTRU_solve(f, g):
 
+    q = 1
+
     n = len(f)
     if n == 1:
         f0 = f[0]
@@ -94,14 +96,19 @@ def check_orth(r) -> bool:
 
 def hawk_keygen(retry=False):
     n = 256
+
     ideal = np.array([1] + ([0]* (n-2)) + [1], dtype=np.uint8)
+
     base_seed = 14
+
     if retry:
         base_seed = random.randint(100)
+
     random_context = RandomContext(base_seed)
 
     f, g = generate_f_g(random_context, n)
 
+    # retry if f and g does not meet requirements
     if not verify_f_g(f, g):
         return hawk_keygen(retry=True)
 
