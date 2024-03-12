@@ -3,6 +3,8 @@ from numpy import linalg as LA
 import secrets
 from utils import *
 from rich import print
+from random_context import RandomContext
+import random
 
 ### High level overview of hawk key-generation ###
 
@@ -19,10 +21,10 @@ def decode_int(bits):
     return int(bits, 2)
 
 # step 1: sample coefficients of f, g through Bin(n). Seed shoud be provided
-def sample_coefficients(eta, kgseed):
+def sample_coefficients(eta, coef_seed, n):
     
     # set a seed for the sampling
-    np.random.seed(kgseed)
+    np.random.seed(coef_seed)
 
     # numpy's binomial distribution. Stored as np-array of type int
     # samples are centered with -eta/2
@@ -31,15 +33,14 @@ def sample_coefficients(eta, kgseed):
     return centred_samples
 
 # generate f and g
-def generate_f_g():
+def generate_f_g(random_context, n):
     
     # eta for n=256 is 2
     eta = 2
 
-    kgseed_f = 13
-    f = sample_coefficients(eta, kgseed_f)
-    kgseed_g = 27
-    g = sample_coefficients(eta, kgseed_g)
+    f = sample_coefficients(eta, random_context.random(10), n)
+
+    g = sample_coefficients(eta, random_context.random(10), n)
 
     print(f"f: {f}\ng:{g}")
     # restart with a new seed if conditions are not fulfilled
@@ -91,23 +92,23 @@ def check_orth(r) -> bool:
 
 # step 9: return (pk, sk) = (Q, (B, hpub)). Guessing B is the private key.
 
-def hawk_keygen():
+def hawk_keygen(retry=False):
     n = 256
     ideal = np.array([1] + ([0]* (n-2)) + [1], dtype=np.uint8)
+    base_seed = 14
+    if retry:
+        base_seed = random.randint(100)
+    random_context = RandomContext(base_seed)
 
-    kgseed = np.random()
-    f, g = generate_f_g(kgseed)
+    f, g = generate_f_g(random_context, n)
+
+    if not verify_f_g(f, g):
+        return hawk_keygen(retry=True)
+
+
+
+    return None, None
 
 if __name__ == "__main__":
     # test environment
-
-    # degree n
-    n = 256
-    q = 1
-    ideal = np.array([1] + ([0]* (n-2)) + [1], dtype=np.uint8)
-    print(f"Ideal: {ideal}")
-
-    # for hawk256, Bin(eta) param is 2
-    eta = 2
-    # use 'secrets' module for CSPRNG
-    #kgseed = secrets.randbits(5)
+    pub, priv = hawk_keygen()
