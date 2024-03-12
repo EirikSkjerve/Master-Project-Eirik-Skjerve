@@ -1,7 +1,6 @@
 import numpy as np
 from numpy import linalg as LA
 import secrets
-from polynomial_arithmetic import *
 from utils import *
 from rich import print
 
