@@ -1,3 +1,5 @@
+from rich import print
+
 import numpy as np
 ### This file contains helper functions for some of the algorithms.
 ### May later be split into several utils-files
@@ -13,10 +15,6 @@ def x_gcd(a, b):
     y = x1
 
     return gcd, x, y
-
-# reduce polynomial f by polynomial g
-def poly_mod(f, g):
-    pass
 
 # returns -1*f
 def negate_poly(f):
@@ -69,6 +67,19 @@ def poly_mult(f, g, n):
     f_g = np.trim_zeros(f_g, trim='b')
     #TODO reduce mod x^n +1
     return f_g
+
+# reduce polynomial f mod g over rationals
+def poly_reduce_Q(f, g):
+    f_rev = np.copy(f)[::-1]
+    g_rev = np.copy(g)[::-1]
+    quot, rem = np.polydiv(f_rev, g_rev)
+    return rem
+
+# check if f is invertible mod p
+def is_invertible(f, p):
+    # if p is 2, we simply do a parity check
+    if p == 2:
+        return (np.sum(f)%2)==1
 
 test_f = np.array([1,1,1,1])
 test_g = np.array([0,0,1,0])
