@@ -31,7 +31,11 @@ def sample_coefficients(eta, kgseed):
     return centred_samples
 
 # generate f and g
-def generate_f_g(eta):
+def generate_f_g():
+    
+    # eta for n=256 is 2
+    eta = 2
+
     kgseed_f = 13
     f = sample_coefficients(eta, kgseed_f)
     kgseed_g = 27
@@ -39,11 +43,12 @@ def generate_f_g(eta):
 
     print(f"f: {f}\ng:{g}")
     # restart with a new seed if conditions are not fulfilled
-    return (f, g) if verify_f_g(f, g, 20) else generate_f_g(eta)
+    return (f, g)
 
 # step 2: check conditions for f, g
-def verify_f_g(f, g, norm_cond) -> bool:
+def verify_f_g(f, g) -> bool:
     
+    norm_cond = 20  # some threshold for the norms of f, g
     f_norm = LA.norm(f)
     g_norm = LA.norm(g)
     
@@ -86,6 +91,12 @@ def check_orth(r) -> bool:
 
 # step 9: return (pk, sk) = (Q, (B, hpub)). Guessing B is the private key.
 
+def hawk_keygen():
+    n = 256
+    ideal = np.array([1] + ([0]* (n-2)) + [1], dtype=np.uint8)
+
+    kgseed = np.random()
+    f, g = generate_f_g(kgseed)
 
 if __name__ == "__main__":
     # test environment
@@ -100,5 +111,3 @@ if __name__ == "__main__":
     eta = 2
     # use 'secrets' module for CSPRNG
     #kgseed = secrets.randbits(5)
-
-    f, g = generate_f_g(eta)
