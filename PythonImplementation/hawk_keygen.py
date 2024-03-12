@@ -9,12 +9,13 @@ from rich import print
 # Polynomials will be represented as a list of coefficients, ordered from least significant to most significant term.
 # e.g. x^3 + x -1 = [-1, 1, 0, 1]
 
+# encodes an integer to binary
 def encode_int(x, k):
-    bin_rep = bin(x)[2:].zfill(k)
-    print(f"{int(bin_rep, 2)}")
-    return bin_rep
+    return bin(x)[2:].zfill(k)
 
-def decode_int(bits, k):
+# decodes binary to integer
+# TODO handle case if input is not a string
+def decode_int(bits):
     return int(bits, 2)
 
 # step 1: sample coefficients of f, g through Bin(n). Seed shoud be provided
