@@ -47,7 +47,7 @@ def poly_add(f, g, n=None):
 def poly_sub(f,g):
     return poly_add(f, negate_poly(g))
 
-# straight-forward multiplication of polynomials f and g mod ideal x^n + 1
+# straightforward multiplication of polynomials f and g mod ideal x^n + 1
 # should use e.g. karatsuba multiplication
 # params: 
 # polynomials f, g
