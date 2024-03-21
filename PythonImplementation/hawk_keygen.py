@@ -1,3 +1,4 @@
+from base64 import encode
 import numpy as np
 from numpy import linalg as LA
 import secrets
@@ -13,11 +14,13 @@ import random
 
 # encodes an integer to binary representation in a numpy array
 def encode_int(x, k):
-    encoded = np.full(k, None)
+    encoded = np.full(k, 0, dtype=np.uint8)
     bin_string = bin(x)[2:].zfill(k)
     for i, b_s in enumerate(bin_string):
         encoded[i] = int(b_s)
     return encoded
+
+print(encode_int(33, 7))
 
 # decodes binary to integer
 # TODO handle case if input is not a string
