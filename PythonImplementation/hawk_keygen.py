@@ -119,8 +119,24 @@ def hawk_keygen(retry=False):
     F, G = NTRU_solve(f, g)
     assert (int(poly_reduce_Q(poly_mult(f, G) - poly_mult(g,F))) == 1)
 
+    # B is the secret basis for the lattice
+    B = np.array([[f, F],
+                 [g, G]])
 
-    return None, None
+    # Inverse of B
+    B_inv = np.array([[G, negate_poly(F)],
+                      [negate_poly(g)], f])
+
+    # Q is the public key. Excplicitly it is computed the following way: 
+    Q = [[None, None],
+         [None, None]]
+
+    Q[0][0] = poly_add(poly_mult(f, f), poly_mult(g, g))
+    Q[0][1] = poly_add(poly_mult(f, F), poly_mult(g, G))
+    Q[1][0] = poly_add(poly_mult(F, f), poly_mult(G, g))
+    Q[1][1] = poly_add(poly_mult(F, F), poly_mult(G, G))
+
+    return
 
 if __name__ == "__main__":
     # test environment
