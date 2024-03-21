@@ -20,12 +20,9 @@ def encode_int(x, k):
         encoded[i] = int(b_s)
     return encoded
 
-print(encode_int(33, 7))
-
 # decodes binary to integer
-# TODO handle case if input is not a string
 def decode_int(bits):
-    return int(bits, 2)
+    return int(''.join([str(b) for b in bits]), 2)
 
 # step 1: sample coefficients of f, g through Bin(n). Seed shoud be provided
 def sample_coefficients(eta, coef_seed, n):
