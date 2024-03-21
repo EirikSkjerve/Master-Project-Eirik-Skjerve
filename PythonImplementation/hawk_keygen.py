@@ -11,9 +11,13 @@ import random
 # Polynomials will be represented as a list of coefficients, ordered from least significant to most significant term.
 # e.g. x^3 + x -1 = [-1, 1, 0, 1]
 
-# encodes an integer to binary
+# encodes an integer to binary representation in a numpy array
 def encode_int(x, k):
-    return bin(x)[2:].zfill(k)
+    encoded = np.full(k, None)
+    bin_string = bin(x)[2:].zfill(k)
+    for i, b_s in enumerate(bin_string):
+        encoded[i] = int(b_s)
+    return encoded
 
 # decodes binary to integer
 # TODO handle case if input is not a string
@@ -112,6 +116,8 @@ def hawk_keygen(retry=False):
     if not verify_f_g(f, g):
         return hawk_keygen(retry=True)
 
+    F, G = NTRU_solve(f, g)
+    assert (int(poly_reduce_Q(poly_mult(f, G) - poly_mult(g,F))) == 1)
 
 
     return None, None
