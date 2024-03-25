@@ -32,7 +32,7 @@ def sample_coefficients(eta, coef_seed, n):
 
     # numpy's binomial distribution. Stored as np-array of type int
     # samples are centered with -eta/2
-    centred_samples = np.array(np.random.binomial(eta,p=0.5,size=n) - eta/2, dtype=np.int8)
+    centred_samples = np.array(np.random.binomial(2*eta,p=0.5,size=n) - eta, dtype=np.int8)
     
     return centred_samples
 
@@ -46,44 +46,25 @@ def generate_f_g(random_context, n):
 
     g = sample_coefficients(eta, random_context.random(10), n)
 
-    print(f"f: {f}\ng:{g}")
-    # restart with a new seed if conditions are not fulfilled
+    print(f"f: {f}\ng: {g}")
+
     return (f, g)
 
 # step 2: check conditions for f, g
 def verify_f_g(f, g) -> bool:
     
-    norm_cond = 20  # some threshold for the norms of f, g
+    threshold = 256*(1.042)**2
+    norm_cond = 40  # some threshold for the norms of f, g
     f_norm = LA.norm(f)
     g_norm = LA.norm(g)
     
-    if f_norm > norm_cond or g_norm > norm_cond:
+    if f_norm > threshold or g_norm > threshold: 
         print(f"Norm too big!")
         return False
 
     #TODO check some other properties aswell
 
     return True
-
-# step 3: get r = NTRUSolve(f, g) = F, G s.t. fG -gF = 1 mod ideal. This is the NTRU-equation
-# see https://github.com/hawk-sign/hawk-py/blob/main/ntrugen/ntrugen_hawk.py
-def NTRU_solve(f, g):
-
-    q = 1
-
-    n = len(f)
-    if n == 1:
-        f0 = f[0]
-        g0 = g[0]
-        d, u, v = x_gcd(f0, g0)
-        if d != 1:
-            raise ValueError
-        else:
-            return [-q * v], [q * u]
-
-# step 4: check orthogonality. If r is orthogonal, restart
-def check_orth(r) -> bool:
-    pass
 
 # step 5: set (F, G) = r
 
@@ -101,6 +82,7 @@ def check_orth(r) -> bool:
 def hawk_keygen(retry=False):
     n = 256
 
+    global ideal
     ideal = np.array([1] + ([0]* (n-2)) + [1], dtype=np.uint8)
 
     base_seed = 14
@@ -116,8 +98,9 @@ def hawk_keygen(retry=False):
     if not verify_f_g(f, g):
         return hawk_keygen(retry=True)
 
+    quit() 
     F, G = NTRU_solve(f, g)
-    assert (int(poly_reduce_Q(poly_mult(f, G) - poly_mult(g,F))) == 1)
+    assert (int(poly_reduce_Q(poly_mult(f, G, ideal) - poly_mult(g,F, ideal))) == 1)
 
     # B is the secret basis for the lattice
     B = np.array([[f, F],
