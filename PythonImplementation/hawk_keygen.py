@@ -1,12 +1,11 @@
-from base64 import encode
 import numpy as np
 from numpy import linalg as LA
-import secrets
 from utils import *
 from rich import print
 from random_context import RandomContext
 import random
-
+# currently using this as a black-box
+from NTRUSolve import NTRU_solve
 ### High level overview of hawk key-generation ###
 
 # Polynomials will be represented as a list of coefficients, ordered from least significant to most significant term.
@@ -98,8 +97,10 @@ def hawk_keygen(retry=False):
     if not verify_f_g(f, g):
         return hawk_keygen(retry=True)
 
-    quit() 
-    F, G = NTRU_solve(f, g)
+    # trying to solve ntru-equation
+    F, G = NTRU_solve(list(f), list(g))
+
+    quit()
     assert (int(poly_reduce_Q(poly_mult(f, G, ideal) - poly_mult(g,F, ideal))) == 1)
 
     # B is the secret basis for the lattice
