@@ -52,7 +52,7 @@ def poly_sub(f,g):
 # params: 
 # polynomials f, g
 # n is degree of ideal x^n +1
-def poly_mult(f, g, n):
+def poly_mult(f, g, ideal):
     len_f = len(f)
     len_g = len(g)
 
@@ -65,8 +65,7 @@ def poly_mult(f, g, n):
 
     # trim zeroes
     f_g = np.trim_zeros(f_g, trim='b')
-    #TODO reduce mod x^n +1
-    return f_g
+    return poly_reduce_Q(f_g, ideal)
 
 # reduce polynomial f mod g over rationals
 def poly_reduce_Q(f, g):
@@ -80,8 +79,3 @@ def is_invertible(f, p):
     # if p is 2, we simply do a parity check
     if p == 2:
         return (np.sum(f)%2)==1
-
-test_f = np.array([1,1,1,1])
-test_g = np.array([0,0,1,0])
-
-test_fg = poly_mult(test_f, test_g, 5)
