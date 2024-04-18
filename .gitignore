@@ -4,7 +4,6 @@ hawk-python-implementation
 shake256_test.py
 master-latex-template/
 ntrugen/
-hawk_py/
 PythonImplementation/
 KeyGenExperiments/Text
 ___ntru_solve.py
