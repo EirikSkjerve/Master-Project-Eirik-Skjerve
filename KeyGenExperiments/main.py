@@ -1,9 +1,10 @@
 # we import HAWK's python implementation of the hawk key generation algorithm
 from hawk_py.keygen import hawkkeygen, RngContext
+from hawk_py.sign import hawksign
 from hawk_py.ntrugen.ntrugen_hawk import ntru_solve
 import numpy as np
 
-def generate_keypairs(num_pairs, logn=8, seed=None):
+def generate_keypairs(num_pairs, logn, seed=None):
     '''
     Input: 
     Wanted number of pairs
@@ -28,10 +29,18 @@ def generate_keypairs(num_pairs, logn=8, seed=None):
 def generate_F_G(f, g):
     return ntru_solve(f, g)
 
+def sign(m, priv, logn):
+    m_vec = np.array([x for x in m], dtype=str)
+    return hawksign(logn, priv, m_vec)
+
 if __name__ == "__main__":
-    keypairs = generate_keypairs(2, seed=13)
+    keypairs = generate_keypairs(num_pairs=2, logn=8, seed=13)
     for i in range(len(keypairs)):
 
+        message = "Hei eg heiter Eirik :)"
         priv, pub = keypairs[i]
         print(f"Private key: {priv}")
         print(f"Public key:  {pub}")
+        signature = sign(message, priv, logn=8)
+        print(f"Signature for message: {signature}")
+        print("\n")
