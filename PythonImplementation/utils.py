@@ -57,10 +57,11 @@ def poly_mult(f, g, ideal):
     len_g = len(g)
 
     len_fg = len_f+len_g
-    f_g = np.full(len_fg, 0)
+    f_g = list(np.full(len_fg, 0))
 
     for i in range(len_f):
         for j in range(len_g):
+            #print(i+j)
             f_g[i+j] += f[i]*g[i]
 
     # trim zeroes
@@ -71,6 +72,11 @@ def poly_mult(f, g, ideal):
 def poly_reduce_Q(f, g):
     f_rev = np.copy(f)[::-1]
     g_rev = np.copy(g)[::-1]
+    '''
+    print(f_rev)
+    print(g_rev)
+    print("\n")
+    '''
     quot, rem = np.polydiv(f_rev, g_rev)
     return rem
 

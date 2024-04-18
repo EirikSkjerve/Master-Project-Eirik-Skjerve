@@ -5,7 +5,7 @@ from rich import print
 from random_context import RandomContext
 import random
 # currently using this as a black-box
-from NTRUSolve import NTRU_solve
+from NTRUSolve import NTRU_solve_bruteforce
 ### High level overview of hawk key-generation ###
 
 # Polynomials will be represented as a list of coefficients, ordered from least significant to most significant term.
@@ -52,16 +52,13 @@ def generate_f_g(random_context, n):
 # step 2: check conditions for f, g
 def verify_f_g(f, g) -> bool:
     
-    threshold = 256*(1.042)**2
-    norm_cond = 40  # some threshold for the norms of f, g
+    threshold = 256*(1.042**2)
     f_norm = LA.norm(f)
     g_norm = LA.norm(g)
     
     if f_norm > threshold or g_norm > threshold: 
         print(f"Norm too big!")
         return False
-
-    #TODO check some other properties aswell
 
     return True
 
@@ -79,7 +76,7 @@ def verify_f_g(f, g) -> bool:
 # step 9: return (pk, sk) = (Q, (B, hpub)). Guessing B is the private key.
 
 def hawk_keygen(retry=False):
-    n = 256
+    n = 64
 
     global ideal
     ideal = np.array([1] + ([0]* (n-2)) + [1], dtype=np.uint8)
@@ -93,12 +90,15 @@ def hawk_keygen(retry=False):
 
     f, g = generate_f_g(random_context, n)
 
+    print(f"f: {list(f)}")
+    print(f"g: {list(g)}")
     # retry if f and g does not meet requirements
     if not verify_f_g(f, g):
         return hawk_keygen(retry=True)
 
     # trying to solve ntru-equation
-    F, G = NTRU_solve(list(f), list(g))
+    F, G = NTRU_solve_bruteforce(f, g)
+    #F, G = NTRU_solve(list(f), list(g))
 
     quit()
     assert (int(poly_reduce_Q(poly_mult(f, G, ideal) - poly_mult(g,F, ideal))) == 1)

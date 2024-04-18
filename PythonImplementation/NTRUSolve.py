@@ -41,7 +41,10 @@ def field_norm(a):
     res[0] += ao_squared[n2 - 1]
     return res
 
-# step 3: get r = NTRUSolve(f, g) = F, G s.t. fG -gF = 1 mod ideal. This is the NTRU-equation
+def reduce():
+    pass
+
+# get r = NTRUSolve(f, g) = F, G s.t. fG -gF = 1 mod ideal. This is the NTRU-equation
 # see https://github.com/hawk-sign/hawk-py/blob/main/ntrugen/ntrugen_hawk.py
 def NTRU_solve(f, g):
 
@@ -63,6 +66,5 @@ def NTRU_solve(f, g):
         Fp, Gp = NTRU_solve(fp, gp)
         F = poly_mult(lift(Fp), galois_conjugate(g), ideal)
         G = poly_mult(lift(Gp), galois_conjugate(f), ideal)
+        F, G = reduce(f, g, F, G)
         return F, G
-
-
