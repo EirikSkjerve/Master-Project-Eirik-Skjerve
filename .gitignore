@@ -6,3 +6,4 @@ master-latex-template/
 PythonImplementation/
 KeyGenExperiments/Text
 ___ntru_solve.py
+__pycache__/
