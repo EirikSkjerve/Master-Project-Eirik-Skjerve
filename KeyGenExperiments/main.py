@@ -11,7 +11,8 @@ def generate_keypairs(num_pairs, logn, seed=None):
     '''
     Input: 
     Wanted number of pairs
-    log(n), power of degree
+    log2 of degree n
+    seed (optional)
     
     Outut:
     Randomly generated public/private key pairs for HAWK
@@ -22,14 +23,25 @@ def generate_keypairs(num_pairs, logn, seed=None):
     for p in range(num_pairs):
         # set seed
         np.random.seed(seed+p)
+
         # create an RngContext used for hawkkeygen
         rng = RngContext(np.random.randint(0, 256, 40, dtype=np.uint8))
+
         # create a keypair from HAWK's implementation
         keypairs[p] = hawkkeygen(logn, rng)
         print(f"{p+1}/{num_pairs} generated")
+
     return keypairs
 
 def generate_F_G(f, g):
+    '''
+    Calls ntru_solve on f and g
+    Inputs:
+    polynomials f, g
+
+    Outputs:
+    polynomials F, G such that fG - gF = 1 mod (x^n +1)
+    '''
     return ntru_solve(f, g)
 
 def sign(m, priv, logn, seed=None):
@@ -39,6 +51,9 @@ def sign(m, priv, logn, seed=None):
     Message m
     Private key priv
     Log2 of degree n
+    
+    Outputs:
+    Signature sig
     '''
 
     np.random.seed(seed)
@@ -51,6 +66,17 @@ def sign(m, priv, logn, seed=None):
     return hawksign(logn, priv, m_vec, rng)
 
 def verify(m, pub, sig, logn):
+    '''
+    Calls hawkverify
+    Inputs:
+    Message m
+    Public key pub
+    Signature sig
+    Log2 of degree n
+
+    Outputs: 
+    True or False
+    '''
 
     # turn the message into a numpy array for it to be convertable to bytes
     m_vec = np.array([x for x in m], dtype=str)
