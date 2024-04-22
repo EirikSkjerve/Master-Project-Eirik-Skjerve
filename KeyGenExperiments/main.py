@@ -35,13 +35,21 @@ def sign(m, priv, logn):
     return hawksign(logn, priv, m_vec)
 
 if __name__ == "__main__":
-    keypairs = generate_keypairs(num_pairs=2, logn=8, seed=13)
+    keypairs = generate_keypairs(num_pairs=1, logn=8, seed=13)
     for i in range(len(keypairs)):
 
         message = "Hei eg heiter Eirik :)"
-        priv, pub = keypairs[i]
-        print(f"Private key: {priv}")
-        print(f"Public key:  {pub}")
+        B, priv, pub = keypairs[i]
+        
+        f, g, F, G = B
+        print(f"f: {f}")
+        print(f"g: {g}")
+        print(f"F: {F}")
+        print(f"G: {G}")
+        '''
+        #print(f"Private key: {priv}")
+        #print(f"Public key:  {pub}")
         signature = sign(message, priv, logn=8)
-        print(f"Signature for message: {signature}")
-        print("\n")
+        #print(f"Signature for message: {signature}")
+        #print("\n")
+        '''
