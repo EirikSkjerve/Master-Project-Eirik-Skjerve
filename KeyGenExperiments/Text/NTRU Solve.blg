@@ -1,0 +1,52 @@
+This is BibTeX, Version 0.99d
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: NTRU Solve.aux
+Reallocating 'name_of_file' (item size: 1) to 6 items.
+The style file: plain.bst
+Reallocating 'name_of_file' (item size: 1) to 8 items.
+Database file #1: sources.bib
+Warning--to sort, need author or key in HAWK-spec
+Warning--empty author in HAWK-spec
+Warning--empty journal in HAWK-spec
+You've used 2 entries,
+            2118 wiz_defined-function locations,
+            509 strings with 4196 characters,
+and the built_in function-call counts, 436 in all, are:
+= -- 41
+> -- 14
+< -- 0
++ -- 6
+- -- 4
+* -- 26
+:= -- 78
+add.period$ -- 6
+call.type$ -- 2
+change.case$ -- 8
+chr.to.int$ -- 0
+cite$ -- 5
+duplicate$ -- 20
+empty$ -- 36
+format.name$ -- 4
+if$ -- 87
+int.to.chr$ -- 0
+int.to.str$ -- 2
+missing$ -- 2
+newline$ -- 13
+num.names$ -- 2
+pop$ -- 8
+preamble$ -- 1
+purify$ -- 6
+quote$ -- 0
+skip$ -- 16
+stack$ -- 0
+substring$ -- 10
+swap$ -- 1
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 8
+warning$ -- 3
+while$ -- 2
+width$ -- 3
+write$ -- 22
+(There were 3 warnings)

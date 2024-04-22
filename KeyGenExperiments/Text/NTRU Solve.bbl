@@ -1,0 +1,14 @@
+\begin{thebibliography}{1}
+
+\bibitem{HAWK-spec}
+Hawk version 1.0.1.
+\newblock 2023.
+\newblock Accessed: [12.04.2024].
+
+\bibitem{PP}
+Thomas Pornin and Thomas Prest.
+\newblock More efficient algorithms for the ntru key generation using the field
+  norm.
+\newblock {\em PKC 2019, part II}, 11443, 2019.
+
+\end{thebibliography}
