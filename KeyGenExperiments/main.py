@@ -14,14 +14,14 @@ def generate_keypairs(num_pairs, logn, seed=None):
     Randomly generated public/private key pairs for HAWK
     '''
     
-    # TODO set an RNGcontext object from seed for testing
-
-    #rng = RngContext(seed)
-
+    # initialize empty list for keypairs
     keypairs = [None]*num_pairs
     for p in range(num_pairs):
+        # set seed
         np.random.seed(seed+p)
+        # create an RngContext used for hawkkeygen
         rng = RngContext(np.random.randint(0, 256, 40, dtype=np.uint8))
+        # create a keypair from HAWK's implementation
         keypairs[p] = hawkkeygen(logn, rng)
         print(f"{p+1}/{num_pairs} generated")
     return keypairs
@@ -30,6 +30,13 @@ def generate_F_G(f, g):
     return ntru_solve(f, g)
 
 def sign(m, priv, logn):
+    '''
+    Calls hawksign
+    Inputs: 
+    Message m
+    Private key priv
+    Log2 of degree n
+    '''
     # turn the message into a numpy array for it to be convertable to bytes
     m_vec = np.array([x for x in m], dtype=str)
     return hawksign(logn, priv, m_vec)
