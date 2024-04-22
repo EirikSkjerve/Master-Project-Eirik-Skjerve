@@ -29,7 +29,7 @@ def generate_keypairs(num_pairs, logn, seed=None):
 def generate_F_G(f, g):
     return ntru_solve(f, g)
 
-def sign(m, priv, logn):
+def sign(m, priv, logn, seed=None):
     '''
     Calls hawksign
     Inputs: 
@@ -37,9 +37,14 @@ def sign(m, priv, logn):
     Private key priv
     Log2 of degree n
     '''
+
+    np.random.seed(seed)
+    rng = RngContext(np.random.randint(0, 256, 40, dtype=np.uint8))
+
     # turn the message into a numpy array for it to be convertable to bytes
     m_vec = np.array([x for x in m], dtype=str)
-    return hawksign(logn, priv, m_vec)
+    # returns a signature of m
+    return hawksign(logn, priv, m_vec, rng)
 
 if __name__ == "__main__":
     keypairs = generate_keypairs(num_pairs=1, logn=8, seed=13)
@@ -53,6 +58,9 @@ if __name__ == "__main__":
         print(f"g: {g}")
         print(f"F: {F}")
         print(f"G: {G}")
+        for j in range(10):
+            signature = sign(message, priv, logn=8, seed=1337)
+            print(signature)
         '''
         #print(f"Private key: {priv}")
         #print(f"Public key:  {pub}")
