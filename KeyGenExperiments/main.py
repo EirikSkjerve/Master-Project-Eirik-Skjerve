@@ -2,6 +2,9 @@
 from hawk_py.keygen import hawkkeygen, RngContext
 from hawk_py.sign import hawksign
 from hawk_py.ntrugen.ntrugen_hawk import ntru_solve
+from hawk_py.verify import hawkverify
+
+from time import time
 import numpy as np
 
 def generate_keypairs(num_pairs, logn, seed=None):
@@ -43,24 +46,42 @@ def sign(m, priv, logn, seed=None):
 
     # turn the message into a numpy array for it to be convertable to bytes
     m_vec = np.array([x for x in m], dtype=str)
+
     # returns a signature of m
     return hawksign(logn, priv, m_vec, rng)
 
+def verify(m, pub, sig, logn):
+
+    # turn the message into a numpy array for it to be convertable to bytes
+    m_vec = np.array([x for x in m], dtype=str)
+
+    return hawkverify(logn, pub, m_vec, sig)
+
 if __name__ == "__main__":
+    kgen_s = time()
     keypairs = generate_keypairs(num_pairs=1, logn=8, seed=13)
+    kgen_e = time()
+    print(f"Keypair generated in {kgen_e - kgen_s} s")
     for i in range(len(keypairs)):
 
         message = "Hei eg heiter Eirik :)"
         B, priv, pub = keypairs[i]
         
+        '''
         f, g, F, G = B
         print(f"f: {f}")
         print(f"g: {g}")
         print(f"F: {F}")
         print(f"G: {G}")
-        for j in range(10):
-            signature = sign(message, priv, logn=8, seed=1337)
-            print(signature)
+        '''
+        sig_s = time()
+        signature = sign(message, priv, logn=8, seed=1337)
+        sig_e = time()
+        print(f"Signature generated in {sig_e-sig_s} s")
+        ver_s = time()
+        verified = verify(message,pub, signature, logn=8)
+        ver_e = time()
+        print(f"Signature verified: {verified} in {ver_e - ver_s} s")
         '''
         #print(f"Private key: {priv}")
         #print(f"Public key:  {pub}")
