@@ -84,11 +84,17 @@ def verify(m, pub, sig, logn):
     return hawkverify(logn, pub, m_vec, sig)
 
 if __name__ == "__main__":
-    kgen_s = time()
-    keypairs = generate_keypairs(num_pairs=1, logn=8, seed=13)
-    kgen_e = time()
-    print(f"Keypair generated in {kgen_e - kgen_s} s")
+    # generate keypair(s)
 
+    num_pairs = 3
+    logn = 10
+
+    kgen_s = time()
+    keypairs = generate_keypairs(num_pairs, logn, seed=13)
+    kgen_e = time()
+    print(f"{num_pairs} keypair(s) generated in {kgen_e - kgen_s} s")
+
+    # run a basic pipeline
     for i in range(len(keypairs)):
 
         message = "A test message for HAWK digital signature scheme"
@@ -105,12 +111,13 @@ if __name__ == "__main__":
         
         # signature generation
         sig_s = time()
-        signature = sign(message, priv, logn=8, seed=1337)
+        signature = sign(message, priv, logn, seed=1337)
         sig_e = time()
         print(f"Signature generated in {sig_e-sig_s} s")
 
         # signature verification
         ver_s = time()
-        verified = verify(message,pub, signature, logn=8)
+        verified = verify(message,pub, signature, logn)
         ver_e = time()
         print(f"Signature verified: {verified} in {ver_e - ver_s} s")
+        print("\n")
