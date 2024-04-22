@@ -30,6 +30,7 @@ def generate_F_G(f, g):
     return ntru_solve(f, g)
 
 def sign(m, priv, logn):
+    # turn the message into a numpy array for it to be convertable to bytes
     m_vec = np.array([x for x in m], dtype=str)
     return hawksign(logn, priv, m_vec)
 
