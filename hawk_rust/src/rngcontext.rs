@@ -1,9 +1,9 @@
 use sha3::{
     digest::{ExtendableOutput, Update},
-    Digest, Shake256,
+    Shake256,
 };
 
-use rand::{random, rngs::StdRng, Rng, SeedableRng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 pub struct RngContext {
     seed: u128,
@@ -24,15 +24,12 @@ impl RngContext {
      */
     pub fn rnd(&mut self, size: u8) -> u128{
         self.i += 1;
-
         let temp = self.seed + self.i as u128;
-        let seed_temp = shake256(&temp.to_ne_bytes());
+        let seed = shake256(&temp.to_ne_bytes());  // set seed to hash of input seed + incremented variable
 
-        // println!("{:?}", seed_temp);
-
-        let mut rng = StdRng::from_seed(seed_temp);
-        let rand_u128: u128 = rng.gen();
-        return rand_u128 >> (128-size);
+        let mut rng = StdRng::from_seed(seed);  // start rng from seed
+        let rand_u128: u128 = rng.gen();  // generate random number from rng
+        return rand_u128 >> (128-size);  // return number reduced to wanted bitsize
 
     }
 }
