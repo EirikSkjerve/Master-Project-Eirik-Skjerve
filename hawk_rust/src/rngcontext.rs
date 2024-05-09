@@ -37,7 +37,7 @@ impl RngContext {
 
 pub fn shake256(input_data: &[u8]) -> [u8;32] {
     
-    //TODO shake256 should have variable output length. Don't know how to best to this
+    //TODO shake256 should have variable output length. Should use a Vec instead of array
 
     // create a shake256 object
     let mut hasher = Shake256::default();
