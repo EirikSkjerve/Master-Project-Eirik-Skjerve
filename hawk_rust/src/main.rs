@@ -14,14 +14,6 @@ mod verify;
 
 fn main() {
 
-    // testing rngContext
-    let mut rng = RngContext::new(1336);
-    let mut rand_bits: u128;
-    for _ in 0..10{
-        rand_bits = rng.rnd(16);
-        println!("Random 16 bits: {}",rand_bits);
-    }
-
     hawkkeygen(8, None);
 
 }

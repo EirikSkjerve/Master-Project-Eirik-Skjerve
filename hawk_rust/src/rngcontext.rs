@@ -52,3 +52,63 @@ pub fn shake256(input_data: &[u8]) -> [u8;32] {
 
     return res;
 }
+
+pub fn shake256x4(message: &[u8], num: usize) -> Vec<u64> {
+
+    // This should ideally be inside a loop, but because of Rust's borrow system, it is
+    // not possible to store the Shake256 instances inside an array.
+    
+    // four shake256 instances
+    let mut s_1 = Shake256::default();
+    let mut s_2 = Shake256::default();
+    let mut s_3 = Shake256::default();
+    let mut s_4 = Shake256::default();
+
+    // initialize an array to store the digests
+    let mut digest: [Vec<u8>; 4] = [vec![0;num], vec![0;num], vec![0;num], vec![0;num]];
+
+    // insert message
+    s_1.update(message);
+    s_2.update(message);
+    s_3.update(message);
+    s_4.update(message);
+
+    // insert extra data to make the digests different
+    s_1.update(&[1 as u8]);
+    s_2.update(&[2 as u8]);
+    s_3.update(&[3 as u8]);
+    s_4.update(&[4 as u8]);
+
+    // store the digests
+    digest[0] = s_1.finalize_boxed((num*8)/4).to_vec();
+    digest[1] = s_2.finalize_boxed((num*8)/4).to_vec();
+    digest[2] = s_3.finalize_boxed((num*8)/4).to_vec();
+    digest[3] = s_4.finalize_boxed((num*8)/4).to_vec();
+
+    for i in 0..4 {
+        println!("Digest {}: {:?}", i, digest[i]);
+    }
+
+    let mut j = 0;
+    let mut y: Vec<u64> = Vec::with_capacity(num);
+
+    for i in 0..(num/4) {
+        for (index, dig) in digest.iter().enumerate() {
+            let start = i * 8;
+            let end = start + 8;
+            let bytes = &dig[start..end];
+            y.push(bytes_to_u64(bytes));
+        }
+    }
+    return y;
+
+
+}
+
+fn bytes_to_u64(bytes: &[u8]) -> u64 {
+    let mut result: u64 = 0;
+    for &byte in bytes.iter() {
+        result = result << 8 | byte as u64;
+    }
+    result
+}

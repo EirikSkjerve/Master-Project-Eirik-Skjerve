@@ -1,4 +1,4 @@
-use crate::rngcontext::RngContext;
+use crate::rngcontext::{shake256x4, RngContext};
 
 
 
@@ -14,9 +14,15 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
     };
 
     // generate f and g
+    generate_f_g(1337, logn)
 
 }
 
 fn generate_f_g(seed: usize, logn: u16) {
+    let n = 1 << logn;
+    let b = n/64;
+    assert!(b==4 || b==8 || b==16);
 
+    let y = shake256x4(&seed.to_ne_bytes(), 2*n*b/64);
+    println!("Vector y: {:?}", y);
 }
