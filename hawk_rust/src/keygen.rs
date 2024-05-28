@@ -16,6 +16,8 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
     let f = f_g.0.clone();
     let g = f_g.1.clone();
 
+    // checks if f and g are invertible mod X^n + 1 and mod 2
+    // if not, restart
     if !(is_invertible(&f) && is_invertible(&g)) {
         return hawkkeygen(logn, Some(rng));
     }
@@ -23,10 +25,12 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
     let n = 1 << logn;
 
     // checks if the norm of f and g is large enough
+    // if not, restart
     if ((l2norm(&f) + l2norm(&g)) as f64) <= 2.0 * (n as f64) * (1.042) {
         return hawkkeygen(logn, Some(rng));
     }
 
+    // construct the adjoints of f and g
     let fstar = adjoint(&f);
     let gstar = adjoint(&g);
 
