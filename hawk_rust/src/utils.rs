@@ -1,4 +1,3 @@
-use std::cmp::max;
 
 pub fn bin(a: u128, x: usize) -> Vec<u8> {
     /*
@@ -62,7 +61,7 @@ pub fn adjoint(f: &Vec<i32>) -> Vec<i32> {
     return fstar;
 }
 
-// performs polynomial addition of two polynomials (without modulation)
+// performs polynomial addition of two polynomials without modulation
 pub fn poly_sum(f: &Vec<i32>, g: &Vec<i32>) -> Vec<i32>{
     assert_eq!(f.len(), g.len());
     let mut q = Vec::with_capacity(f.len());
@@ -72,6 +71,15 @@ pub fn poly_sum(f: &Vec<i32>, g: &Vec<i32>) -> Vec<i32>{
     return q;
 }
 
+// performs polynomial multiplication of two polynomials without modulation
 pub fn poly_mult(f: &Vec<i32>, g: &Vec<i32>) -> Vec<i32> {
-    return;
+    let mut q = Vec::with_capacity(f.len()+g.len());
+
+    for i in 0..f.len(){
+
+        for j in 0..g.len(){
+            q[i+j] = f[i]*g[j];
+        } 
+    }
+    return q;
 }
