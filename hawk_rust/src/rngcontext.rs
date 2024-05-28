@@ -23,6 +23,7 @@ impl RngContext {
      */
     pub fn rnd(&mut self, size: u8) -> u128 {
         self.i += 1;
+
         let temp = self.seed + self.i as u128;
         let seed = shake256(&temp.to_ne_bytes()); // set seed to hash of input seed + incremented variable
 

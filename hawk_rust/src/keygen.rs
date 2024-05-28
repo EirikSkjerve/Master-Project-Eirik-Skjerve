@@ -1,5 +1,5 @@
 use crate::rngcontext::{shake256x4, RngContext};
-use crate::utils::is_invertible;
+use crate::utils::{is_invertible, l2norm};
 
 pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
     // checks if rng-context is initialized or not. If not, initialize a new one and recusively call hawkkeygen
@@ -20,7 +20,15 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
         return hawkkeygen(logn, Some(rng));
     }
 
+    let n = 1 << logn;
+
+    // checks if the norm of f and g is large enough
+    if ((l2norm(&f) + l2norm(&g)) as f64) <= 2.0 * (n as f64) * (1.042) {
+        return hawkkeygen(logn, Some(rng));
+    }
+
     println!("f: {:?}, \n g: {:?}", f, g);
+
 }
 
 // generates polynomials f and g

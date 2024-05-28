@@ -43,3 +43,11 @@ pub fn is_invertible(f: &Vec<i32>) -> bool {
     }
     return sum == 1;
 }
+
+pub fn l2norm(f: &Vec<i32>) -> i64 {
+    let mut sum: i64 = 0;
+    for i in 0..f.len() {
+        sum += (f[i] as i64).pow(2);
+    }
+    return sum;
+}
