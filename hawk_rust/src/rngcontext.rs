@@ -54,6 +54,10 @@ pub fn shake256(input_data: &[u8]) -> [u8;32] {
 }
 
 pub fn shake256x4(message: &[u8], num: usize) -> Vec<u64> {
+    /*
+    Inputs: message m
+    Outputs: four shake256 digests interleaved, with num length
+    */
 
     // This should ideally be inside a loop, but because of Rust's borrow system, it is
     // not possible to store the Shake256 instances inside an array.
@@ -85,13 +89,15 @@ pub fn shake256x4(message: &[u8], num: usize) -> Vec<u64> {
     digest[2] = s_3.finalize_boxed((num*8)/4).to_vec();
     digest[3] = s_4.finalize_boxed((num*8)/4).to_vec();
 
+    // debugging
     for i in 0..4 {
         println!("Digest {}: {:?}", i, digest[i]);
     }
 
-    let mut j = 0;
+    // initialized a vector with the desired capacity
     let mut y: Vec<u64> = Vec::with_capacity(num);
 
+    // interleaves the four digests
     for i in 0..(num/4) {
         for (index, dig) in digest.iter().enumerate() {
             let start = i * 8;
@@ -105,6 +111,7 @@ pub fn shake256x4(message: &[u8], num: usize) -> Vec<u64> {
 
 }
 
+// simple function for converting bytes to an unsigned 64-bit integer
 fn bytes_to_u64(bytes: &[u8]) -> u64 {
     let mut result: u64 = 0;
     for &byte in bytes.iter() {

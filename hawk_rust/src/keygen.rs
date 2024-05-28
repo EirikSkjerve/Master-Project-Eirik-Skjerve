@@ -14,15 +14,56 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
     };
 
     // generate f and g
-    generate_f_g(1337, logn)
+    generate_f_g(1337, logn);
 
 }
 
 fn generate_f_g(seed: usize, logn: u16) {
+    // expand logn -> n
     let n = 1 << logn;
     let b = n/64;
     assert!(b==4 || b==8 || b==16);
 
+    // get an array of 64-bit values
     let y = shake256x4(&seed.to_ne_bytes(), 2*n*b/64);
-    println!("Vector y: {:?}", y);
+
+    // construct a sequence of bits from y
+    let mut ybits: Vec<u8> = vec![0;b*2*n];
+    for (j, y) in y.iter().enumerate() {
+        for bi in 0..64 {
+            ybits[j*64 + bi] = ((y >> bi) & 1) as u8;
+        }
+    }
+
+    // generate f and g from centered binomial distribution
+    // if e.g. n = 256, b = 4, so f and g consists of random numbes from the interval [-2,-1,0,1,2]
+    // if n = 512, b = 8, inteval = [-4,...,4]
+    // if n = 1024, b = 16, interval = [-8,...,8]
+    let mut f: Vec<i32> = vec![0;n];
+    let mut sum: i32 = 0;
+
+    // get some bounded number from ybits
+    for i in 0..n {
+        sum = 0;
+        for j in 0..b {
+            sum += ybits[i * b + j] as i32;
+        }
+
+        // center the number around 0
+        f[i] = sum - (b/2) as i32;
+    }
+
+    // reuse "sum" variable here
+    let mut g: Vec<i32> = vec![0;n];
+
+    for i in 0..n {
+        sum = 0;
+        for j in 0..b {
+            sum += ybits[i+n * b + j] as i32;
+        }
+
+        g[i] = sum - (b/2) as i32;
+    }
+
+    println!("f: {:?}, \n g: {:?}", f, g);
 }
