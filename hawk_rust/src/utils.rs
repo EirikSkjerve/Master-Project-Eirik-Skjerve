@@ -62,11 +62,16 @@ pub fn adjoint(f: &Vec<i32>) -> Vec<i32> {
     return fstar;
 }
 
+// performs polynomial addition of two polynomials (without modulation)
 pub fn poly_sum(f: &Vec<i32>, g: &Vec<i32>) -> Vec<i32>{
-    let mut q = Vec::with_capacity(max(f.len(), g.len()));
+    assert_eq!(f.len(), g.len());
+    let mut q = Vec::with_capacity(f.len());
     for i in 0..q.len(){
         q[i] = f[i]+g[i];
     }
     return q;
 }
 
+pub fn poly_mult(f: &Vec<i32>, g: &Vec<i32>) -> Vec<i32> {
+    return;
+}
