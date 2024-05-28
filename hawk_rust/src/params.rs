@@ -13,7 +13,6 @@ const Hawk256_T0: [u128; 13] = [
     0x00000000000152A6E9AE,
     0x0000000000000014DA4A,
     0x0000000000000000007B,
-
     /// these are redundant
     0x00000000000000000000,
     0x00000000000000000000,
@@ -63,7 +62,6 @@ const Hawk256_T1: [u128; 13] = [
     0x00000000000005EFCD99,
     0x00000000000000003953,
     0x00000000000000000000,
-    
     // these are redundant
     0x00000000000000000000,
     0x00000000000000000000,
@@ -103,7 +101,7 @@ const Hawk1024_T1: [u128; 13] = [
 ];
 
 #[derive(Debug)]
-pub enum HawkParams<'a>{
+pub enum HawkParams<'a> {
     Lenpriv(u64),
     Lenpub(u64),
     Lensig(u64),
@@ -126,10 +124,9 @@ pub enum HawkParams<'a>{
     Beta0(f32),
     T0(&'a [u128; 13]),
     T1(&'a [u128; 13]),
-
 }
 
-pub fn initialize_params<'a> (logn:u8) -> HashMap<&'a str, HawkParams<'a>>{
+pub fn initialize_params<'a>(logn: u8) -> HashMap<&'a str, HawkParams<'a>> {
     if logn != 8 && logn != 9 && logn != 10 {
         panic!("Invalid param");
     }
@@ -138,7 +135,6 @@ pub fn initialize_params<'a> (logn:u8) -> HashMap<&'a str, HawkParams<'a>>{
     let mut params = HashMap::new();
 
     if logn == 8 {
-        
         // update the parameter set with correct values for n=8
         params.insert("lenpriv", HawkParams::Lenpriv(96));
         params.insert("lenpub", HawkParams::Lenpub(450));
@@ -148,9 +144,9 @@ pub fn initialize_params<'a> (logn:u8) -> HashMap<&'a str, HawkParams<'a>>{
         params.insert("sigmasign", HawkParams::SigmaSign(1.010));
         params.insert("sigmaverify", HawkParams::SigmaVerify(1.042));
         params.insert("sigmakrsec", HawkParams::SigmaKrSec(1.042));
-        params.insert("lensalt", HawkParams::LenSalt(112/8));
-        params.insert("lenkgseed", HawkParams::LenkgSeed(128/8));
-        params.insert("lenhpub", HawkParams::LenhPub(128/8));
+        params.insert("lensalt", HawkParams::LenSalt(112 / 8));
+        params.insert("lenkgseed", HawkParams::LenkgSeed(128 / 8));
+        params.insert("lenhpub", HawkParams::LenhPub(128 / 8));
         params.insert("low00", HawkParams::Low00(5));
         params.insert("high00", HawkParams::High00(9));
         params.insert("low01", HawkParams::Low01(8));
@@ -159,21 +155,14 @@ pub fn initialize_params<'a> (logn:u8) -> HashMap<&'a str, HawkParams<'a>>{
         params.insert("highs0", HawkParams::Highs0(12));
         params.insert("lows1", HawkParams::Lows1(8));
         params.insert("highs1", HawkParams::Highs1(9));
-        params.insert("beta0", HawkParams::Beta0(1_f32/250_f32));
+        params.insert("beta0", HawkParams::Beta0(1_f32 / 250_f32));
         params.insert("T0", HawkParams::T0(&Hawk256_T0));
         params.insert("T1", HawkParams::T1(&Hawk256_T1));
-
     }
-    if logn == 9 {
-
-    }
-    if logn == 10 {
-
-    }
+    if logn == 9 {}
+    if logn == 10 {}
 
     return params;
-
-
 }
 
 /*
