@@ -1,14 +1,17 @@
-
 pub fn bin(a: u128, x: usize) -> Vec<u8> {
-    /* 
+    /*
     Converts an integer to binary representation in a vector of arbitrary size
     */
     let mut res: Vec<u8> = vec![];
     let mut b = a;
 
-    for i in 0..x{
-        if b % 2 == 1 { res.push(1); }
-        if b % 2 == 0 { res.push(0); }
+    for i in 0..x {
+        if b % 2 == 1 {
+            res.push(1);
+        }
+        if b % 2 == 0 {
+            res.push(0);
+        }
         b /= 2;
     }
 
@@ -17,9 +20,8 @@ pub fn bin(a: u128, x: usize) -> Vec<u8> {
 }
 
 pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
-
     let a = input.as_ref();
-    /* 
+    /*
     Converts an array representing a binary string to its decimal representation
     and returns an 128 bit integer
     */
@@ -30,4 +32,14 @@ pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
         }
     }
     return res;
+}
+
+pub fn is_invertible(f: &Vec<i32>) -> bool {
+    // asserts if the polynomial f is invertible mod X^n + 1
+    let mut sum: i32 = 0;
+    for i in 0..f.len() {
+        sum += f[i];
+        sum %= 2;
+    }
+    return sum == 1;
 }
