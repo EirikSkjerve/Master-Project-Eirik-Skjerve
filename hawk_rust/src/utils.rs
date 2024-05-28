@@ -51,3 +51,11 @@ pub fn l2norm(f: &Vec<i32>) -> i64 {
     }
     return sum;
 }
+
+pub fn adjoint(f: &Vec<i32>) -> Vec<i32> {
+    let mut fstar = f.clone();
+    for i in 1..f.len(){
+        fstar[i] = - f[f.len()-i];
+    }
+    return fstar;
+}

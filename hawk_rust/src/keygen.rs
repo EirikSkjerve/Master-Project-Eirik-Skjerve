@@ -1,5 +1,5 @@
 use crate::rngcontext::{shake256x4, RngContext};
-use crate::utils::{is_invertible, l2norm};
+use crate::utils::{is_invertible, l2norm, adjoint};
 
 pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
     // checks if rng-context is initialized or not. If not, initialize a new one and recusively call hawkkeygen
@@ -26,6 +26,9 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
     if ((l2norm(&f) + l2norm(&g)) as f64) <= 2.0 * (n as f64) * (1.042) {
         return hawkkeygen(logn, Some(rng));
     }
+
+    let fstar = adjoint(&f);
+    let gstar = adjoint(&g);
 
     println!("f: {:?}, \n g: {:?}", f, g);
 
