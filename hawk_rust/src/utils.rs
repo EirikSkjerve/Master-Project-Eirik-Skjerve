@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 pub fn bin(a: u128, x: usize) -> Vec<u8> {
     /*
     Converts an integer to binary representation in a vector of arbitrary size
@@ -59,3 +61,12 @@ pub fn adjoint(f: &Vec<i32>) -> Vec<i32> {
     }
     return fstar;
 }
+
+pub fn poly_sum(f: &Vec<i32>, g: &Vec<i32>) -> Vec<i32>{
+    let mut q = Vec::with_capacity(max(f.len(), g.len()));
+    for i in 0..q.len(){
+        q[i] = f[i]+g[i];
+    }
+    return q;
+}
+
