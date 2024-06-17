@@ -1,5 +1,5 @@
 use crate::rngcontext::{shake256x4, RngContext};
-use crate::utils::{is_invertible, l2norm, adjoint};
+use crate::utils::{adjoint, is_invertible, l2norm};
 
 pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
     // checks if rng-context is initialized or not. If not, initialize a new one and recusively call hawkkeygen
@@ -35,7 +35,6 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
     let gstar = adjoint(&g);
 
     println!("f: {:?}, \n g: {:?}", f, g);
-
 }
 
 // generates polynomials f and g
