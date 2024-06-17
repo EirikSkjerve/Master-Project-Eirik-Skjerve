@@ -34,14 +34,18 @@ pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
     return res;
 }
 
-pub fn is_invertible(f: &Vec<i32>) -> bool {
+pub fn is_invertible(f: &Vec<i32>, p: u128) -> bool {
     // asserts if the polynomial f is invertible mod X^n + 1
+    if p == 2{
     let mut sum: i32 = 0;
     for i in 0..f.len() {
         sum += f[i];
         sum %= 2;
     }
     return sum == 1;
+    }
+
+    return false
 }
 
 pub fn l2norm(f: &Vec<i32>) -> i64 {

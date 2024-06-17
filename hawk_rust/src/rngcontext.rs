@@ -7,7 +7,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 pub struct RngContext {
     seed: u128,
-    i: u8,
+    i: usize,
 }
 
 impl RngContext {

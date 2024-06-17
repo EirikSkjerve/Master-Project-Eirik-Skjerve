@@ -17,7 +17,9 @@ fn main() {
     let a = vec![1, 2];
     let b = vec![4, 3, 2];
     let c = poly_mult(&a, &b);
-    println!("{:?} * {:?} = {:?}", a, b, c);
+
+    initialize_params(8);
+    hawkkeygen(8, None);
 }
 
 fn print_type_of<T>(_: &T) {

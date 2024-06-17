@@ -18,7 +18,7 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
 
     // checks if f and g are invertible mod X^n + 1 and mod 2
     // if not, restart
-    if !(is_invertible(&f) && is_invertible(&g)) {
+    if !(is_invertible(&f, 2) && is_invertible(&g, 2)) {
         return hawkkeygen(logn, Some(rng));
     }
 
@@ -26,7 +26,7 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
 
     // checks if the norm of f and g is large enough
     // if not, restart
-    if ((l2norm(&f) + l2norm(&g)) as f64) <= 2.0 * (n as f64) * (1.042) {
+    if ((l2norm(&f) + l2norm(&g)) as f64) <= 2.0 * (n as f64) * (1.042 as f64).powi(2) {
         return hawkkeygen(logn, Some(rng));
     }
 
