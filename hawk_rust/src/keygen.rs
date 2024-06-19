@@ -1,5 +1,5 @@
 use crate::rngcontext::{shake256x4, RngContext};
-use crate::utils::{adjoint, is_invertible, l2norm};
+use crate::utils::{adjoint, is_invertible, l2norm, poly_add, poly_mult};
 
 pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
     // checks if rng-context is initialized or not. If not, initialize a new one and recusively call hawkkeygen
@@ -30,9 +30,26 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
         return hawkkeygen(logn, Some(rng));
     }
 
-    // construct the adjoints of f and g
+    // construct the (hermitan) adjoints of f and g, f*, g*
     let fstar = adjoint(&f);
     let gstar = adjoint(&g);
+    
+    // pseudocode says nothing about this p, but it is in the reference code
+    let p = (1 << 16) + 1;
+
+    // ff* + gg*
+    let q00 = poly_add(&poly_mult(&f, &fstar, p), &poly_mult(&g, &gstar, p), p);
+
+    // two primes p1 and p2
+    let p1 = 2147473409;
+    let p2 = 2147389441;
+
+    // causes stack overflow/infinite recursion. Need to implement the actual method for p != 2
+    /*
+    if !(is_invertible(&q00, p1) && is_invertible(&q00, p2)){
+        return hawkkeygen(logn, Some(rng));
+    }
+    */
 
     println!("f: {:?}, \n g: {:?}", f, g);
 }
