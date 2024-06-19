@@ -37,12 +37,12 @@ pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
 pub fn is_invertible(f: &Vec<i32>, p: u128) -> bool {
     // asserts if the polynomial f is invertible mod X^n + 1
     if p == 2{
-    let mut sum: i32 = 0;
-    for i in 0..f.len() {
-        sum += f[i];
-        sum %= 2;
-    }
-    return sum == 1;
+        let mut sum: i32 = 0;
+        for i in 0..f.len() {
+            sum += f[i];
+            sum %= 2;
+        }
+        return sum == 1;
     }
 
     return false
@@ -64,23 +64,24 @@ pub fn adjoint(f: &Vec<i32>) -> Vec<i32> {
     return fstar;
 }
 
-// performs polynomial addition of two polynomials without modulation
-pub fn poly_add(f: &Vec<i32>, g: &Vec<i32>) -> Vec<i32> {
+// performs standard polynomial addition of two polynomials with mod p
+pub fn poly_add(f: &Vec<i32>, g: &Vec<i32>, p: i32) -> Vec<i32> {
     assert_eq!(f.len(), g.len());
     let mut q = vec![0; f.len()];
     for i in 0..q.len() {
-        q[i] = f[i] + g[i];
+        q[i] = (f[i] + g[i]) % p;
     }
     return q;
 }
 
-// performs polynomial multiplication of two polynomials without modulation
-pub fn poly_mult(f: &Vec<i32>, g: &Vec<i32>) -> Vec<i32> {
+// performs standard polynomial multiplication of two polynomials with mod p
+pub fn poly_mult(f: &Vec<i32>, g: &Vec<i32>, p:i32) -> Vec<i32> {
     let mut q = vec![0; f.len() + g.len() - 1];
 
     for i in 0..f.len() {
         for j in 0..g.len() {
             q[i + j] += f[i] * g[j];
+            q[i+j] %= p;
         }
     }
     return q;
