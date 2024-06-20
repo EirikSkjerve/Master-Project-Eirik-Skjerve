@@ -65,11 +65,11 @@ pub fn adjoint(f: &Vec<i32>) -> Vec<i32> {
 }
 
 // performs standard polynomial addition of two polynomials with mod p
-pub fn poly_add(f: &Vec<i32>, g: &Vec<i32>, p: i32) -> Vec<i32> {
+pub fn poly_add(f: &Vec<i32>, g: &Vec<i32>) -> Vec<i32> {
     assert_eq!(f.len(), g.len());
     let mut q = vec![0; f.len()];
     for i in 0..q.len() {
-        q[i] = (f[i] + g[i]) % p;
+        q[i] = f[i] + g[i];
     }
     return q;
 }
