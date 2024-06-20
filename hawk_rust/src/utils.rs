@@ -41,13 +41,18 @@ pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
 
 pub fn fbe(a:usize,b:usize,p:usize) -> usize{
     // implements fast binary exponentiation
+    /*
+    Inputs a, b, p
+    Outputs a^b mod p
+    */
     assert!(a>=0 && b>=0 && p>0);
 
     let mut r = 1;
     let mut a_c = a;
     let mut b_c = b;
+
     while b_c > 0 {
-        if (b_c % 2) == 1{
+        if (b_c & 1) != 0{
             r *=a;
         }
         b_c = b_c >> 1;
@@ -71,6 +76,7 @@ pub fn is_invertible(f: &Vec<i32>, p: u128) -> bool {
 }
 
 pub fn l2norm(f: &Vec<i32>) -> i64 {
+    // returns the l2 norm of polynomial/vector f as f[0]^2 + f[1]^2 +..+ f[n]^2
     let mut sum: i64 = 0;
     for i in 0..f.len() {
         sum += (f[i] as i64).pow(2);
@@ -86,8 +92,8 @@ pub fn adjoint(f: &Vec<i32>) -> Vec<i32> {
     return fstar;
 }
 
-// performs standard polynomial addition of two polynomials with mod p
 pub fn poly_add(f: &Vec<i32>, g: &Vec<i32>) -> Vec<i32> {
+    // performs standard polynomial addition of two polynomials with mod p
     assert_eq!(f.len(), g.len());
     let mut q = vec![0; f.len()];
     for i in 0..q.len() {
@@ -96,8 +102,8 @@ pub fn poly_add(f: &Vec<i32>, g: &Vec<i32>) -> Vec<i32> {
     return q;
 }
 
-// performs standard polynomial multiplication of two polynomials with mod p
 pub fn poly_mult(f: &Vec<i32>, g: &Vec<i32>, p:i32) -> Vec<i32> {
+    // performs standard polynomial multiplication of two polynomials with mod p
     let mut q = vec![0; f.len() + g.len() - 1];
 
     for i in 0..f.len() {
