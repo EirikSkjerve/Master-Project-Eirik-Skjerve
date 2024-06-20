@@ -1,10 +1,15 @@
 pub fn bin(a: u128, x: usize) -> Vec<u8> {
     /*
     Converts an integer to binary representation in a vector of arbitrary size
+    Call bin(a, x=0) for default binary size
     */
     let mut res: Vec<u8> = vec![];
     let mut b = a;
 
+    if x == 0 {
+        // returns a as binary with *default* size
+        return bin(a, (a as f64).log2().ceil() as usize + 1)
+    }
     for i in 0..x {
         if b % 2 == 1 {
             res.push(1);
@@ -32,6 +37,23 @@ pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
         }
     }
     return res;
+}
+
+pub fn fbe(a:usize,b:usize,p:usize) -> usize{
+    // implements fast binary exponentiation
+    assert!(a>=0 && b>=0 && p>0);
+
+    let mut r = 1;
+    let mut a_c = a;
+    let mut b_c = b;
+    while b_c > 0 {
+        if (b_c % 2) == 1{
+            r *=a;
+        }
+        b_c = b_c >> 1;
+        a_c *= a_c;
+    }
+    return r%p;
 }
 
 pub fn is_invertible(f: &Vec<i32>, p: u128) -> bool {
