@@ -29,20 +29,34 @@ fn get_roots(p: i32, n: i32) -> Vec<i32>{
 
 // comptute zeta values in a specific order for usage in ntt/intt functions
 fn compute_zetas(root: i32, p: i32, n: i32) -> Vec<i32>{
-    let zetas = vec![0; (n as usize)];
+    let zetas = vec![0; n as usize];
     return zetas;
 }
 
 // return the primitive root of prime p
 // using https://www.geeksforgeeks.org/primitive-root-of-a-prime-number-n-modulo-n/
+use modexp;
 pub fn primitive_root(p: i32) -> i32 {
-    let g = 2;
+    let mut g = 2;
+
     // phi(p) = p-1
     let s = p-1;
+
     // compute prime factors of p-1
-    let mut p_factors = Factorization::run(s as u64).factors;
-    //let p_factors = p_factors.factors.into_iter().unique().collect();
-    p_factors.dedup();
-    println!("{:?}", p_factors);
-    return g;
+    let mut s_factors = Factorization::run(s as u64).factors;
+
+    // remove duplicates
+    s_factors.dedup();
+
+    // check if g is a generator
+    loop {
+        for p_i in s_factors{
+            if modexp::modexp(g, s as usize/p_i as usize, p as usize) == 1{
+                g += 1;
+                break;
+            }
+        }
+        println!("generator: {}", g);
+        return g as i32;
+    }
 }

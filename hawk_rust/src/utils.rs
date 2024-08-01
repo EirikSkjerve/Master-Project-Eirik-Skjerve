@@ -45,7 +45,6 @@ pub fn fbe(a:usize,b:usize,p:usize) -> usize{
     Inputs a, b, p
     Outputs a^b mod p
     */
-    assert!(a>=0 && b>=0 && p>0);
 
     let mut r = 1;
     let mut a_c = a;
@@ -54,6 +53,7 @@ pub fn fbe(a:usize,b:usize,p:usize) -> usize{
     while b_c > 0 {
         if (b_c & 1) != 0{
             r *=a;
+            r %= p;
         }
         b_c = b_c >> 1;
         a_c *= a_c;
