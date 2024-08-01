@@ -1,6 +1,7 @@
 // This is the Number Theoretic Transform module
 // see https://eprint.iacr.org/2024/585.pdf
 
+use crate::utils::fbe;
 
 // ntt of a polynomial
 pub fn ntt(f: Vec<i32>, p: u32) -> Vec<i32> {
@@ -32,7 +33,24 @@ fn compute_zetas(root: i32, p: i32, n: i32) -> Vec<i32>{
 }
 
 // return the primitive root of prime p
+// using https://www.geeksforgeeks.org/primitive-root-of-a-prime-number-n-modulo-n/
 fn primitive_root(p: i32) -> i32 {
-    let g = 0;
+    let g = 2;
+    // phi(p) = p-1
+    let s = p-1;
+    // compute prime factors of p-1
+    let p_factors = Vec::new();
+    loop {
+        
+    }
     return g;
+}
+
+// generating primes using Eratosthenes' sieve
+fn generate_primes(upper: u64){
+    let mut primes: Vec<i64> = Vec::new();
+    for n in 2..upper{
+        primes.push(n as u64);
+    }
+    let mut p = 2;
 }
