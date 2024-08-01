@@ -16,6 +16,8 @@ mod ntt_fft;
 fn main() {
     initialize_params(8);
     hawkkeygen(8, None);
+    ntt_fft::primitive_root(35);
+    ntt_fft::primitive_root(25);
 }
 
 fn print_type_of<T>(_: &T) {
