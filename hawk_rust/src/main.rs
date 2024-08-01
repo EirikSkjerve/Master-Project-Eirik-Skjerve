@@ -12,6 +12,7 @@ mod sign;
 mod utils;
 mod verify;
 mod ntt;
+
 fn main() {
     initialize_params(8);
     hawkkeygen(8, None);

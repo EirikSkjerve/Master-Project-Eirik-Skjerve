@@ -11,3 +11,10 @@ pub fn ntt(f: Vec<i32>, p: u32) -> Vec<i32> {
 
     return ntt_f;
 }
+
+// implementation of bit reversal of an integer
+pub fn brv(n: i32) -> i32 {
+    // assert n power of 2
+    // assert b = log2(n)
+    return 0;
+}

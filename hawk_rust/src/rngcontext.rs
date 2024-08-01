@@ -25,7 +25,8 @@ impl RngContext {
         self.i += 1;
 
         let temp = self.seed + self.i as u128;
-        let seed = shake256(&temp.to_ne_bytes()); // set seed to hash of input seed + incremented variable
+        // set seed to hash of input seed + incremented variable
+        let seed = shake256(&temp.to_ne_bytes()); 
 
         let mut rng = StdRng::from_seed(seed); // start rng from seed
         let rand_u128: u128 = rng.gen(); // generate random number from rng

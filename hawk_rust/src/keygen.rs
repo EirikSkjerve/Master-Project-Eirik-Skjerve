@@ -2,11 +2,12 @@ use crate::rngcontext::{shake256x4, RngContext};
 use crate::utils::{adjoint, is_invertible, l2norm, poly_add, poly_mult};
 
 pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
-    // checks if rng-context is initialized or not. If not, initialize a new one and recusively call hawkkeygen
+    // checks if rng-context is initialized or not. If not, initialize a new one and recursively call hawkkeygen
     let mut rng = match rng {
         Some(rng) => rng,
         None => {
-            let new_rng = RngContext::new(1337); // this should be an actual random number
+            // this should be an actual random number
+            let new_rng = RngContext::new(1337); 
             return hawkkeygen(logn, Some(new_rng));
         }
     };
@@ -26,6 +27,7 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
 
     // checks if the norm of f and g is large enough
     // if not, restart
+    // 1.042 need to be retrieved from table of values based on which security level
     if ((l2norm(&f) + l2norm(&g)) as f64) <= 2.0 * (n as f64) * (1.042 as f64).powi(2) {
         return hawkkeygen(logn, Some(rng));
     }
@@ -77,7 +79,7 @@ fn generate_f_g(seed: usize, logn: u16) -> (Vec<i32>, Vec<i32>) {
     // if n = 512, b = 8, inteval = [-4,...,4]
     // if n = 1024, b = 16, interval = [-8,...,8]
     let mut f: Vec<i32> = vec![0; n];
-    let mut sum: i32 = 0;
+    let mut sum;
 
     // get some bounded number from ybits
     for i in 0..n {

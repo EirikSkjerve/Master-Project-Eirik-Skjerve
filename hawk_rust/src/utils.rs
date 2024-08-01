@@ -63,6 +63,8 @@ pub fn fbe(a:usize,b:usize,p:usize) -> usize{
 
 pub fn is_invertible(f: &Vec<i32>, p: u128) -> bool {
     // asserts if the polynomial f is invertible mod X^n + 1
+    // case for p=2 works because in integers mod 2, a polynomial is invertible <->
+    // sum of coefficients is odd <-> non-zero constant-term
     if p == 2{
         let mut sum: i32 = 0;
         for i in 0..f.len() {
@@ -71,6 +73,7 @@ pub fn is_invertible(f: &Vec<i32>, p: u128) -> bool {
         }
         return sum == 1;
     }
+    // if p is some other prime, we can use NTT representation of f to check invertibility
 
     return false
 }
@@ -85,6 +88,7 @@ pub fn l2norm(f: &Vec<i32>) -> i64 {
 }
 
 pub fn adjoint(f: &Vec<i32>) -> Vec<i32> {
+    // computes the (hermitian) adjoint of a polynomial f 
     let mut fstar = f.clone();
     for i in 1..f.len() {
         fstar[i] = -f[f.len() - i];
