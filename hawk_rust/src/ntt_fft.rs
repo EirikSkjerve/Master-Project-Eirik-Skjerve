@@ -1,8 +1,8 @@
 // This is the Number Theoretic Transform module
 // see https://eprint.iacr.org/2024/585.pdf
 
-use crate::utils::fbe;
 use prime_factorization::Factorization;
+use crate::utils::mod_pow;
 
 // ntt of a polynomial
 pub fn ntt(f: Vec<i32>, p: u32) -> Vec<i32> {
@@ -23,7 +23,7 @@ fn brv(n: i32) -> i32 {
 
 // given prime p and order n, compute 2n-th root of unity mod p
 fn get_roots(p: i32, n: i32) -> Vec<i32>{
-    let roots = vec![0; (n as usize)];
+    let roots = vec![0; n as usize];
     return roots;
 }
 
@@ -35,7 +35,6 @@ fn compute_zetas(root: i32, p: i32, n: i32) -> Vec<i32>{
 
 // return the primitive root of prime p
 // using https://www.geeksforgeeks.org/primitive-root-of-a-prime-number-n-modulo-n/
-use modexp;
 pub fn primitive_root(p: i32) -> i32 {
     let mut g = 2;
 
@@ -51,7 +50,7 @@ pub fn primitive_root(p: i32) -> i32 {
     // check if g is a generator
     loop {
         for p_i in s_factors{
-            if modexp::modexp(g, s as usize/p_i as usize, p as usize) == 1{
+            if mod_pow(g, (s as usize/p_i as usize) as u64, p as u64) == 1{
                 g += 1;
                 break;
             }

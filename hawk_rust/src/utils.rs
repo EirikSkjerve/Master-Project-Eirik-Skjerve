@@ -39,26 +39,20 @@ pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
     return res;
 }
 
-pub fn fbe(a:usize,b:usize,p:usize) -> usize{
-    // implements fast binary exponentiation
-    /*
-    Inputs a, b, p
-    Outputs a^b mod p
-    */
-
-    let mut r = 1;
-    let mut a_c = a;
-    let mut b_c = b;
-
-    while b_c > 0 {
-        if (b_c & 1) != 0{
-            r *=a;
-            r %= p;
+// implements fast binary exponentiation for computing base^exp mod modulus
+pub fn mod_pow(mut base: u64, mut exp: u64, modulus: u64) -> u64 {
+    let mut result = 1;
+    base %= modulus;
+    while exp > 0 {
+        if exp & 1 == 1 {
+            result *= base;
+            result %= modulus;
         }
-        b_c = b_c >> 1;
-        a_c *= a_c;
+        exp >>= 1;
+        base *= base;
+        base %= modulus;
     }
-    return r%p;
+    return result;
 }
 
 pub fn is_invertible(f: &Vec<i32>, p: u128) -> bool {

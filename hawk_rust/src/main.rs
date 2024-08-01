@@ -13,14 +13,12 @@ mod utils;
 mod verify;
 mod ntt_fft;
 
-use modexp;
-
 fn main() {
     initialize_params(8);
     hawkkeygen(8, None);
     ntt_fft::primitive_root(2147473409);
 
-    println!("{}",modexp::modexp(3523,2254,199991));
+    println!("{}",utils::mod_pow(3523,2254,199991));
 }
 
 fn print_type_of<T>(_: &T) {
