@@ -11,7 +11,7 @@ mod rngcontext;
 mod sign;
 mod utils;
 mod verify;
-mod ntt;
+mod ntt_fft;
 
 fn main() {
     initialize_params(8);
