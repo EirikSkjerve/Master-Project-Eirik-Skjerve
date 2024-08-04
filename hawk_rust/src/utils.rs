@@ -49,25 +49,24 @@ where
     T: Num + FromPrimitive,
 {
     // convert the inputs to u64 
-    let mut base_u64 = base.to_u64().unwrap();
-    let mut exp_u64 = exp.to_u64().unwrap();
-    let mod_u64 = modulus.to_u64().unwrap();
+    let mut base_u128 = base.to_u128().unwrap();
+    let mut exp_u128 = exp.to_u128().unwrap();
+    let mod_u128 = modulus.to_u128().unwrap();
 
     // perform the algorithm
     let mut result = 1;
-    base_u64 %= mod_u64;
-    while exp_u64 > 0 {
-        if exp_u64 & 1 == 1 {
-            result *= base_u64;
-            result %= mod_u64;
+    base_u128 %= mod_u128;
+    while exp_u128 > 0 {
+        if exp_u128 & 1 == 1 {
+            result *= base_u128;
+            result %= mod_u128;
         }
-        exp_u64 >>= 1;
-        base_u64 *= base_u64;
-        base_u64 %= mod_u64;
+        exp_u128 >>= 1;
+        base_u128 *= base_u128;
+        base_u128 %= mod_u128;
     }
 
-    return T::from_u64(result).unwrap();
-    //return result as u128;
+    return T::from_u128(result).unwrap();
 }
 
 pub fn is_invertible(f: &Vec<i32>, p: u128) -> bool {

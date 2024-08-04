@@ -1,3 +1,4 @@
+
 use keygen::hawkkeygen;
 use params::initialize_params;
 use rngcontext::RngContext;
@@ -17,10 +18,10 @@ fn main() {
     initialize_params(8);
     hawkkeygen(8, None);
 
-    println!("{:?}", mod_pow(1337_i32, 999_i32, 150000_i32));
-    ntt_fft::primitive_root(54521);
-    ntt_fft::primitive_root(2147473409);
-
+    let test = ntt_fft::get_roots(2147473409, 256);
+    let zetas = test.0;
+    let izetas = test.1;
+    println!("zetas: {:?}",zetas);
 }
 
 fn print_type_of<T>(_: &T) {
