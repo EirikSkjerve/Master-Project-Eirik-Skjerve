@@ -1,3 +1,6 @@
+use num::traits::{Num, FromPrimitive, PrimInt};
+use crate::ntt_fft;
+
 pub fn bin(a: u128, x: usize) -> Vec<u8> {
     /*
     Converts an integer to binary representation in a vector of arbitrary size
@@ -40,19 +43,31 @@ pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
 }
 
 // implements fast binary exponentiation for computing base^exp mod modulus
-pub fn mod_pow(mut base: u64, mut exp: u64, modulus: u64) -> u64 {
+// inputs base, exponent and modulus as generic, and returns a u128
+pub fn mod_pow<T: PrimInt>(base: T, exp: T, modulus: T) -> T
+where 
+    T: Num + FromPrimitive,
+{
+    // convert the inputs to u64 
+    let mut base_u64 = base.to_u64().unwrap();
+    let mut exp_u64 = exp.to_u64().unwrap();
+    let mod_u64 = modulus.to_u64().unwrap();
+
+    // perform the algorithm
     let mut result = 1;
-    base %= modulus;
-    while exp > 0 {
-        if exp & 1 == 1 {
-            result *= base;
-            result %= modulus;
+    base_u64 %= mod_u64;
+    while exp_u64 > 0 {
+        if exp_u64 & 1 == 1 {
+            result *= base_u64;
+            result %= mod_u64;
         }
-        exp >>= 1;
-        base *= base;
-        base %= modulus;
+        exp_u64 >>= 1;
+        base_u64 *= base_u64;
+        base_u64 %= mod_u64;
     }
-    return result;
+
+    return T::from_u64(result).unwrap();
+    //return result as u128;
 }
 
 pub fn is_invertible(f: &Vec<i32>, p: u128) -> bool {
