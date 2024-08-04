@@ -22,14 +22,28 @@ fn brv(n: i32) -> i32 {
 }
 
 // given prime p and order n, compute 2n-th root of unity mod p
-fn get_roots(p: i32, n: i32) -> Vec<i32>{
-    let roots = vec![0; n as usize];
-    return roots;
+fn get_roots(p: i32, n: i32) -> (Vec<i32>, Vec<i32>) {
+
+    let mut g0 = primitive_root(p);
+    let b = (p-1)/(2*n);
+    g0 = mod_pow(g0, b, p);
+    println!("g0: {}", g0);
+
+    let zetas = compute_zetas(g0, p, n);    
+    let mut izetas: Vec<i32> = Vec::new();
+
+    for z in zetas.iter() {
+        izetas.push(mod_pow(*z, p-2, p));
+    }
+
+    return (zetas, izetas);
 }
 
 // comptute zeta values in a specific order for usage in ntt/intt functions
 fn compute_zetas(root: i32, p: i32, n: i32) -> Vec<i32>{
     let zetas = vec![0; n as usize];
+
+    let log_n = (n as f64).log2() as i32;
     return zetas;
 }
 
@@ -55,7 +69,7 @@ pub fn primitive_root(p: i32) -> i32 {
                 break;
             }
         }
-        println!("generator: {}", g);
+        println!("Generator for {}: {}", p, g);
         return g as i32;
     }
 }
