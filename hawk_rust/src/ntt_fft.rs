@@ -9,9 +9,30 @@ use num_bigint::{BigUint, ToBigUint};
 // ntt of a polynomial
 pub fn ntt(f: Vec<i32>, p: u32) -> Vec<i32> {
 
-    let mut ntt_f = vec![0;f.len()];
+    //let mut ntt_f = vec![0;f.len()];
+    let mut ntt_f = f.clone();
 
-    // using *this* algorithm
+    let n = f.len();
+    let mut l = n/2;
+    let mut k = 1;
+
+    let zetas = get_roots(p as u128, n as u128).0;
+
+    let q = p as i32;
+    println!("zetas: {:?}", zetas);
+    while l>0{
+        println!("f: {:?}", ntt_f);
+        for s in (0..n).step_by(2*l) {
+            let zeta = zetas[k];
+            k += 1;
+            for j in s..s+l {
+                let t = (((ntt_f[j+l]*zeta as i32) % q) + q) % q;
+                ntt_f[j+l] = (((ntt_f[j] - t) % q) + q) % q;
+                ntt_f[j] = (((ntt_f[j] + t) % q) + q) % q;
+            }
+        }
+        l = l/2;
+    }
 
     return ntt_f;
 }
@@ -33,6 +54,8 @@ pub fn get_roots(p: u128, n: u128) -> (Vec<u128>, Vec<u128>) {
 
 
     let mut g0 = primitive_root(p);
+    g0 = 17;
+    println!("Primitive root: {}", g0);
     let b = (p-1)/(2*n);
     g0 = mod_pow(g0, b, p);
     println!("{}", g0);
@@ -52,7 +75,6 @@ fn compute_zetas(root: u128, p: u128, n: u128) -> Vec<u128>{
 
     let mut zetas: Vec<u128> = Vec::new();
     let log_n = (n as f64).log2() as u128;
-    println!("logn: {}", log_n);
 
     for u in 0.. n {
 
@@ -62,7 +84,6 @@ fn compute_zetas(root: u128, p: u128, n: u128) -> Vec<u128>{
         //println!("res: {}", res);
         zetas.push(mod_pow(root, brv, p));
     }
-    println!("{}", zetas.len());
     return zetas;
 }
 
