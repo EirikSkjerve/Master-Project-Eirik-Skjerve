@@ -54,7 +54,7 @@ pub fn get_roots(p: u128, n: u128) -> (Vec<u128>, Vec<u128>) {
 
 
     let mut g0 = primitive_root(p);
-    g0 = 17;
+    // g0 = 17;
     println!("Primitive root: {}", g0);
     let b = (p-1)/(2*n);
     g0 = mod_pow(g0, b, p);
@@ -91,7 +91,7 @@ fn compute_zetas(root: u128, p: u128, n: u128) -> Vec<u128>{
 // using https://www.geeksforgeeks.org/primitive-root-of-a-prime-number-n-modulo-n/
 pub fn primitive_root(p: u128) -> u128 {
 
-    let mut g: u128 = 2;
+    // let mut g: u128 = 2;
 
     // phi(p) = p-1
     let s = p - 1;
@@ -99,17 +99,24 @@ pub fn primitive_root(p: u128) -> u128 {
     // compute prime factors of p-1
     let mut s_factors = Factorization::run(s).factors;
 
+    println!("before dedup: {:?}", s_factors);
     // remove duplicates
     s_factors.dedup();
-
+    println!("after dedup: {:?}", s_factors);
     // check if g is a generator
-    loop {
-        for p_i in s_factors{
+    let mut roots: Vec<u128> = Vec::new();
+
+    let mut flag = false;
+    for g in 2..p{
+        flag = false;
+        for p_i in s_factors.iter(){
             if mod_pow(g, s/p_i, p) == 1{
-                g += 1;
-                break;
+                flag = true;
             }
         }
-        return g;
+        if !flag{
+            roots.push(g);
+        }
     }
+    return roots[0];
 }
