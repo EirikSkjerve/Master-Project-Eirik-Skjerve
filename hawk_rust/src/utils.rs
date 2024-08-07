@@ -1,5 +1,5 @@
-use num::traits::{Num, FromPrimitive, PrimInt};
 use crate::ntt_fft;
+use num::traits::{FromPrimitive, Num, PrimInt};
 
 pub fn bin(a: u128, x: usize) -> Vec<u8> {
     /*
@@ -11,7 +11,7 @@ pub fn bin(a: u128, x: usize) -> Vec<u8> {
 
     if x == 0 {
         // returns a as binary with *default* size
-        return bin(a, (a as f64).log2().ceil() as usize + 1)
+        return bin(a, (a as f64).log2().ceil() as usize + 1);
     }
     for i in 0..x {
         if b % 2 == 1 {
@@ -45,10 +45,10 @@ pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
 // implements fast binary exponentiation for computing base^exp mod modulus
 // inputs base, exponent and modulus as generic, and returns a u128
 pub fn mod_pow<T: PrimInt>(base: T, exp: T, modulus: T) -> T
-where 
+where
     T: Num + FromPrimitive,
 {
-    // convert the inputs to u64 
+    // convert the inputs to u64
     let mut base_u128 = base.to_u128().unwrap();
     let mut exp_u128 = exp.to_u128().unwrap();
     let mod_u128 = modulus.to_u128().unwrap();
@@ -73,7 +73,7 @@ pub fn is_invertible(f: &Vec<i32>, p: u128) -> bool {
     // asserts if the polynomial f is invertible mod X^n + 1
     // case for p=2 works because in integers mod 2, a polynomial is invertible <->
     // sum of coefficients is odd <-> non-zero constant-term
-    if p == 2{
+    if p == 2 {
         let mut sum: i32 = 0;
         for i in 0..f.len() {
             sum += f[i];
@@ -83,7 +83,7 @@ pub fn is_invertible(f: &Vec<i32>, p: u128) -> bool {
     }
     // if p is some other prime, we can use NTT representation of f to check invertibility
 
-    return false
+    return false;
 }
 
 pub fn l2norm(f: &Vec<i32>) -> i64 {
@@ -96,7 +96,7 @@ pub fn l2norm(f: &Vec<i32>) -> i64 {
 }
 
 pub fn adjoint(f: &Vec<i32>) -> Vec<i32> {
-    // computes the (hermitian) adjoint of a polynomial f 
+    // computes the (hermitian) adjoint of a polynomial f
     let mut fstar = f.clone();
     for i in 1..f.len() {
         fstar[i] = -f[f.len() - i];
@@ -114,14 +114,14 @@ pub fn poly_add(f: &Vec<i32>, g: &Vec<i32>) -> Vec<i32> {
     return q;
 }
 
-pub fn poly_mult(f: &Vec<i32>, g: &Vec<i32>, p:i32) -> Vec<i32> {
+pub fn poly_mult(f: &Vec<i32>, g: &Vec<i32>, p: i32) -> Vec<i32> {
     // performs standard polynomial multiplication of two polynomials with mod p
     let mut q = vec![0; f.len() + g.len() - 1];
 
     for i in 0..f.len() {
         for j in 0..g.len() {
             q[i + j] += f[i] * g[j];
-            q[i+j] %= p;
+            q[i + j] %= p;
         }
     }
     return q;
