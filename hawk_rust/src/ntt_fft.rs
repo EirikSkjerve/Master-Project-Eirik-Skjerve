@@ -97,15 +97,13 @@ pub fn primitive_root(p: u128) -> u128 {
     let s = p - 1;
 
     // compute prime factors of p-1
+    // thanks to crate
     let mut s_factors = Factorization::run(s).factors;
 
-    println!("before dedup: {:?}", s_factors);
     // remove duplicates
     s_factors.dedup();
-    println!("after dedup: {:?}", s_factors);
+    
     // check if g is a generator
-    let mut roots: Vec<u128> = Vec::new();
-
     let mut flag = false;
     for g in 2..p{
         flag = false;
@@ -114,9 +112,11 @@ pub fn primitive_root(p: u128) -> u128 {
                 flag = true;
             }
         }
+        // return g if flag is not raised <=> g is primitive root
         if !flag{
-            roots.push(g);
+            return g;
         }
     }
-    return roots[0];
+    // return default value so compiler is happy 
+    return 0;
 }

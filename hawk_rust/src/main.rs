@@ -27,7 +27,7 @@ fn main() {
     */
 
     let h = vec![5,6,7,8];
-    let p = 7681;
+    let p = 2147473409;
 
     let h_hat = ntt_fft::ntt(h, p);
 
