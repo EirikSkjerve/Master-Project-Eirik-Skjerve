@@ -2,7 +2,7 @@ use keygen::hawkkeygen;
 use params::initialize_params;
 use rngcontext::RngContext;
 
-use crate::utils::{adjoint, bin, int, mod_pow, poly_add, poly_mult};
+use crate::utils::{adjoint, bin, int, mod_pow, poly_add, poly_mult_ntt};
 
 mod keygen;
 mod ntru_solve;
@@ -25,14 +25,14 @@ fn main() {
     println!("izetas: {:?}",izetas);
     */
 
-    let h = vec![5, 6, 7, 8];
+    let f = vec![5, 6, 7, 8];
+    let g = vec![1, 2, 3, 4];
+
     // let p = 2147473409;
     let p = 7681;
 
-    let h_hat = ntt_fft::ntt(h, p);
-    println!("h hat: {:?}", h_hat);
-    let h_orig = ntt_fft::intt(h_hat, p);
-    println!("h original: {:?}", h_orig);
+    let fg = poly_mult_ntt(f, g, p);
+    println!("f*g = {:?}", fg);
 }
 
 fn print_type_of<T>(_: &T) {

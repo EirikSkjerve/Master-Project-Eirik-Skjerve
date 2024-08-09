@@ -1,4 +1,4 @@
-use crate::ntt_fft::{ntt, intt};
+use crate::ntt_fft::{intt, ntt};
 use num::traits::{FromPrimitive, Num, PrimInt};
 
 pub fn bin(a: u128, x: usize) -> Vec<u8> {
@@ -99,7 +99,7 @@ pub fn is_invertible(f: &Vec<i32>, p: u32) -> bool {
     // if p is some other prime, we can use NTT representation of f to check invertibility
     let f_ntt = ntt(f.clone(), p);
     for i in 0..f.len() {
-        if f_ntt[i] == 0{
+        if f_ntt[i] == 0 {
             return false;
         }
     }
@@ -153,26 +153,23 @@ pub fn poly_mult_ntt(f: Vec<i32>, g: Vec<i32>, p: u32) -> Vec<i32> {
     assert_eq!(f.len(), g.len());
 
     let n = f.len();
-    
+
     // ntt representation of f and g
     let f_ntt = ntt(f.clone(), p);
     let g_ntt = ntt(g.clone(), p);
 
-
     let mut fg_ntt: Vec<i32> = vec![0; n];
     for i in 0..n {
-        fg_ntt[i] = modulo(f_ntt[i]*g_ntt[i], p as i32);
+        fg_ntt[i] = modulo(f_ntt[i] * g_ntt[i], p as i32);
     }
 
     let mut fg = intt(fg_ntt, p);
 
     for i in 0..n {
-        if fg[i] > (p as i32 -1) / 2 {
+        if fg[i] > (p as i32 - 1) / 2 {
             fg[i] -= p as i32;
         }
     }
 
-
     return fg;
 }
-
