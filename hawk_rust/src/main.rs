@@ -2,7 +2,7 @@ use keygen::hawkkeygen;
 use params::initialize_params;
 use rngcontext::RngContext;
 
-use crate::utils::{adjoint, bin, int, mod_pow, poly_add, poly_mult_ntt};
+use crate::utils::{adjoint, bin, int, mod_pow, poly_add, poly_mult_ntt, is_invertible};
 
 mod keygen;
 mod ntru_solve;
@@ -31,8 +31,10 @@ fn main() {
     // let p = 2147473409;
     let p = 7681;
 
-    let fg = poly_mult_ntt(f, g, p);
-    println!("f*g = {:?}", fg);
+    //let fg = poly_mult_ntt(f, g, p);
+    //println!("f*g = {:?}", fg);
+    let invertible = is_invertible(&f, p);
+    println!("{}", invertible);
 }
 
 fn print_type_of<T>(_: &T) {
