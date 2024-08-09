@@ -107,7 +107,7 @@ pub fn is_invertible(f: &Vec<i64>, p: u32) -> bool {
     return true;
 }
 
-pub fn l2norm(f: &Vec<i32>) -> i64 {
+pub fn l2norm(f: &Vec<i64>) -> i64 {
     // returns the l2 norm of polynomial/vector f as f[0]^2 + f[1]^2 +..+ f[n]^2
     let mut sum: i64 = 0;
     for i in 0..f.len() {
@@ -116,7 +116,7 @@ pub fn l2norm(f: &Vec<i32>) -> i64 {
     return sum;
 }
 
-pub fn adjoint(f: &Vec<i32>) -> Vec<i32> {
+pub fn adjoint(f: &Vec<i64>) -> Vec<i64> {
     // computes the (hermitian) adjoint of a polynomial f
     let mut fstar = f.clone();
     for i in 1..f.len() {
@@ -125,7 +125,7 @@ pub fn adjoint(f: &Vec<i32>) -> Vec<i32> {
     return fstar;
 }
 
-pub fn poly_add(f: &Vec<i32>, g: &Vec<i32>) -> Vec<i32> {
+pub fn poly_add(f: &Vec<i64>, g: &Vec<i64>) -> Vec<i64> {
     // performs standard polynomial addition of two polynomials with mod p
     assert_eq!(f.len(), g.len());
     let mut q = vec![0; f.len()];
@@ -135,7 +135,7 @@ pub fn poly_add(f: &Vec<i32>, g: &Vec<i32>) -> Vec<i32> {
     return q;
 }
 
-pub fn poly_mult(f: &Vec<i32>, g: &Vec<i32>, p: i32) -> Vec<i32> {
+pub fn poly_mult(f: &Vec<i64>, g: &Vec<i64>, p: i64) -> Vec<i64> {
     // performs standard polynomial multiplication of two polynomials with mod p
     let mut q = vec![0; f.len() + g.len() - 1];
 
@@ -148,7 +148,7 @@ pub fn poly_mult(f: &Vec<i32>, g: &Vec<i32>, p: i32) -> Vec<i32> {
     return q;
 }
 
-pub fn poly_mult_ntt(f: Vec<i32>, g: Vec<i32>, p: u32) -> Vec<i32> {
+pub fn poly_mult_ntt(f: &Vec<i64>, g: &Vec<i64>, p: u32) -> Vec<i64> {
     // length of f and g should be the same
     assert_eq!(f.len(), g.len());
 
@@ -158,16 +158,16 @@ pub fn poly_mult_ntt(f: Vec<i32>, g: Vec<i32>, p: u32) -> Vec<i32> {
     let f_ntt = ntt(f.clone(), p);
     let g_ntt = ntt(g.clone(), p);
 
-    let mut fg_ntt: Vec<i32> = vec![0; n];
+    let mut fg_ntt: Vec<i64> = vec![0; n];
     for i in 0..n {
-        fg_ntt[i] = modulo(f_ntt[i] * g_ntt[i], p as i32);
+        fg_ntt[i] = modulo(f_ntt[i] * g_ntt[i], p as i64);
     }
 
     let mut fg = intt(fg_ntt, p);
 
     for i in 0..n {
-        if fg[i] > (p as i32 - 1) / 2 {
-            fg[i] -= p as i32;
+        if fg[i] > (p as i64 - 1) / 2 {
+            fg[i] -= p as i64;
         }
     }
 
