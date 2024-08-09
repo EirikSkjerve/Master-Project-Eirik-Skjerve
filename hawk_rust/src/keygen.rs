@@ -7,7 +7,7 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
         Some(rng) => rng,
         None => {
             // this should be an actual random number
-            let new_rng = RngContext::new(1337); 
+            let new_rng = RngContext::new(1337);
             return hawkkeygen(logn, Some(new_rng));
         }
     };
@@ -35,11 +35,12 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
     // construct the (hermitan) adjoints of f and g, f*, g*
     let fstar = adjoint(&f);
     let gstar = adjoint(&g);
-    
+
     // pseudocode says nothing about this p, but it is in the reference code
     let p = (1 << 16) + 1;
 
     // ff* + gg*
+    // here we can also use NTT for faster multiplication
     let q00 = poly_add(&poly_mult(&f, &fstar, p), &poly_mult(&g, &gstar, p));
 
     // two primes p1 and p2

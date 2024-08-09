@@ -1,3 +1,6 @@
+use crate::ntt_fft::{intt, ntt};
+use num::traits::{FromPrimitive, Num, PrimInt};
+
 pub fn bin(a: u128, x: usize) -> Vec<u8> {
     /*
     Converts an integer to binary representation in a vector of arbitrary size
@@ -8,7 +11,7 @@ pub fn bin(a: u128, x: usize) -> Vec<u8> {
 
     if x == 0 {
         // returns a as binary with *default* size
-        return bin(a, (a as f64).log2().ceil() as usize + 1)
+        return bin(a, (a as f64).log2().ceil() as usize + 1);
     }
     for i in 0..x {
         if b % 2 == 1 {
@@ -39,33 +42,53 @@ pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
     return res;
 }
 
-pub fn fbe(a:usize,b:usize,p:usize) -> usize{
-    // implements fast binary exponentiation
-    /*
-    Inputs a, b, p
-    Outputs a^b mod p
-    */
-    assert!(a>=0 && b>=0 && p>0);
+// implements integer modulation
+pub fn modulo<T: PrimInt>(a: T, b: T) -> T
+where
+    T: Num + FromPrimitive,
+{
+    // convert the inputs to u64
+    let a_i64 = a.to_i64().unwrap();
+    let b_i64 = b.to_i64().unwrap();
 
-    let mut r = 1;
-    let mut a_c = a;
-    let mut b_c = b;
+    // perform the calculations
+    let result = ((a_i64 % b_i64) + b_i64) % b_i64;
 
-    while b_c > 0 {
-        if (b_c & 1) != 0{
-            r *=a;
-        }
-        b_c = b_c >> 1;
-        a_c *= a_c;
-    }
-    return r%p;
+    return T::from_i64(result).unwrap();
 }
 
-pub fn is_invertible(f: &Vec<i32>, p: u128) -> bool {
+// implements fast binary exponentiation for computing base^exp mod modulus
+// inputs base, exponent and modulus as generic, and returns a u128
+pub fn mod_pow<T: PrimInt>(base: T, exp: T, modulus: T) -> T
+where
+    T: Num + FromPrimitive,
+{
+    // convert the inputs to u64
+    let mut base_u128 = base.to_u128().unwrap();
+    let mut exp_u128 = exp.to_u128().unwrap();
+    let mod_u128 = modulus.to_u128().unwrap();
+
+    // perform the algorithm
+    let mut result = 1;
+    base_u128 %= mod_u128;
+    while exp_u128 > 0 {
+        if exp_u128 & 1 == 1 {
+            result *= base_u128;
+            result %= mod_u128;
+        }
+        exp_u128 >>= 1;
+        base_u128 *= base_u128;
+        base_u128 %= mod_u128;
+    }
+
+    return T::from_u128(result).unwrap();
+}
+
+pub fn is_invertible(f: &Vec<i32>, p: u32) -> bool {
     // asserts if the polynomial f is invertible mod X^n + 1
     // case for p=2 works because in integers mod 2, a polynomial is invertible <->
     // sum of coefficients is odd <-> non-zero constant-term
-    if p == 2{
+    if p == 2 {
         let mut sum: i32 = 0;
         for i in 0..f.len() {
             sum += f[i];
@@ -74,8 +97,14 @@ pub fn is_invertible(f: &Vec<i32>, p: u128) -> bool {
         return sum == 1;
     }
     // if p is some other prime, we can use NTT representation of f to check invertibility
+    let f_ntt = ntt(f.clone(), p);
+    for i in 0..f.len() {
+        if f_ntt[i] == 0 {
+            return false;
+        }
+    }
 
-    return false
+    return true;
 }
 
 pub fn l2norm(f: &Vec<i32>) -> i64 {
@@ -88,7 +117,7 @@ pub fn l2norm(f: &Vec<i32>) -> i64 {
 }
 
 pub fn adjoint(f: &Vec<i32>) -> Vec<i32> {
-    // computes the (hermitian) adjoint of a polynomial f 
+    // computes the (hermitian) adjoint of a polynomial f
     let mut fstar = f.clone();
     for i in 1..f.len() {
         fstar[i] = -f[f.len() - i];
@@ -106,15 +135,41 @@ pub fn poly_add(f: &Vec<i32>, g: &Vec<i32>) -> Vec<i32> {
     return q;
 }
 
-pub fn poly_mult(f: &Vec<i32>, g: &Vec<i32>, p:i32) -> Vec<i32> {
+pub fn poly_mult(f: &Vec<i32>, g: &Vec<i32>, p: i32) -> Vec<i32> {
     // performs standard polynomial multiplication of two polynomials with mod p
     let mut q = vec![0; f.len() + g.len() - 1];
 
     for i in 0..f.len() {
         for j in 0..g.len() {
             q[i + j] += f[i] * g[j];
-            q[i+j] %= p;
+            q[i + j] %= p;
         }
     }
     return q;
+}
+
+pub fn poly_mult_ntt(f: Vec<i32>, g: Vec<i32>, p: u32) -> Vec<i32> {
+    // length of f and g should be the same
+    assert_eq!(f.len(), g.len());
+
+    let n = f.len();
+
+    // ntt representation of f and g
+    let f_ntt = ntt(f.clone(), p);
+    let g_ntt = ntt(g.clone(), p);
+
+    let mut fg_ntt: Vec<i32> = vec![0; n];
+    for i in 0..n {
+        fg_ntt[i] = modulo(f_ntt[i] * g_ntt[i], p as i32);
+    }
+
+    let mut fg = intt(fg_ntt, p);
+
+    for i in 0..n {
+        if fg[i] > (p as i32 - 1) / 2 {
+            fg[i] -= p as i32;
+        }
+    }
+
+    return fg;
 }
