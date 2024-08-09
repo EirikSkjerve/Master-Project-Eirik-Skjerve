@@ -47,12 +47,9 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
     let p1 = 2147473409;
     let p2 = 2147389441;
 
-    // causes stack overflow/infinite recursion. Need to implement the actual method for p != 2
-    /*
-    if !(is_invertible(&q00, p1) && is_invertible(&q00, p2)){
+    if !(is_invertible(&q00, p1) && is_invertible(&q00, p2)) {
         return hawkkeygen(logn, Some(rng));
     }
-    */
 
     println!("f: {:?}, \n g: {:?}", f, g);
 }

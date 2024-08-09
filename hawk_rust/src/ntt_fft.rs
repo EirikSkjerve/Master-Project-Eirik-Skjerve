@@ -8,7 +8,7 @@ use num::traits::{FromPrimitive, Num, PrimInt};
 use prime_factorization::Factorization;
 
 // ntt of a polynomial
-pub fn ntt(f: Vec<i32>, p: u32) -> Vec<i32> {
+pub fn ntt(f: Vec<i64>, p: u32) -> Vec<i64> {
     let mut ntt_f = f.clone();
 
     let n = f.len();
@@ -17,21 +17,17 @@ pub fn ntt(f: Vec<i32>, p: u32) -> Vec<i32> {
 
     let zetas = get_roots(p as u128, n as u128).0;
 
-    let q = p as i32;
+    let q = p as i64;
 
     while l > 0 {
         for s in (0..n).step_by(2 * l) {
-            let zeta = zetas[k] as i32;
+            let zeta = zetas[k] as i64;
             k += 1;
             for j in s..s + l {
+                println!("{}, {}", ntt_f[j + l], zeta);
                 let t = modulo(ntt_f[j + l] * zeta, q);
                 ntt_f[j + l] = modulo(ntt_f[j] - t, q);
                 ntt_f[j] = modulo(ntt_f[j] + t, q);
-                /*
-                let t = (((ntt_f[j + l] * zeta as i32) % q) + q) % q;
-                ntt_f[j + l] = (((ntt_f[j] - t) % q) + q) % q;
-                ntt_f[j] = (((ntt_f[j] + t) % q) + q) % q;
-                */
             }
         }
         l /= 2;
@@ -41,7 +37,7 @@ pub fn ntt(f: Vec<i32>, p: u32) -> Vec<i32> {
 }
 
 // inverse ntt of a polynomial
-pub fn intt(f: Vec<i32>, p: u32) -> Vec<i32> {
+pub fn intt(f: Vec<i64>, p: u32) -> Vec<i64> {
     let mut intt_f = f.clone();
 
     let n = f.len();
@@ -50,11 +46,11 @@ pub fn intt(f: Vec<i32>, p: u32) -> Vec<i32> {
 
     let izetas = get_roots(p as u128, n as u128).1;
 
-    let q = p as i32;
+    let q = p as i64;
 
     while l < n {
         for s in (0..n).step_by(2 * l).rev() {
-            let izeta = izetas[k] as i32;
+            let izeta = izetas[k] as i64;
             k -= 1;
             for j in s..s + l {
                 let t = intt_f[j];
@@ -66,7 +62,7 @@ pub fn intt(f: Vec<i32>, p: u32) -> Vec<i32> {
         l *= 2;
     }
 
-    let ideg = mod_pow(n as i32, q - 2, q);
+    let ideg = mod_pow(n as i64, q - 2, q);
     for i in 0..intt_f.len() {
         intt_f[i] = modulo(intt_f[i] * ideg, q);
     }
