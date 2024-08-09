@@ -42,6 +42,21 @@ pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
     return res;
 }
 
+// implements integer modulation 
+pub fn modulo<T: PrimInt>(a: T, b: T) -> T
+where
+    T: Num + FromPrimitive,
+{
+    // convert the inputs to u64
+    let a_i64 = a.to_i64().unwrap();
+    let b_i64 = b.to_i64().unwrap();
+
+    // perform the calculations
+    let result = ((a_i64 % b_i64)+b_i64)%b_i64;
+
+    return T::from_i64(result).unwrap();
+}
+
 // implements fast binary exponentiation for computing base^exp mod modulus
 // inputs base, exponent and modulus as generic, and returns a u128
 pub fn mod_pow<T: PrimInt>(base: T, exp: T, modulus: T) -> T

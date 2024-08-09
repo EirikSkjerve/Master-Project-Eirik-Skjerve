@@ -3,11 +3,9 @@
 // and section 4.1.1 of HAWK spec paper
 
 // use num::One;
-use crate::utils::{bin, int, mod_pow};
+use crate::utils::{modulo, mod_pow};
 use prime_factorization::Factorization;
 use num::traits::{FromPrimitive, Num, PrimInt};
-
-// use num_bigint::{BigUint, ToBigUint};
 
 // ntt of a polynomial
 pub fn ntt(f: Vec<i32>, p: u32) -> Vec<i32> {
@@ -24,21 +22,26 @@ pub fn ntt(f: Vec<i32>, p: u32) -> Vec<i32> {
 
     while l > 0 {
         for s in (0..n).step_by(2 * l) {
-            let zeta = zetas[k];
+            let zeta = zetas[k] as i32;
             k += 1;
             for j in s..s + l {
-                // using this method so that modulus actually works
+                let t = modulo(ntt_f[j+l]*zeta, q);
+                ntt_f[j+l] = modulo(ntt_f[j]-t, q);
+                ntt_f[j] = modulo(ntt_f[j] + t, q);
+                /*
                 let t = (((ntt_f[j + l] * zeta as i32) % q) + q) % q;
                 ntt_f[j + l] = (((ntt_f[j] - t) % q) + q) % q;
                 ntt_f[j] = (((ntt_f[j] + t) % q) + q) % q;
+                */
             }
         }
-        l = l / 2;
+        l /= 2;
     }
 
     return ntt_f;
 }
 
+// inverse ntt of a polynomial
 pub fn intt(f: Vec<i32>, p: u32) -> Vec<i32> {
 
     let mut intt_f = f.clone();
@@ -52,25 +55,27 @@ pub fn intt(f: Vec<i32>, p: u32) -> Vec<i32> {
     let q = p as i32;
 
     while l<n {
-        for s in (n..0).step_by(2*l){
-            let izeta = izetas[k];
+        for s in (0..n).step_by(2*l).rev(){
+            let izeta = izetas[k] as i32;
             k -= 1;
-            for j in (s..s+l){
+            for j in s..s+l{
                 let t = intt_f[j];
-
+                intt_f[j] = modulo(t + intt_f[j+l], q);
+                intt_f[j+l] = modulo(t-intt_f[j+l], q);
+                intt_f[j+l] = modulo(intt_f[j+l]*izeta, q);
             }
         }
+        l *= 2;
     }
 
-    return f;
+    let ideg = mod_pow(n as i32, q-2, q);
+    for i in 0..intt_f.len(){
+        intt_f[i] = modulo(intt_f[i]*ideg, q);
+    }
+
+    return intt_f;
 }
 
-pub fn mod <T: PrimInt>(a: T, b: T) -> T 
-where T: 
-    Num + FromPrimitive,
-{
-    return a;
-}
 
 // implementation of bit reversal of an integer
 pub fn brv(x: u128, log_n: u128) -> u128 {
