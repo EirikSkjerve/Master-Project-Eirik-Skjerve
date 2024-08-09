@@ -1,4 +1,4 @@
-use crate::ntt_fft;
+use crate::ntt_fft::{ntt, intt};
 use num::traits::{FromPrimitive, Num, PrimInt};
 
 pub fn bin(a: u128, x: usize) -> Vec<u8> {
@@ -42,7 +42,7 @@ pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
     return res;
 }
 
-// implements integer modulation 
+// implements integer modulation
 pub fn modulo<T: PrimInt>(a: T, b: T) -> T
 where
     T: Num + FromPrimitive,
@@ -52,7 +52,7 @@ where
     let b_i64 = b.to_i64().unwrap();
 
     // perform the calculations
-    let result = ((a_i64 % b_i64)+b_i64)%b_i64;
+    let result = ((a_i64 % b_i64) + b_i64) % b_i64;
 
     return T::from_i64(result).unwrap();
 }
@@ -84,7 +84,7 @@ where
     return T::from_u128(result).unwrap();
 }
 
-pub fn is_invertible(f: &Vec<i32>, p: u128) -> bool {
+pub fn is_invertible(f: &Vec<i32>, p: u32) -> bool {
     // asserts if the polynomial f is invertible mod X^n + 1
     // case for p=2 works because in integers mod 2, a polynomial is invertible <->
     // sum of coefficients is odd <-> non-zero constant-term
@@ -97,8 +97,14 @@ pub fn is_invertible(f: &Vec<i32>, p: u128) -> bool {
         return sum == 1;
     }
     // if p is some other prime, we can use NTT representation of f to check invertibility
+    let f_ntt = ntt(f.clone(), p);
+    for i in 0..f.len() {
+        if f_ntt[i] == 0{
+            return false;
+        }
+    }
 
-    return false;
+    return true;
 }
 
 pub fn l2norm(f: &Vec<i32>) -> i64 {
@@ -141,3 +147,32 @@ pub fn poly_mult(f: &Vec<i32>, g: &Vec<i32>, p: i32) -> Vec<i32> {
     }
     return q;
 }
+
+pub fn poly_mult_ntt(f: Vec<i32>, g: Vec<i32>, p: u32) -> Vec<i32> {
+    // length of f and g should be the same
+    assert_eq!(f.len(), g.len());
+
+    let n = f.len();
+    
+    // ntt representation of f and g
+    let f_ntt = ntt(f.clone(), p);
+    let g_ntt = ntt(g.clone(), p);
+
+
+    let mut fg_ntt: Vec<i32> = vec![0; n];
+    for i in 0..n {
+        fg_ntt[i] = modulo(f_ntt[i]*g_ntt[i], p as i32);
+    }
+
+    let mut fg = intt(fg_ntt, p);
+
+    for i in 0..n {
+        if fg[i] > (p as i32 -1) / 2 {
+            fg[i] -= p as i32;
+        }
+    }
+
+
+    return fg;
+}
+
