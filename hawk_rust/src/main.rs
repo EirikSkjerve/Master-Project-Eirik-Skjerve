@@ -13,6 +13,17 @@ mod sign;
 mod utils;
 mod verify;
 
+/*
+   Driver code for HAWK implementation.
+
+   Integer types:
+   n: 256-1024, use u16,
+   log n: 8-10, use u8,
+   vectors of bits: 0/1, use u8,
+   vectors f and g: initially low numbers, but is changed fast.
+       set as Vec<i64>, will have negative values
+
+*/
 fn main() {
     // initialize_params(8);
     hawkkeygen(8, None);

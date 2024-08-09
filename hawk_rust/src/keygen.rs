@@ -1,7 +1,7 @@
 use crate::rngcontext::{shake256x4, RngContext};
-use crate::utils::{adjoint, is_invertible, l2norm, poly_add, poly_mult};
+use crate::utils::{adjoint, is_invertible, l2norm, poly_add, poly_mult_ntt};
 
-pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
+pub fn hawkkeygen(logn: u8, rng: Option<RngContext>) {
     // checks if rng-context is initialized or not. If not, initialize a new one and recursively call hawkkeygen
     let mut rng = match rng {
         Some(rng) => rng,
@@ -17,12 +17,14 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
     let f = f_g.0.clone();
     let g = f_g.1.clone();
 
+    //println!("Here 1");
+
     // checks if f and g are invertible mod X^n + 1 and mod 2
     // if not, restart
     if !(is_invertible(&f, 2) && is_invertible(&g, 2)) {
         return hawkkeygen(logn, Some(rng));
     }
-
+    //println!("Here 2");
     let n = 1 << logn;
 
     // checks if the norm of f and g is large enough
@@ -41,7 +43,10 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
 
     // ff* + gg*
     // here we can also use NTT for faster multiplication
-    let q00 = poly_add(&poly_mult(&f, &fstar, p), &poly_mult(&g, &gstar, p));
+    //let q00 = poly_add(&poly_mult(&f, &fstar, p), &poly_mult(&g, &gstar, p));
+    let q00 = poly_add(
+        &poly_mult_ntt(&f, &fstar, p), &poly_mult_ntt(&g, &gstar, p)
+        );
 
     // two primes p1 and p2
     let p1 = 2147473409;
@@ -55,7 +60,7 @@ pub fn hawkkeygen(logn: u16, rng: Option<RngContext>) {
 }
 
 // generates polynomials f and g
-fn generate_f_g(seed: usize, logn: u16) -> (Vec<i32>, Vec<i32>) {
+fn generate_f_g(seed: usize, logn: u8) -> (Vec<i64>, Vec<i64>) {
     // expand logn -> n
     let n = 1 << logn;
     let b = n / 64;
@@ -74,32 +79,32 @@ fn generate_f_g(seed: usize, logn: u16) -> (Vec<i32>, Vec<i32>) {
 
     // generate f and g from centered binomial distribution
     // if e.g. n = 256, b = 4, so f and g consists of random numbes from the interval [-2,-1,0,1,2]
-    // if n = 512, b = 8, inteval = [-4,...,4]
+    // if n = 512, b = 8, interval = [-4,...,4]
     // if n = 1024, b = 16, interval = [-8,...,8]
-    let mut f: Vec<i32> = vec![0; n];
+    let mut f: Vec<i64> = vec![0; n];
     let mut sum;
 
     // get some bounded number from ybits
     for i in 0..n {
         sum = 0;
         for j in 0..b {
-            sum += ybits[i * b + j] as i32;
+            sum += ybits[i * b + j] as i64;
         }
 
         // center the number around 0
-        f[i] = sum - (b / 2) as i32;
+        f[i] = sum - (b / 2) as i64;
     }
 
     // reuse "sum" variable here
-    let mut g: Vec<i32> = vec![0; n];
+    let mut g: Vec<i64> = vec![0; n];
 
     for i in 0..n {
         sum = 0;
         for j in 0..b {
-            sum += ybits[i + n * b + j] as i32;
+            sum += ybits[i + n * b + j] as i64;
         }
 
-        g[i] = sum - (b / 2) as i32;
+        g[i] = sum - (b / 2) as i64;
     }
 
     // returns the two vectors

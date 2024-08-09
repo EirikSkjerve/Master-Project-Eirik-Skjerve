@@ -24,7 +24,6 @@ pub fn ntt(f: Vec<i64>, p: u32) -> Vec<i64> {
             let zeta = zetas[k] as i64;
             k += 1;
             for j in s..s + l {
-                println!("{}, {}", ntt_f[j + l], zeta);
                 let t = modulo(ntt_f[j + l] * zeta, q);
                 ntt_f[j + l] = modulo(ntt_f[j] - t, q);
                 ntt_f[j] = modulo(ntt_f[j] + t, q);
