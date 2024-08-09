@@ -84,12 +84,12 @@ where
     return T::from_u128(result).unwrap();
 }
 
-pub fn is_invertible(f: &Vec<i32>, p: u32) -> bool {
+pub fn is_invertible(f: &Vec<i64>, p: u32) -> bool {
     // asserts if the polynomial f is invertible mod X^n + 1
     // case for p=2 works because in integers mod 2, a polynomial is invertible <->
     // sum of coefficients is odd <-> non-zero constant-term
     if p == 2 {
-        let mut sum: i32 = 0;
+        let mut sum: i64 = 0;
         for i in 0..f.len() {
             sum += f[i];
             sum %= 2;
