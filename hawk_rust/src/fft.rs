@@ -1,89 +1,74 @@
 use std::f64::consts::PI;
 
+use libm::Libm;
 use num::Zero;
 use num_complex::Complex;
-use libm::Libm;
 
-
-fn fft(f: &Vec<Complex<f64>>) -> Vec<Complex<f64>> {
+fn fft(f: &Vec<f64>) -> Vec<Complex<f64>> {
+    println!("f: {:?}", f);
     let n = f.len();
 
-    // base case 
+    // base case
     if n == 2 {
-        // let mut y: Vec<Complex<f64>> = vec![Complex::new(0.0,0.0); n];
-        return f.to_vec();
+        let mut f_fft: Vec<Complex<f64>> = vec![Complex::new(0.0, 0.0); n];
+        f_fft[0] = Complex::new(f[0], f[1]);
+        f_fft[1] = Complex::new(f[0], -f[1]);
+        return f_fft;
     }
 
     // calculating roots
-    let theta = -2.0*PI/(n as f64);
+    // TODO this should be precomputed
+    let theta = -2.0 * PI / (n as f64);
     let mut w: Vec<Complex<f64>> = vec![Complex::new(0.0, 0.0); n];
 
     let mut temp: f64 = 0.0;
     for i in (0..n) {
-        temp = theta* i as f64;
+        temp = theta * i as f64;
         w[i] = Complex::new(Libm::<f64>::cos(temp), Libm::<f64>::sin(temp));
     }
 
-    // initialize empty odd/even vectors
-    let mut f_even: Vec<Complex<f64>> = Vec::new(); 
-    let mut f_odd: Vec<Complex<f64>> = Vec::new();
+    println!("w: {:?}", w);
+
+    let mut f_e: Vec<f64> = Vec::new();
+    let mut f_o: Vec<f64> = Vec::new();
 
     // split f into two
     for i in 0..n {
-        if i%2==0{
-            f_even.push(f[i]);
-        }
-        else{
-            f_odd.push(f[i]);
+        if i % 2 == 0 {
+            f_e.push(f[i]);
+        } else {
+            f_o.push(f[i]);
         }
     }
 
     // recursively call fft on halves
-    let y_even = fft(&f_even);
-    let y_odd = fft(&f_odd);
+    let y_e = fft(&f_e);
+    let y_o = fft(&f_o);
 
     // initialize empty result vector
-    let mut y: Vec<Complex<f64>> = vec![Complex::new(0.0,0.0); n];
+    let mut y: Vec<Complex<f64>> = vec![Complex::new(0.0, 0.0); n];
 
-    let m = n/2;
+    let m = n / 2;
 
     let mut temp = Complex::zero();
+
+    // join polynomials
     for i in 0..m {
-
-        temp = w[2*i] * y_odd[i];
-        y[2*i] = y_even[i] + temp;
-        y[2*i+1] = y_even[i] - temp;   
+        temp = w[2 * i] * y_o[i];
+        y[2 * i] = y_e[i] + temp;
+        y[2 * i + 1] = y_e[i] - temp;
     }
-    /*
-    // initialize working variables
-    let mut w_yodd_k = Complex::zero();
-    let mut yeven_k = Complex::zero();
-
-    // perform the calculations
-    for k in 0..m {
-
-       w_yodd_k = w[k] * y_odd[k];
-       yeven_k = y_even[k];
-
-       y[k] = yeven_k + w_yodd_k;
-       y[k + m] = yeven_k - w_yodd_k;
-    }
-    */
 
     // return the result
     return y;
-
 }
 
 // fft where input is i64: converts the polynomial into complex domain
 pub fn f_fft(f: &Vec<i64>) -> Vec<Complex<f64>> {
-    
-    let poly = f.clone();
+    let mut f_f: Vec<f64> = Vec::new();
+    for i in 0..f.len() {
+        f_f.push(f[i] as f64);
+    }
 
-    let poly_complex = poly.into_iter()
-        .map(|x| Complex::new(x as f64, 0.0))
-        .collect();
-
-    return fft(&poly_complex);
-
+    return fft(&f_f);
 }

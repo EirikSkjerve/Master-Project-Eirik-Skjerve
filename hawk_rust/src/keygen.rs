@@ -44,9 +44,7 @@ pub fn hawkkeygen(logn: u8, rng: Option<RngContext>) {
     // ff* + gg*
     // here we can also use NTT for faster multiplication
     //let q00 = poly_add(&poly_mult(&f, &fstar, p), &poly_mult(&g, &gstar, p));
-    let q00 = poly_add(
-        &poly_mult_ntt(&f, &fstar, p), &poly_mult_ntt(&g, &gstar, p)
-        );
+    let q00 = poly_add(&poly_mult_ntt(&f, &fstar, p), &poly_mult_ntt(&g, &gstar, p));
 
     // two primes p1 and p2
     let p1 = 2147473409;
