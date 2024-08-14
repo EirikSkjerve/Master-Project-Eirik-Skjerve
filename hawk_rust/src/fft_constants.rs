@@ -2082,3 +2082,21 @@ static PHI2048_ROOTS: [Complex<f64>; 1024] = [
     Complex::new(0.500885382611241, -0.865513624090569), 
     Complex::new(-0.500885382611241, 0.865513624090569), 
 ]; 
+
+// return array of roots based on input degree
+pub fn get_roots(n: usize) -> &'static [Complex<f64>] {
+
+    match n {
+        2 => &PHI4_ROOTS,
+        4 => &PHI8_ROOTS,
+        8 => &PHI16_ROOTS,
+        16 => &PHI32_ROOTS,
+        32 => &PHI64_ROOTS,
+        64 => &PHI128_ROOTS,
+        128 => &PHI256_ROOTS,
+        256 => &PHI512_ROOTS,
+        512 => &PHI1024_ROOTS,
+        1024 => &PHI2048_ROOTS,
+        _ => &PHI4_ROOTS,
+    }
+}

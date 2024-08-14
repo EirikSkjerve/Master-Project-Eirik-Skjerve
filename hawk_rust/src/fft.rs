@@ -3,6 +3,7 @@ use std::f64::consts::PI;
 use libm::Libm;
 use num::Zero;
 use num_complex::Complex;
+use crate::fft_constants;
 
 fn fft(f: &Vec<f64>) -> Vec<Complex<f64>> {
     println!("f: {:?}", f);
@@ -16,16 +17,7 @@ fn fft(f: &Vec<f64>) -> Vec<Complex<f64>> {
         return f_fft;
     }
 
-    // calculating roots
-    // TODO this should be precomputed
-    let theta = -2.0 * PI / (n as f64);
-    let mut w: Vec<Complex<f64>> = vec![Complex::new(0.0, 0.0); n];
-
-    let mut temp: f64 = 0.0;
-    for i in (0..n) {
-        temp = theta * i as f64;
-        w[i] = Complex::new(Libm::<f64>::cos(temp), Libm::<f64>::sin(temp));
-    }
+    // getting roots
 
     println!("w: {:?}", w);
 
