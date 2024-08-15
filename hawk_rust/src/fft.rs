@@ -5,8 +5,7 @@ use num::Zero;
 use num_complex::Complex;
 use crate::fft_constants;
 
-fn fft(f: &Vec<f64>) -> Vec<Complex<f64>> {
-    println!("f: {:?}", f);
+pub fn fft(f: &Vec<f64>) -> Vec<Complex<f64>> {
     let n = f.len();
 
     // base case
@@ -18,6 +17,8 @@ fn fft(f: &Vec<f64>) -> Vec<Complex<f64>> {
     }
 
     // getting roots
+
+    let w = fft_constants::get_roots(n);
 
     println!("w: {:?}", w);
 
@@ -53,6 +54,46 @@ fn fft(f: &Vec<f64>) -> Vec<Complex<f64>> {
 
     // return the result
     return y;
+}
+
+pub fn ifft(f_fft: &Vec<Complex<f64>>) -> Vec<f64> {
+    let n = f_fft.len();
+
+    // base case
+    if n == 2 {
+        let mut f: Vec<f64> = vec![0.0; n];
+        f[0] = f_fft[0].re;
+        f[1] = f_fft[0].im;
+        return f;
+
+    }
+
+    let mut f: Vec<f64> = vec![0.0; n];
+
+    let w = fft_constants::get_roots(n);
+    let m = n/2;
+
+    let mut f0_fft: Vec<Complex<f64>> = vec![Complex::new(0.0,0.0); m];
+    let mut f1_fft: Vec<Complex<f64>> = vec![Complex::new(0.0,0.0); m];
+
+    for i in 0..m {
+        f0_fft[i] = 0.5 * (f_fft[2*i] + f_fft[2*i+1]);
+        f1_fft[i] = 0.5 * (f_fft[2*i] - f_fft[2*i+1])* w[2*i].conj();
+
+    }
+
+    // recursively call ifft on halves
+    let f0 = ifft(&f0_fft);
+    let f1 = ifft(&f1_fft);
+
+    // merge the splits
+    for i in 0..m {
+        f[2*i] = f0[i];
+        f[2*i+1] = f1[i];
+    }
+
+
+    return f;
 }
 
 // fft where input is i64: converts the polynomial into complex domain
