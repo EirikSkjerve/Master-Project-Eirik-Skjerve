@@ -22,7 +22,8 @@ impl RngContext {
     Returns size random bits,
      */
     pub fn rnd(&mut self, size: u8) -> u128 {
-        self.i += 1;
+        self.i += size as usize;
+        // println!("Recursion step {}", self.i);
 
         let temp = self.seed + self.i as u128;
         // set seed to hash of input seed + incremented variable

@@ -17,3 +17,8 @@ Cargo.lock
 
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
+
+# one time script
+convert_tables.py
+roots_table.txt
+roots_table_rs.txt
