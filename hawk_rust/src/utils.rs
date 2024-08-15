@@ -92,7 +92,7 @@ pub fn is_invertible(f: &Vec<i64>, p: u32) -> bool {
         let mut sum: i64 = 0;
         for i in 0..f.len() {
             sum += f[i];
-            sum %= 2;
+            sum = modulo(sum, 2);
         }
         return sum == 1;
     }
@@ -111,8 +111,9 @@ pub fn l2norm(f: &Vec<i64>) -> i64 {
     // returns the l2 norm of polynomial/vector f as f[0]^2 + f[1]^2 +..+ f[n]^2
     let mut sum: i64 = 0;
     for i in 0..f.len() {
-        sum += (f[i] as i64).pow(2);
+        sum += (f[i]).pow(2);
     }
+    println!("{}", sum);
     return sum;
 }
 

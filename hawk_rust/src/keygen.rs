@@ -18,20 +18,24 @@ pub fn hawkkeygen(logn: u8, rng: Option<RngContext>) {
     let f = f_g.0.clone();
     let g = f_g.1.clone();
 
-    //println!("Here 1");
+    
+    let f = vec![1, -1, 0, 0, -1, 1, -1, 0, 2, 1, 0, 1, -1, 1, 0, -1, 1, 0, 0, 0, 1, 1, 0, 1, -1, 1, 0, 0, 1, 1, 1, 1, -2, 0, -1, 0, 0, 0, 0, 1, 1, 1, 0, 2, 0, 0, 0, 0, -1, -2, 0, 0, 2, -2, 1, 0, 2, -1, 1, 0, 1, 1, 0, -1, 2, 0, -1, 1, 1, 0, 0, -1, 2, 0, 1, 1, 0, -1, 1, -2, 0, 1, 1, 0, -1, 1, 0, 2, -2, -1, 1, 0, -1, 2, -1, 0, 1, 0, 2, -1, -2, -1, -1, 2, 1, -1, 0, -1, -1, -1, 1, 1, -2, 1, 0, 0, -1, 0, 1, 0, -1, 0, 0, 0, 0, 1, 1, -1, -1, 0, 1, -1, 1, 1, -1, 0, -1, -1, -1, 0, -2, -1, 0, 1, 0, -1, 0, 0, -1, 1, 1, -2, -2, 1, 1, 0, 1, 1, 1, -1, 0, 0, 2, -2, 0, -1, 2, -1, 1, 0, 1, 2, -1, 0, 0, 0, 1, 1, 0, 1, 0, 1, -1, 0, -2, 0, 2, 0, 1, -1, -1, -2, 1, 0, 0, 2, 1, 0, 2, 0, -1, 1, 1, 0, 0, 0, -1, 0, 1, 0, -1, 0, 0, 1, -1, 0, -1, -1, -1, 0, 1, 1, 0, 0, 0, 0, -1, -1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 2, 1, -2, -1, -1, 0, -2, 0, 0, 0, -2, 1, 1, 0, -2, 0, 2, 0, 0];
+    let g = vec![1, 0, 2, -1, 0, -1, -1, 1, 0, 0, -1, 0, -2, -2, 1, 1, 0, -1, 0, 0, -1, 1, 0, 0, 0, 1, 2, 0, -2, 1, -1, 1, 1, -1, 0, 0, 0, 1, -1, 1, -1, -2, 0, -2, 0, -2, 0, -1, 1, 1, 1, 0, 1, -1, -1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, -1, 0, -1, -1, -1, -1, -1, 0, -1, -1, 1, 1, -2, -1, 0, -2, -2, 1, 2, -2, 1, 2, 1, -1, 1, 2, -1, 1, 1, -1, 1, 0, -1, 0, 2, 0, 0, 0, -1, 0, 2, 0, 0, 1, 0, -1, -1, 1, -1, -1, 2, -1, -1, -2, 0, 0, 2, -1, 1, 2, 0, 1, 0, 1, 0, -1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, -1, 1, 2, -1, 0, 0, 0, 0, 2, 0, 1, 1, 2, -1, -2, 1, -1, 0, 2, 1, 1, 0, 0, 0, 0, -2, 1, 2, 0, 1, 0, 1, 1, -1, -2, 0, -1, 0, 0, -1, 0, 0, 1, -2, -1, -2, 1, 0, 0, 0, 0, -1, 2, -1, 0, 1, 1, 0, 0, 1, 0, -2, 0, 0, 0, 1, 0, 0, 1, -1, -1, 2, 1, -1, 1, 0, 0, 0, -1, 2, -1, 0, -1, 1, -2, 1, -1, -1, -1, -2, -1, 0, 1, 1, 0, 0, 0, 2, -1, 1, 1, 1, 1, 2, 2, 1, -1, 1, -1, 0, 0, -1, -2];
+
 
     // checks if f and g are invertible mod X^n + 1 and mod 2
     // if not, restart
-    if !(is_invertible(&f, 2) && is_invertible(&g, 2)) {
+    if !is_invertible(&f, 2) || !is_invertible(&g, 2) {
+        println!("restarting 1");
         return hawkkeygen(logn, Some(rng));
     }
-    //println!("Here 2");
     let n = 1 << logn;
 
     // checks if the norm of f and g is large enough
     // if not, restart
     // 1.042 need to be retrieved from table of values based on which security level
     if ((l2norm(&f) + l2norm(&g)) as f64) <= 2.0 * (n as f64) * (1.042 as f64).powi(2) {
+        println!("restarting 2");
         return hawkkeygen(logn, Some(rng));
     }
 
@@ -47,18 +51,20 @@ pub fn hawkkeygen(logn: u8, rng: Option<RngContext>) {
     //let q00 = poly_add(&poly_mult(&f, &fstar, p), &poly_mult(&g, &gstar, p));
     let q00 = poly_add(&poly_mult_ntt(&f, &fstar, p), &poly_mult_ntt(&g, &gstar, p));
 
+
     // two primes p1 and p2
     let p1 = 2147473409;
     let p2 = 2147389441;
 
     if !(is_invertible(&q00, p1) && is_invertible(&q00, p2)) {
+        println!("restarting 3");
         return hawkkeygen(logn, Some(rng));
     }
 
     let invq00 = fft::inverse_fft(&q00);
-    // println!("{:?}", invq00[0]);
     
-    if invq00[0] >=  (1.0 / 250.0){
+    if invq00[0] >= 0.004{
+        println!("restarting 4");
         return hawkkeygen(logn, Some(rng));
     }
     

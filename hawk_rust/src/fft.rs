@@ -105,11 +105,12 @@ pub fn inverse_fft(p: &Vec<i64>) -> Vec<f64> {
 
     for u in 0..m {
         p_fft[u].re = 1.0 / p_fft[u].re;
-    }
-    //println!("p_fft: {:?}", p_fft);
-    for u in 0..m {
         p_fft[u + m].re = 0.0;
+
+        // doing this to match the reference implementation
+        p_fft[u].im = 0.0;
+        p_fft[u + m].im = 0.0;
     }
-    //println!("p_fft: {:?}", p_fft);
+
     return ifft(&p_fft); 
 }
