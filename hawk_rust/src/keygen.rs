@@ -1,5 +1,6 @@
 use crate::rngcontext::{shake256x4, RngContext};
 use crate::utils::{adjoint, is_invertible, l2norm, poly_add, poly_mult_ntt};
+use crate::fft;
 
 pub fn hawkkeygen(logn: u8, rng: Option<RngContext>) {
     // checks if rng-context is initialized or not. If not, initialize a new one and recursively call hawkkeygen
@@ -7,7 +8,7 @@ pub fn hawkkeygen(logn: u8, rng: Option<RngContext>) {
         Some(rng) => rng,
         None => {
             // this should be an actual random number
-            let new_rng = RngContext::new(1337);
+            let new_rng = RngContext::new(1338);
             return hawkkeygen(logn, Some(new_rng));
         }
     };
@@ -54,6 +55,13 @@ pub fn hawkkeygen(logn: u8, rng: Option<RngContext>) {
         return hawkkeygen(logn, Some(rng));
     }
 
+    let invq00 = fft::inverse_fft(&q00);
+    // println!("{:?}", invq00[0]);
+    
+    if invq00[0] >=  (1.0 / 250.0){
+        return hawkkeygen(logn, Some(rng));
+    }
+    
     println!("f: {:?}, \n g: {:?}", f, g);
 }
 

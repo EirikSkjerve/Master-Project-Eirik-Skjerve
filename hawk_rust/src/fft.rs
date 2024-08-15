@@ -17,8 +17,6 @@ pub fn fft(f: &Vec<f64>) -> Vec<Complex<f64>> {
 
     let w = fft_constants::get_roots(n);
 
-    println!("w: {:?}", w);
-
     let mut f_e: Vec<f64> = Vec::new();
     let mut f_o: Vec<f64> = Vec::new();
 
@@ -93,17 +91,25 @@ pub fn ifft(f_fft: &Vec<Complex<f64>>) -> Vec<f64> {
     return f;
 }
 
-pub fn inverse_fft(p: Vec<f64>) -> Vec<f64> {
+pub fn inverse_fft(p: &Vec<i64>) -> Vec<f64> {
+
+    // convert to vector of floats/rationals
+    let mut p_f: Vec<f64> = vec![0.0; p.len()];
+    for i in 0..p.len(){ 
+        p_f[i] = p[i] as f64;
+    }
 
     let m = p.len()/2;
-    let mut p_fft = fft(&p);
+    let mut p_fft = fft(&p_f);
+    //println!("p_fft: {:?}", p_fft);
 
     for u in 0..m {
         p_fft[u].re = 1.0 / p_fft[u].re;
     }
+    //println!("p_fft: {:?}", p_fft);
     for u in 0..m {
         p_fft[u + m].re = 0.0;
     }
-
+    //println!("p_fft: {:?}", p_fft);
     return ifft(&p_fft); 
 }
