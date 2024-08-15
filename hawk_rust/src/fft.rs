@@ -1,6 +1,3 @@
-use std::f64::consts::PI;
-
-use libm::Libm;
 use num::Zero;
 use num_complex::Complex;
 use crate::fft_constants;
@@ -96,12 +93,17 @@ pub fn ifft(f_fft: &Vec<Complex<f64>>) -> Vec<f64> {
     return f;
 }
 
-// fft where input is i64: converts the polynomial into complex domain
-pub fn f_fft(f: &Vec<i64>) -> Vec<Complex<f64>> {
-    let mut f_f: Vec<f64> = Vec::new();
-    for i in 0..f.len() {
-        f_f.push(f[i] as f64);
+pub fn inverse_fft(p: Vec<f64>) -> Vec<f64> {
+
+    let m = p.len()/2;
+    let mut p_fft = fft(&p);
+
+    for u in 0..m {
+        p_fft[u].re = 1.0 / p_fft[u].re;
+    }
+    for u in 0..m {
+        p_fft[u + m].re = 0.0;
     }
 
-    return fft(&f_f);
+    return ifft(&p_fft); 
 }
