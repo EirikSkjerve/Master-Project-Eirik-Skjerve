@@ -5,7 +5,6 @@ use rngcontext::RngContext;
 use crate::utils::{adjoint, bin, int, is_invertible, mod_pow, poly_add, poly_mult_ntt};
 
 mod keygen;
-mod ntru_solve;
 mod ntt_fft;
 // mod params;
 mod fft;
@@ -14,6 +13,7 @@ mod rngcontext;
 mod sign;
 mod utils;
 mod verify;
+mod ntru_solve;
 /*
    Driver code for HAWK implementation.
 
@@ -27,7 +27,7 @@ mod verify;
 */
 fn main() {
     // initialize_params(8);
-    hawkkeygen(8, None);
+    // hawkkeygen(8, None);
 
     // let f: Vec<i64> = vec![1, 1, 0, 0, 0, 0, -1, 2, 0, 0, -1, 1, -2, 1, 0, 0, -2, 1, 1, 1, 0, -1, 0, 0, 0, 0, -1, 1, 1, -2, -1, 2, 1, 0, 0, 1, -1, 1, 1, 1, 0, 1, 1, -1, 0, -1, 1, 0, 2, 1, -1, -1, 0, -1, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, -1, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, -1, -1, -1, -1, -2, 0, 0, -2, 0, 1, 0, 0, 1, 1, -2, 0, -1, -1, 0, -1, 0, 1, 1, -1, 0, -1, 0, 0, -1, -1, -1, -1, 0, -1, 1, -2, 1, 1, 2, 1, 1, 0, -1, 0, -2, 0, 0, 0, -1, -2, 1, 0, -1, 1, -1, 0, 0, 0, 1, 1, 2, 1, 0, 1, 0, -1, -2, 0, 0, -1, -1, 1, 1, 1, 1, 0, 0, -1, 1, 1, 1, -1, 2, 1, -1, 0, 1, 1, -1, 1, 0, 0, -1, 0, -2, 1, 0, 1, 1, -1, -1, 0, 1, 0, -1, 0, 0, 0, -2, 0, 2, 0, 0, -2, -1, -2, -1, 1, -1, 1, 1, -1, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, -1, 1, 2, 0, -1, -1, -1, 1, -1, -1, 1, 0, -1, -1, 0, 0, 0, 0, 1, -1, 0, 2, 2, 1, -1, 1, 0, 1, 0, 0, -1, 0, 0, 1, 0, -2, -2, 1, 1, 0, -2, 0, 2, -1, 1, -1, 1];
     // let f: Vec<f64> = vec![1.0, 2.0, 3.0, 4.0];
@@ -39,6 +39,7 @@ fn main() {
 
     let p: Vec<i64> = vec![1,2,3,4];
     let inverse_f_fft = fft::inverse_fft(&p);
+    println!("{:?}", ntru_solve::xgcd(10024, 5243));
     // println!("inverse f_fft: {:?}", inverse_f_fft);
 }
 
