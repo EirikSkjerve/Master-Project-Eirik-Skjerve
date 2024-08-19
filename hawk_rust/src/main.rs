@@ -39,7 +39,6 @@ fn main() {
 
     let p: Vec<i64> = vec![1,2,3,4];
     let inverse_f_fft = fft::inverse_fft(&p);
-    println!("{:?}", ntru_solve::xgcd(10024, 5243));
     // println!("inverse f_fft: {:?}", inverse_f_fft);
 }
 
