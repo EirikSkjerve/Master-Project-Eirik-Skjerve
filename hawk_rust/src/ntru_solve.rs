@@ -1,3 +1,9 @@
+extern crate num_bigint;
+extern crate num_traits;
+
+use num_bigint::BigInt;
+use num_traits::{One, Zero};
+
 /*
 
 pub fn ntrusolve(f: &Vec<i64>, g: &Vec<i64>) -> (Vec<i64>, Vec<i64>, Vec<i64>, Vec<i64>){
@@ -58,11 +64,11 @@ pub fn xgcd(a_inp: i64, b_inp: i64) -> (i64, i64, i64){
 }
 
 // implementation of the karatsuba algorithm for fast integer/polynomial multiplication
-pub fn karatsuba(a: &Vec<i64>, b: &Vec<i64>, n: usize) -> Vec<i64> {
+pub fn karatsuba(a: Vec<BigInt>, b: Vec<BigInt>, n: usize) -> Vec<BigInt> {
 
     // base case
     if n==1{
-        return vec![a[0]*b[0], 0];
+        return vec![&a[0]*&b[0], BigInt::ZERO];
     }
 
     let m = n/2;
@@ -71,67 +77,67 @@ pub fn karatsuba(a: &Vec<i64>, b: &Vec<i64>, n: usize) -> Vec<i64> {
     let b0 = b[0..m].to_vec();
     let b1 = b[m..n as usize].to_vec();
 
-    let mut ax = vec![0;m];
-    let mut bx = vec![0;m];
+    let mut ax = vec![BigInt::ZERO;m];
+    let mut bx = vec![BigInt::ZERO;m];
     for i in 0..m {
-        ax[i] = a0[i] + a1[i];
-        bx[i] = b0[i] + b1[i];
+        ax[i] = &a0[i] + &a1[i];
+        bx[i] = &b0[i] + &b1[i];
     }
 
-    let c0 = karatsuba(&a0, &b0, m);
-    let c1 = karatsuba(&a1, &b1, m);
+    let c0 = karatsuba(a0, b0, m);
+    let c1 = karatsuba(a1, b1, m);
 
-    let mut c2 = karatsuba(&ax, &bx, m);
+    let mut c2 = karatsuba(ax, bx, m);
 
 
     for i in 0..n{
-        c2[i] -= c0[i] + c1[i];
+        c2[i] -= &c0[i] + &c1[i];
     }
 
-    let mut c = vec![0; 2*n];
+    let mut c = vec![BigInt::ZERO; 2*n];
 
     for i in 0..n {
-        c[i] += c0[i];
-        c[i+n] += c1[i];
-        c[i+m] += c2[i];
+        c[i] += &c0[i];
+        c[i+n] += &c1[i];
+        c[i+m] += &c2[i];
     }
 
     return c;
 }
 
-pub fn karamul(a: &Vec<i64>, b: &Vec<i64>) -> Vec<i64> {
+pub fn karamul(a: Vec<BigInt>, b: Vec<BigInt>) -> Vec<BigInt> {
     let n = a.len();
-    let c = karatsuba(a, b, n);
-    let mut c_reduced = vec![0; n];
+    let c = karatsuba(a.to_vec(), b.to_vec(), n);
+    let mut c_reduced = vec![BigInt::ZERO; n];
 
     for i in 0..n {
-        c_reduced[i] = c[i] - c[i+n]
+        c_reduced[i] = &c[i] - &c[i+n]
     }
     return c_reduced;
 }
 
-pub fn field_norm(a: &Vec<i64>) -> Vec<i64> {
+pub fn field_norm(a: &Vec<BigInt>) -> Vec<BigInt> {
     /*
      * Projects an element from Q[x]/x^n +1 to Q[x]/x^(n/2) + 1
      */
     let m = a.len()/2;
 
     // split a into even and odd coefficients
-    let mut a_even: Vec<i64> = Vec::new();
-    let mut a_odd: Vec<i64> = Vec::new();
+    let mut a_even: Vec<BigInt> = Vec::new();
+    let mut a_odd: Vec<BigInt> = Vec::new();
 
     for i in 0..a.len() {
         if i%2 == 0{
-            a_even.push(a[i]);
+            a_even.push(a[i].clone());
         }
         if i%2 == 1 {
-            a_odd.push(a[i]);
+            a_odd.push(a[i].clone());
         }
     }
 
     // square polynomials
-    let a_even_squared = karamul(&a_even, &a_even);
-    let a_odd_squared = karamul(&a_odd, &a_odd);
+    let a_even_squared = karamul(a_even.clone(), a_even.clone());
+    let a_odd_squared = karamul(a_odd.clone(), a_odd.clone());
 
     let mut res = a_even_squared.clone();
     println!("{:?}", a_even_squared);
@@ -139,10 +145,10 @@ pub fn field_norm(a: &Vec<i64>) -> Vec<i64> {
 
     for i in 0..m-1 {
         //res[i+1] = a_even_squared[i+1] - a_odd_squared[i];
-        res[i+1] -= a_odd_squared[i];
+        res[i+1] -= &a_odd_squared[i];
     }
 
-    res[0] += a_odd_squared[m-1];
+    res[0] += &a_odd_squared[m-1];
     return res;
 }
 

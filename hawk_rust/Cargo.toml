@@ -13,6 +13,7 @@ prime_factorization = "1.0.4"
 num = "0.4"
 
 num-bigint = "0.4"
+num-traits = "0.2"
 
 # rustfft = "6.2.0"
 num-complex = "0.4.6"

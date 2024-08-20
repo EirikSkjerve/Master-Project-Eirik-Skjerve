@@ -1,4 +1,4 @@
-use crate::ntt_fft::{intt, ntt};
+use crate::ntt::{intt, ntt};
 use num::traits::{FromPrimitive, Num, PrimInt};
 
 pub fn bin(a: u128, x: usize) -> Vec<u8> {
