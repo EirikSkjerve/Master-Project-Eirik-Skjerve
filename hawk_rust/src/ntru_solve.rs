@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 /*
 
 pub fn ntrusolve(f: &Vec<i64>, g: &Vec<i64>) -> (Vec<i64>, Vec<i64>, Vec<i64>, Vec<i64>){
@@ -32,12 +25,14 @@ pub fn xgcd(a_inp: i64, b_inp: i64) -> (i64, i64, i64){
         return (res.0, res.2, res.1);
     }
 
+    // initialize variables
     let mut cof: [i64; 4] = [1, 0, 0, 1];
     let mut a = a_inp;
     let mut b = b_inp;
     let mut q = 0;
     let mut temp = 0;
 
+    // perform the algorithm
     while b != 0 {
 
         // rounded division
@@ -60,3 +55,59 @@ pub fn xgcd(a_inp: i64, b_inp: i64) -> (i64, i64, i64){
 
     return (a, cof[0], cof[2]);
 }
+
+// implementation of the karatsuba algorithm for fast integer/polynomial multiplication
+pub fn karatsuba(a: &Vec<i64>, b: &Vec<i64>, n: usize) -> Vec<i64> {
+
+    // base case
+    if n==1{
+        return vec![a[0]*b[0], 0];
+    }
+
+    let m = n/2;
+    let a0 = a[0..m].to_vec();
+    let a1 = a[m..n as usize].to_vec();
+    let b0 = b[0..m].to_vec();
+    let b1 = b[m..n as usize].to_vec();
+
+    let mut ax = vec![0;m];
+    let mut bx = vec![0;m];
+    for i in 0..m {
+        ax[i] = a0[i] + a1[i];
+        bx[i] = b0[i] + b1[i];
+    }
+
+    let c0 = karatsuba(&a0, &b0, m);
+    let c1 = karatsuba(&a1, &b1, m);
+
+    let mut c2 = karatsuba(&ax, &bx, m);
+
+
+    for i in 0..n{
+        c2[i] -= c0[i] + c1[i];
+    }
+
+    let mut c = vec![0; 2*n];
+
+    for i in 0..n {
+        c[i] += c0[i];
+        c[i+n] += c1[i];
+        c[i+m] += c2[i];
+    }
+
+    return c;
+}
+
+pub fn karamul(a: &Vec<i64>, b: &Vec<i64>) -> Vec<i64> {
+    let n = a.len();
+    let c = karatsuba(a, b, n);
+    let mut c_reduced = vec![0; n];
+
+    for i in 0..n {
+        c_reduced[i] = c[i] - c[i+n]
+    }
+    return c_reduced;
+}
+
+
+
