@@ -32,7 +32,9 @@ fn main() {
     let a = vec![13,4,2,99];
     let b = vec![8,7, 6, 66];
     let c = ntru_solve::karamul(&a, &b);
+    let field_norm_a = ntru_solve::field_norm(&a);
     println!("{:?} * {:?} mod 2^{} = {:?}", a, b, a.len(), c);
+    println!("field norm of {:?} = {:?}", a, field_norm_a);
 }
 
 fn print_type_of<T>(_: &T) {

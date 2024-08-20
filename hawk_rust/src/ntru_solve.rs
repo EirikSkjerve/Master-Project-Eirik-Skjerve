@@ -12,6 +12,7 @@ pub fn reduce(f: &Vec<i64>, g: &Vec<i64>, G: &Vec<i64>, G: &Vec<i64>) -> (Vec<i6
 }
 */
 use crate::utils::modulo;
+
 pub fn xgcd(a_inp: i64, b_inp: i64) -> (i64, i64, i64){
     /*
      * Implements extended euclidean algorithm to find Bezout's coefficients
@@ -109,5 +110,39 @@ pub fn karamul(a: &Vec<i64>, b: &Vec<i64>) -> Vec<i64> {
     return c_reduced;
 }
 
+pub fn field_norm(a: &Vec<i64>) -> Vec<i64> {
+    /*
+     * Projects an element from Q[x]/x^n +1 to Q[x]/x^(n/2) + 1
+     */
+    let m = a.len()/2;
 
+    // split a into even and odd coefficients
+    let mut a_even: Vec<i64> = Vec::new();
+    let mut a_odd: Vec<i64> = Vec::new();
+
+    for i in 0..a.len() {
+        if i%2 == 0{
+            a_even.push(a[i]);
+        }
+        if i%2 == 1 {
+            a_odd.push(a[i]);
+        }
+    }
+
+    // square polynomials
+    let a_even_squared = karamul(&a_even, &a_even);
+    let a_odd_squared = karamul(&a_odd, &a_odd);
+
+    let mut res = a_even_squared.clone();
+    println!("{:?}", a_even_squared);
+
+
+    for i in 0..m-1 {
+        //res[i+1] = a_even_squared[i+1] - a_odd_squared[i];
+        res[i+1] -= a_odd_squared[i];
+    }
+
+    res[0] += a_odd_squared[m-1];
+    return res;
+}
 
