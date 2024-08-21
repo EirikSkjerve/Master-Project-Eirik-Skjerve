@@ -3,7 +3,10 @@ extern crate num_traits;
 
 use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
 use num_traits::{One, Zero, ToPrimitive, Signed};
-use crate::utils::modulo;
+
+use crate::utils::bigint_vec;
+use crate::fft::{fft, add_fft, mul_fft, div_fft, sub_fft, adj_fft, ifft};
+use num_complex::Complex;
 
 
 // this file contains code for the NTRU-solve algorithm, and its helper-functions
@@ -157,7 +160,6 @@ pub fn lift(a: Vec<BigInt>) -> Vec<BigInt> {
 
 pub fn galois_conjugate(a: Vec<BigInt>) -> Vec<BigInt> {
     let n = a.len();
-    // let res: Vec<BigInt> = vec![BigInt::ZERO; 2*n];
     let neg_one = -1.to_bigint().unwrap();
     let res: Vec<BigInt> = (0..n).map(|i| neg_one.pow(i as u32) * &a[i]).collect();
     return res;
@@ -186,11 +188,12 @@ pub fn ntrusolve(f: Vec<BigInt>, g: Vec<BigInt>) -> (Vec<BigInt>, Vec<BigInt>){
 
     let (Fp, Gp) = ntrusolve(fp, gp);
 
-    let mut F = karamul(lift(Fp), galois_conjugate(g));
-    let mut G = karamul(lift(Gp), galois_conjugate(f));
+    let mut F = karamul(lift(Fp), galois_conjugate(g.clone()));
+    let mut G = karamul(lift(Gp), galois_conjugate(f.clone()));
     
-    // let (F, G) = reduce(f, g, F, G);
-
+    // println!("before: F: {:?}, G:{:?} \n", F, G);
+    let (F, G) = reduce(f, g, F, G);
+    // println!("\nafter: F: {:?}, G:{:?}", F, G);
     return (F, G);
 }
 
@@ -214,6 +217,54 @@ pub fn bitsize(a: BigInt) -> u32 {
     }
 }
 
+pub fn bigint_to_f64_vec(a: Vec<BigInt>) -> Vec<f64> {
+
+        let n = a.len();
+        let mut res: Vec<f64> = Vec::with_capacity(n);
+
+        for i in 0..n {
+            if let Some(res_i) = &a[i].to_f64() {
+                res.push(*res_i);           
+            } else {
+                println!("Could not convert to float");
+            }
+        }
+
+        return res;
+}
+
+pub fn adjust_fft(f: Vec<BigInt>, g: Vec<BigInt>, size: u32) -> (Vec<Complex<f64>>, Vec<Complex<f64>>){
+
+    let n = f.len();
+    // set the minimum threshold bitsize to 
+    let mut f_adjust: Vec<BigInt> = Vec::new();
+    let mut g_adjust: Vec<BigInt> = Vec::new();
+
+    for i in 0..n {
+        f_adjust.push(&f[i] >> (size-53));
+        g_adjust.push(&g[i] >> (size-53));
+    }
+    // at this point, f_adjust and g_adjust should be small enough to cast into floats
+    let fa_fft = fft(&bigint_to_f64_vec(f_adjust));
+    let ga_fft = fft(&bigint_to_f64_vec(g_adjust));
+
+    return (fa_fft, ga_fft);
+
+}
+
+pub fn calculate_size(f: Vec<BigInt>, g: Vec<BigInt>) -> u32 {
+
+    let f_min = f.iter().min().unwrap().clone();
+    let f_max = f.iter().max().unwrap().clone();
+    let g_min = g.iter().min().unwrap().clone();
+    let g_max = g.iter().max().unwrap().clone();
+
+    let size = [53, bitsize(f_min), bitsize(f_max), bitsize(g_min), bitsize(g_max)].iter().max().unwrap().clone();
+
+    return size;
+
+}
+
 pub fn reduce(f: Vec<BigInt>, g: Vec<BigInt>, F: Vec<BigInt>, G: Vec<BigInt>) -> (Vec<BigInt>, Vec<BigInt>){
 
     // Pornin, Prest 2019's method, also used in HAWK's implementation, is the following:
@@ -224,14 +275,42 @@ pub fn reduce(f: Vec<BigInt>, g: Vec<BigInt>, F: Vec<BigInt>, G: Vec<BigInt>) ->
     // After this, we compute F -= kf, G -= kg, both as Vec<BigInt>, and return the result.
     // return (f, g, F, G);
     
-    let n = f.len();
-    // set the minimum threshold bitsize to 
-    let f_min = f.iter().min().unwrap().clone();
-    let f_max = f.iter().max().unwrap().clone();
-    let g_min = g.iter().min().unwrap().clone();
-    let g_max = g.iter().max().unwrap().clone();
+    let mut F_mut = F.clone();
+    let mut G_mut = G.clone();
 
-    let size = [53, bitsize(f_min), bitsize(f_max), bitsize(g_min), bitsize(g_max)].iter().max().unwrap();
-    
+    let size = calculate_size(f.clone(), g.clone());
+    let (fa_fft, ga_fft) = adjust_fft(f.clone(), g.clone(), size);
+
+    loop{
+        // println!("F_mut: {:?}, G_mut: {:?}", F_mut, G_mut);
+        let size_inner = calculate_size(F_mut.clone(), G_mut.clone());
+        // println!("size inner: {}, size outer: {}",size_inner, size);
+        if size_inner < size{
+            break;
+        }
+
+        let (Fa_fft, Ga_fft) = adjust_fft(F_mut.clone(), G_mut.clone(), size);
+
+        // calculate ff* + gg*
+        let den_fft = add_fft(&mul_fft(&fa_fft, &adj_fft(&fa_fft)), &mul_fft(&ga_fft, &adj_fft(&ga_fft)));
+        // calculate Ff* + Gg*
+        let num_fft = add_fft(&mul_fft(&Fa_fft, &adj_fft(&fa_fft)), &mul_fft(&Ga_fft, &adj_fft(&ga_fft)));
+
+        let k_f = ifft(&div_fft(&num_fft, &den_fft));
+        let k: Vec<BigInt> = bigint_vec((0..k_f.len()).map(|x| k_f[x].abs() as i64).collect());
+        if k[0] == BigInt::ZERO{
+            break;
+        }
+        // println!("k: {:?}", k);
+
+        let fk = karamul(f.clone(), k.clone());
+        let gk = karamul(g.clone(), k.clone());
+
+        for i in 0..f.len() {
+            F_mut[i] -= &fk[i] << (size_inner - size);
+            G_mut[i] -= &gk[i] << (size_inner - size);
+        }
+
+    }
     return (F, G);
 }
