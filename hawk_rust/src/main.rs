@@ -33,10 +33,10 @@ fn main() {
 
     let a: Vec<BigInt> = bigint_vec(vec![13,4,2,99]);
     let b: Vec<BigInt> = bigint_vec(vec![8,7, 6, 66]);
-    // let c = ntru_solve::karamul(a, b);
-    let field_norm_a = ntru_solve::field_norm(&a);
-    // println!("{:?} * {:?} mod 2^{} = {:?}", a, b, a.len(), c);
-    println!("field norm of {:?} = {:?}", a, field_norm_a);
+    let x = 194238.to_bigint().unwrap();
+    let y = 13371337.to_bigint().unwrap();
+    let z = ntru_solve::xgcd(x.clone(), y.clone());
+    println!("gcd({:?}, {:?}) = {:?}",x,y,z);
 }
 
 fn print_type_of<T>(_: &T) {
