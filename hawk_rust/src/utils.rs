@@ -1,6 +1,11 @@
 use crate::ntt::{intt, ntt};
 use num::traits::{FromPrimitive, Num, PrimInt};
 
+use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
+use num_traits::{One, Zero, ToPrimitive, Signed};
+
+
+
 pub fn bin(a: u128, x: usize) -> Vec<u8> {
     /*
     Converts an integer to binary representation in a vector of arbitrary size
@@ -56,6 +61,18 @@ where
 
     return T::from_i64(result).unwrap();
 }
+
+
+pub fn bigint_vec(v: Vec<i64>) -> Vec<BigInt> {
+    let mut v_big: Vec<BigInt> = Vec::new();
+    for i in v.iter() {
+        v_big.push(i.to_bigint().unwrap());
+    }
+
+    return v_big;
+}
+
+// TODO implement a Vec<BigInt> -> Vec<u32>
 
 // implements fast binary exponentiation for computing base^exp mod modulus
 // inputs base, exponent and modulus as generic, and returns a u128

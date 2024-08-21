@@ -1,10 +1,14 @@
 extern crate num_bigint;
 extern crate num_traits;
 
-use num_bigint::{BigInt, ToBigInt};
-use num_traits::{One, Zero};
+use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
+use num_traits::{One, Zero, ToPrimitive, Signed};
 use crate::utils::modulo;
 
+
+// this file contains code for the NTRU-solve algorithm, and its helper-functions
+// Because the size of intermediate values in NTRU-solve grows very big, I use the BigInt crate
+// for all calculations.
 
 pub fn xgcd(a_inp: BigInt, b_inp: BigInt) -> (BigInt, BigInt, BigInt){
     /*
@@ -156,42 +160,78 @@ pub fn galois_conjugate(a: Vec<BigInt>) -> Vec<BigInt> {
     // let res: Vec<BigInt> = vec![BigInt::ZERO; 2*n];
     let neg_one = -1.to_bigint().unwrap();
     let res: Vec<BigInt> = (0..n).map(|i| neg_one.pow(i as u32) * &a[i]).collect();
-    return a;
+    return res;
 }
 
-/*
 pub fn ntrusolve(f: Vec<BigInt>, g: Vec<BigInt>) -> (Vec<BigInt>, Vec<BigInt>){
 
     let n = f.len();
 
     if n == 1 {
-        let (d, u, v) = xgcd(f[0], g[0]);
+        let (d, u, v) = xgcd(f[0].clone(), g[0].clone());
 
-        if d != 1{
+        if d != BigInt::one(){
             println!("gcd({}, {}) = {}, aborting",f[0], g[0], d);
             // this should throw an error or return false
-            return (vec![0], vec![0]);
+            return (vec![BigInt::ZERO], vec![BigInt::ZERO]);
         }
         else {
+            // in theory, this return -q*v, q*u, but in HAWK, q=1
             return (vec![-v], vec![u]);
         }
     }
 
-    let fp = field_norm(f);
-    let gp = field_norm(g);
+    let fp = field_norm(f.clone());
+    let gp = field_norm(g.clone());
 
     let (Fp, Gp) = ntrusolve(fp, gp);
 
     let mut F = karamul(lift(Fp), galois_conjugate(g));
     let mut G = karamul(lift(Gp), galois_conjugate(f));
     
-    let (F, G) = reduce(f, g, F, G);
+    // let (F, G) = reduce(f, g, F, G);
 
-    // return (f, g, f, g);
+    return (F, G);
 }
 
-pub fn reduce(f: &Vec<i64>, g: &Vec<i64>, G: &Vec<i64>, G: &Vec<i64>) -> (Vec<i64>, Vec<i64>, Vec<i64>, Vec<i64>){
+pub fn bitsize(a: BigInt) -> u32 {
+    // clone a mutable copy of the absolute value of input value
+    let mut val = a.abs().clone();
+   
+    // create mutable temporary variable
+    let mut res: u32 = 0;
+    // count bits in intervals of 8
+    while val > BigInt::ZERO{
+        res += 8;
+        val >>= 8;
+    }
+    // try and convert the temporary value into an u32
+    if let Some(res_u32) = res.to_u32() {
+        return res_u32;
+    } else {
+        println!("res_u32 variable is too big");
+        return 0;
+    }
+}
 
+pub fn reduce(f: Vec<BigInt>, g: Vec<BigInt>, F: Vec<BigInt>, G: Vec<BigInt>) -> (Vec<BigInt>, Vec<BigInt>){
+
+    // Pornin, Prest 2019's method, also used in HAWK's implementation, is the following:
+    // since input is vectors of BigInt type, they are not floats. To perform fft-calculations on
+    // them, we need to extract the high bits of f, g, F, and G, convert the vectors of the 
+    // high bits to Vec<f32> or Vec<f64>, compute a scaling factor k that
+    // fits in in i32 type (accounts for sign) using fft.
+    // After this, we compute F -= kf, G -= kg, both as Vec<BigInt>, and return the result.
     // return (f, g, F, G);
+    
+    let n = f.len();
+    // set the minimum threshold bitsize to 
+    let f_min = f.iter().min().unwrap().clone();
+    let f_max = f.iter().max().unwrap().clone();
+    let g_min = g.iter().min().unwrap().clone();
+    let g_max = g.iter().max().unwrap().clone();
+
+    let size = [53, bitsize(f_min), bitsize(f_max), bitsize(g_min), bitsize(g_max)].iter().max().unwrap();
+    
+    return (F, G);
 }
-*/

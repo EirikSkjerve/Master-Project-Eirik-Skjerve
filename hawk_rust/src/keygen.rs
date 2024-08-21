@@ -1,6 +1,11 @@
+use crate::ntru_solve::ntrusolve;
 use crate::rngcontext::{shake256x4, RngContext};
 use crate::utils::{adjoint, is_invertible, l2norm, poly_add, poly_mult_ntt};
 use crate::fft;
+use crate::utils::bigint_vec;
+
+use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
+use num_traits::{One, Zero, ToPrimitive, Signed};
 
 pub fn hawkkeygen(logn: u8, rng: Option<RngContext>) {
     // checks if rng-context is initialized or not. If not, initialize a new one and recursively call hawkkeygen
@@ -68,7 +73,12 @@ pub fn hawkkeygen(logn: u8, rng: Option<RngContext>) {
         return hawkkeygen(logn, Some(rng));
     }
     
+
     println!("f: {:?}, \n g: {:?}", f, g);
+
+    // generate F and G
+    let (F, G) = ntrusolve(bigint_vec(f), bigint_vec(g));
+
 }
 
 // generates polynomials f and g

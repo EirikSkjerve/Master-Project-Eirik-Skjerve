@@ -29,25 +29,20 @@ mod ntru_solve;
 */
 fn main() {
     // initialize_params(8);
-    // hawkkeygen(8, None);
+    hawkkeygen(8, None);
 
-    let a: Vec<BigInt> = bigint_vec(vec![13,4,2,99]);
-    let b: Vec<BigInt> = bigint_vec(vec![8,7, 6, 66]);
-    let x = 194238.to_bigint().unwrap();
-    let y = 13371337.to_bigint().unwrap();
-    let z = ntru_solve::xgcd(x.clone(), y.clone());
-    println!("gcd({:?}, {:?}) = {:?}",x,y,z);
+    // test
+    // let a: Vec<BigInt> = bigint_vec(vec![13,4,2,99]);
+    // let b: Vec<BigInt> = bigint_vec(vec![8,7, 6, 66]);
+    // println!("{:?}", ntru_solve::galois_conjugate(a));
+    // let x = (194238123456789098676512312598 as u128).to_bigint().unwrap();
+    // let y = (133713371238909804523897987423987 as u128).to_bigint().unwrap();
+    // let z = ntru_solve::xgcd(x.clone(), y.clone());
+    // println!("gcd({:?}, {:?}) = {:?}",x,y,z);
+    //
 }
 
 fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>())
 }
 
-fn bigint_vec(v: Vec<i64>) -> Vec<BigInt> {
-    let mut v_big: Vec<BigInt> = Vec::new();
-    for i in v.iter() {
-        v_big.push(i.to_bigint().unwrap());
-    }
-
-    return v_big;
-}
