@@ -2,7 +2,7 @@ use crate::fft;
 use crate::ntru_solve::ntrusolve;
 use crate::rngcontext::{shake256x4, RngContext};
 use crate::utils::bigint_vec;
-use crate::utils::{adjoint, is_invertible, l2norm, poly_add, poly_mult_ntt};
+use crate::utils::{adjoint, bigint_to_i64_vec, is_invertible, l2norm, poly_add, poly_mult_ntt};
 
 use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
 use num_traits::{One, Signed, ToPrimitive, Zero};
@@ -95,10 +95,10 @@ pub fn hawkkeygen(logn: u8, rng: Option<RngContext>) {
         return hawkkeygen(logn, Some(rng));
     }
 
-    // println!("f: {:?}, \n g: {:?}", f, g);
-
     // generate F and G
     let (F, G) = ntrusolve(bigint_vec(f.clone()), bigint_vec(g.clone()));
+
+    let (F, G) = (bigint_to_i64_vec(F), bigint_to_i64_vec(G));
 
     println!("f: {:?}, \nf: {:?}", f, g);
     println!("F: {:?}, \nG: {:?}", F, G);

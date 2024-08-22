@@ -4,8 +4,8 @@ extern crate num_traits;
 use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
 use num_traits::{One, Signed, ToPrimitive, Zero};
 
-use crate::fft::{add_fft, adj_fft, div_fft, fft, ifft, mul_fft, sub_fft};
-use crate::utils::bigint_vec;
+use crate::fft::{add_fft, adj_fft, div_fft, fft, ifft, mul_fft};
+use crate::utils::{bigint_to_f64_vec, bigint_to_i64_vec, bigint_vec};
 use num_complex::Complex;
 
 // this file contains code for the NTRU-solve algorithm, and its helper-functions
@@ -62,12 +62,14 @@ pub fn karatsuba(a: Vec<BigInt>, b: Vec<BigInt>, n: usize) -> Vec<BigInt> {
         return vec![&a[0] * &b[0], BigInt::ZERO];
     }
 
+    // split polynomials
     let m = n / 2;
     let a0 = a[0..m].to_vec();
     let a1 = a[m..n as usize].to_vec();
     let b0 = b[0..m].to_vec();
     let b1 = b[m..n as usize].to_vec();
 
+    // calculate new factors
     let mut ax = vec![BigInt::ZERO; m];
     let mut bx = vec![BigInt::ZERO; m];
     for i in 0..m {
@@ -75,6 +77,7 @@ pub fn karatsuba(a: Vec<BigInt>, b: Vec<BigInt>, n: usize) -> Vec<BigInt> {
         bx[i] = &b0[i] + &b1[i];
     }
 
+    // recursive steps
     let c0 = karatsuba(a0, b0, m);
     let c1 = karatsuba(a1, b1, m);
 
@@ -86,6 +89,7 @@ pub fn karatsuba(a: Vec<BigInt>, b: Vec<BigInt>, n: usize) -> Vec<BigInt> {
 
     let mut c = vec![BigInt::ZERO; 2 * n];
 
+    // join terms
     for i in 0..n {
         c[i] += &c0[i];
         c[i + n] += &c1[i];
@@ -185,9 +189,8 @@ pub fn ntrusolve(f: Vec<BigInt>, g: Vec<BigInt>) -> (Vec<BigInt>, Vec<BigInt>) {
     let mut F = karamul(lift(Fp), galois_conjugate(g.clone()));
     let mut G = karamul(lift(Gp), galois_conjugate(f.clone()));
 
-    // println!("before: F: {:?}, G:{:?} \n", F, G);
     let (F, G) = reduce(f, g, F, G);
-    // println!("\nafter: F: {:?}, G:{:?}", F, G);
+
     return (F, G);
 }
 
@@ -209,21 +212,6 @@ pub fn bitsize(a: BigInt) -> u32 {
         println!("res_u32 variable is too big");
         return 0;
     }
-}
-
-pub fn bigint_to_f64_vec(a: Vec<BigInt>) -> Vec<f64> {
-    let n = a.len();
-    let mut res: Vec<f64> = Vec::with_capacity(n);
-
-    for i in 0..n {
-        if let Some(res_i) = &a[i].to_f64() {
-            res.push(*res_i);
-        } else {
-            println!("Could not convert to float");
-        }
-    }
-
-    return res;
 }
 
 pub fn adjust_fft(
@@ -288,8 +276,6 @@ pub fn reduce(
     let size = calculate_size(f.clone(), g.clone());
     let (fa_fft, ga_fft) = adjust_fft(f.clone(), g.clone(), size);
 
-    // correct up to here
-
     loop {
         let size_inner = calculate_size(F_mut.clone(), G_mut.clone());
         if size_inner < size {
@@ -303,6 +289,7 @@ pub fn reduce(
             &mul_fft(&fa_fft, &adj_fft(&fa_fft)),
             &mul_fft(&ga_fft, &adj_fft(&ga_fft)),
         );
+
         // calculate Ff* + Gg*
         let num_fft = add_fft(
             &mul_fft(&Fa_fft, &adj_fft(&fa_fft)),

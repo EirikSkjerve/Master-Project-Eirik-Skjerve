@@ -70,7 +70,35 @@ pub fn bigint_vec(v: Vec<i64>) -> Vec<BigInt> {
 }
 
 // TODO implement a Vec<BigInt> -> Vec<u32>
+pub fn bigint_to_f64_vec(a: Vec<BigInt>) -> Vec<f64> {
+    let n = a.len();
+    let mut res: Vec<f64> = Vec::with_capacity(n);
 
+    for i in 0..n {
+        if let Some(res_i) = &a[i].to_f64() {
+            res.push(*res_i);
+        } else {
+            println!("Could not convert to float");
+        }
+    }
+
+    return res;
+}
+
+pub fn bigint_to_i64_vec(a: Vec<BigInt>) -> Vec<i64> {
+    let n = a.len();
+    let mut res: Vec<i64> = Vec::with_capacity(n);
+
+    for i in 0..n {
+        if let Some(res_i) = &a[i].to_i64() {
+            res.push(*res_i);
+        } else {
+            println!("Could not convert to float");
+        }
+    }
+
+    return res;
+}
 // implements fast binary exponentiation for computing base^exp mod modulus
 // inputs base, exponent and modulus as generic, and returns a u128
 pub fn mod_pow<T: PrimInt>(base: T, exp: T, modulus: T) -> T
