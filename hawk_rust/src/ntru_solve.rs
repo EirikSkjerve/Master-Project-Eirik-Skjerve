@@ -237,8 +237,8 @@ pub fn adjust_fft(f: Vec<BigInt>, g: Vec<BigInt>, size: u32) -> (Vec<Complex<f64
 
     let n = f.len();
     // set the minimum threshold bitsize to 
-    let mut f_adjust: Vec<BigInt> = Vec::new();
-    let mut g_adjust: Vec<BigInt> = Vec::new();
+    let mut f_adjust: Vec<BigInt> = Vec::with_capacity(n);
+    let mut g_adjust: Vec<BigInt> = Vec::with_capacity(n);
 
     for i in 0..n {
         f_adjust.push(&f[i] >> (size-53));
@@ -281,24 +281,34 @@ pub fn reduce(f: Vec<BigInt>, g: Vec<BigInt>, F: Vec<BigInt>, G: Vec<BigInt>) ->
     let size = calculate_size(f.clone(), g.clone());
     let (fa_fft, ga_fft) = adjust_fft(f.clone(), g.clone(), size);
 
+    // correct up to here
+
     loop{
-        // println!("F_mut: {:?}, G_mut: {:?}", F_mut, G_mut);
         let size_inner = calculate_size(F_mut.clone(), G_mut.clone());
-        // println!("size inner: {}, size outer: {}",size_inner, size);
         if size_inner < size{
             break;
         }
 
-        let (Fa_fft, Ga_fft) = adjust_fft(F_mut.clone(), G_mut.clone(), size);
+        let (Fa_fft, Ga_fft) = adjust_fft(F_mut.clone(), G_mut.clone(), size_inner);
+        // println!("Fa_fft: {:?} \nGa_fft: {:?} \n", Fa_fft, Ga_fft);
 
         // calculate ff* + gg*
         let den_fft = add_fft(&mul_fft(&fa_fft, &adj_fft(&fa_fft)), &mul_fft(&ga_fft, &adj_fft(&ga_fft)));
         // calculate Ff* + Gg*
         let num_fft = add_fft(&mul_fft(&Fa_fft, &adj_fft(&fa_fft)), &mul_fft(&Ga_fft, &adj_fft(&ga_fft)));
+        // println!("den_fft: {:?}, \nnum_fft: {:?}\n", den_fft, num_fft);
 
         let k_f = ifft(&div_fft(&num_fft, &den_fft));
+        // println!("k: {:?}",k_f);
         let k: Vec<BigInt> = bigint_vec((0..k_f.len()).map(|x| k_f[x].abs() as i64).collect());
-        if k[0] == BigInt::ZERO{
+        let mut zero_flag = true;
+        for i in 0..k.len() {
+            if k[i] != BigInt::ZERO{
+                zero_flag = false;
+            }
+        }
+        if zero_flag{
+            println!("Breaking");
             break;
         }
         // println!("k: {:?}", k);

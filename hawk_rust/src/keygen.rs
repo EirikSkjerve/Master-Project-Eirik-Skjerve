@@ -81,8 +81,8 @@ pub fn hawkkeygen(logn: u8, rng: Option<RngContext>) {
     // generate F and G
     let (F, G) = ntrusolve(bigint_vec(f.clone()), bigint_vec(g.clone()));
 
-    println!("f: {:?}, \nf: {:?}",f,g);
-    println!("F: {:?}, \nG: {:?}",F,G);
+    // println!("f: {:?}, \nf: {:?}",f,g);
+    // println!("F: {:?}, \nG: {:?}",F,G);
 
 }
 
