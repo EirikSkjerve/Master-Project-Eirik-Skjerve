@@ -4,18 +4,18 @@ use rngcontext::RngContext;
 
 use crate::utils::{adjoint, bin, int, is_invertible, mod_pow, poly_add, poly_mult_ntt};
 use num_bigint::{BigInt, ToBigInt};
-use num_traits::{Zero, One};
+use num_traits::{One, Zero};
 
 mod keygen;
 mod ntt;
 // mod params;
 mod fft;
 mod fft_constants;
+mod ntru_solve;
 mod rngcontext;
 mod sign;
 mod utils;
 mod verify;
-mod ntru_solve;
 /*
    Driver code for HAWK implementation.
 
@@ -45,4 +45,3 @@ fn main() {
 fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>())
 }
-

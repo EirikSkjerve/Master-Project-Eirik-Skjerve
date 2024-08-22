@@ -2,9 +2,7 @@ use crate::ntt::{intt, ntt};
 use num::traits::{FromPrimitive, Num, PrimInt};
 
 use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
-use num_traits::{One, Zero, ToPrimitive, Signed};
-
-
+use num_traits::{One, Signed, ToPrimitive, Zero};
 
 pub fn bin(a: u128, x: usize) -> Vec<u8> {
     /*
@@ -61,7 +59,6 @@ where
 
     return T::from_i64(result).unwrap();
 }
-
 
 pub fn bigint_vec(v: Vec<i64>) -> Vec<BigInt> {
     let mut v_big: Vec<BigInt> = Vec::new();
