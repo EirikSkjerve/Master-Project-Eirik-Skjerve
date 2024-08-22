@@ -284,6 +284,7 @@ pub fn reduce(f: Vec<BigInt>, g: Vec<BigInt>, F: Vec<BigInt>, G: Vec<BigInt>) ->
     // correct up to here
 
     loop{
+
         let size_inner = calculate_size(F_mut.clone(), G_mut.clone());
         if size_inner < size{
             break;
@@ -298,9 +299,9 @@ pub fn reduce(f: Vec<BigInt>, g: Vec<BigInt>, F: Vec<BigInt>, G: Vec<BigInt>) ->
         let num_fft = add_fft(&mul_fft(&Fa_fft, &adj_fft(&fa_fft)), &mul_fft(&Ga_fft, &adj_fft(&ga_fft)));
         // println!("den_fft: {:?}, \nnum_fft: {:?}\n", den_fft, num_fft);
 
+
         let k_f = ifft(&div_fft(&num_fft, &den_fft));
-        // println!("k: {:?}",k_f);
-        let k: Vec<BigInt> = bigint_vec((0..k_f.len()).map(|x| k_f[x].abs() as i64).collect());
+        let k: Vec<BigInt> = bigint_vec((0..k_f.len()).map(|x| k_f[x].round() as i64).collect());
         let mut zero_flag = true;
         for i in 0..k.len() {
             if k[i] != BigInt::ZERO{
@@ -311,16 +312,22 @@ pub fn reduce(f: Vec<BigInt>, g: Vec<BigInt>, F: Vec<BigInt>, G: Vec<BigInt>) ->
             println!("Breaking");
             break;
         }
+        // println!("k: {:?}",k_f);
         // println!("k: {:?}", k);
 
         let fk = karamul(f.clone(), k.clone());
         let gk = karamul(g.clone(), k.clone());
 
+        // println!("fk: {:?} \ngk: {:?}", fk, gk);
+
+        
         for i in 0..f.len() {
-            F_mut[i] -= &fk[i] << (size_inner - size);
-            G_mut[i] -= &gk[i] << (size_inner - size);
+            F_mut[i] -= fk[i].clone() << (size_inner - size);
+            G_mut[i] -= gk[i].clone() << (size_inner - size);
         }
 
+        println!("size: {:?}, \nsize_inner: {:?}", size, size_inner);
+        println!("F: {:?} \nG: {:?}", F_mut, G_mut);
     }
-    return (F, G);
+    return (F_mut, G_mut);
 }
