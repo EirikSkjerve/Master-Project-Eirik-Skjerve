@@ -69,7 +69,6 @@ pub fn bigint_vec(v: Vec<i64>) -> Vec<BigInt> {
     return v_big;
 }
 
-// TODO implement a Vec<BigInt> -> Vec<u32>
 pub fn bigint_to_f64_vec(a: Vec<BigInt>) -> Vec<f64> {
     let n = a.len();
     let mut res: Vec<f64> = Vec::with_capacity(n);
@@ -101,6 +100,7 @@ pub fn bigint_to_i64_vec(a: Vec<BigInt>) -> Vec<i64> {
 }
 // implements fast binary exponentiation for computing base^exp mod modulus
 // inputs base, exponent and modulus as generic, and returns a u128
+// note that this is an already implemented method for BigInt, which is probably better to use
 pub fn mod_pow<T: PrimInt>(base: T, exp: T, modulus: T) -> T
 where
     T: Num + FromPrimitive,

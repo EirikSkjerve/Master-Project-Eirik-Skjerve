@@ -51,6 +51,11 @@ pub fn fft(f: &Vec<f64>) -> Vec<Complex<f64>> {
     return y;
 }
 
+pub fn fft_i64(f: &Vec<i64>) -> Vec<Complex<f64>> {
+    let f_f: Vec<f64> = f.iter().map(|&x| x as f64).collect();
+    return fft(&f_f);
+}
+
 pub fn ifft(f_fft: &Vec<Complex<f64>>) -> Vec<f64> {
     let n = f_fft.len();
 
@@ -88,6 +93,12 @@ pub fn ifft(f_fft: &Vec<Complex<f64>>) -> Vec<f64> {
     return f;
 }
 
+pub fn ifft_i64(f_f_fft: &Vec<Complex<f64>>) -> Vec<i64> {
+    let f_f = ifft(f_f_fft);
+    let f: Vec<i64> = f_f.iter().map(|&x| x.round() as i64).collect();
+    return f;
+}
+
 pub fn inverse_fft(p: &Vec<i64>) -> Vec<f64> {
     // convert to vector of floats/rationals
     let mut p_f: Vec<f64> = vec![0.0; p.len()];
@@ -120,6 +131,11 @@ pub fn mul_fft(f: &Vec<Complex<f64>>, g: &Vec<Complex<f64>>) -> Vec<Complex<f64>
     }
 
     return res;
+}
+
+pub fn mul_fft_i64(f: &Vec<i64>, g: &Vec<i64>) -> Vec<i64> {
+    let (f_fft, g_fft) = (fft_i64(f), fft_i64(g));
+    return ifft_i64(&mul_fft(&f_fft, &g_fft));
 }
 
 pub fn div_fft(f: &Vec<Complex<f64>>, g: &Vec<Complex<f64>>) -> Vec<Complex<f64>> {

@@ -1,8 +1,7 @@
-use crate::fft;
+use crate::fft::{mul_fft_i64, inverse_fft};
 use crate::ntru_solve::ntrusolve;
 use crate::rngcontext::{shake256x4, RngContext};
-use crate::utils::bigint_vec;
-use crate::utils::{adjoint, bigint_to_i64_vec, is_invertible, l2norm, poly_add, poly_mult_ntt};
+use crate::utils::{adjoint,bigint_vec, bigint_to_i64_vec, is_invertible, l2norm, poly_add, poly_mult_ntt};
 
 use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
 use num_traits::{One, Signed, ToPrimitive, Zero};
@@ -88,7 +87,7 @@ pub fn hawkkeygen(logn: u8, rng: Option<RngContext>) {
         return hawkkeygen(logn, Some(rng));
     }
 
-    let invq00 = fft::inverse_fft(&q00);
+    let invq00 = inverse_fft(&q00);
 
     if invq00[0] >= 0.004 {
         println!("restarting 4");
@@ -98,10 +97,22 @@ pub fn hawkkeygen(logn: u8, rng: Option<RngContext>) {
     // generate F and G
     let (F, G) = ntrusolve(bigint_vec(f.clone()), bigint_vec(g.clone()));
 
+    // convert the vectors to Vec<i64>
     let (F, G) = (bigint_to_i64_vec(F), bigint_to_i64_vec(G));
 
-    println!("f: {:?}, \nf: {:?}", f, g);
-    println!("F: {:?}, \nG: {:?}", F, G);
+    // compute F* and G*
+    let Fstar = adjoint(&F);
+    let Gstar = adjoint(&G);
+
+    // compute q01 = Ff* + Gg*
+    let q01 = poly_add(&mul_fft_i64(&F, &f), &mul_fft_i64(&G, &g));
+
+    // compute q11 = FF* + GG*
+    let q11 = poly_add(&mul_fft_i64(&F, &Fstar), &mul_fft_i64(&G, &Gstar));
+
+    println!("q01: {:?} \nq11: {:?}", q01, q11);
+    // println!("f: {:?}, \nf: {:?}", f, g);
+    // println!("F: {:?}, \nG: {:?}", F, G);
 }
 
 // generates polynomials f and g
