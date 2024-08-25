@@ -1,5 +1,8 @@
-use crate::ntt_fft::{intt, ntt};
+use crate::ntt::{intt, ntt};
 use num::traits::{FromPrimitive, Num, PrimInt};
+
+use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
+use num_traits::{One, Signed, ToPrimitive, Zero};
 
 pub fn bin(a: u128, x: usize) -> Vec<u8> {
     /*
@@ -57,8 +60,47 @@ where
     return T::from_i64(result).unwrap();
 }
 
+pub fn bigint_vec(v: &Vec<i64>) -> Vec<BigInt> {
+    let mut v_big: Vec<BigInt> = Vec::new();
+    for i in v.iter() {
+        v_big.push(i.to_bigint().unwrap());
+    }
+
+    return v_big;
+}
+
+pub fn bigint_to_f64_vec(a: Vec<BigInt>) -> Vec<f64> {
+    let n = a.len();
+    let mut res: Vec<f64> = Vec::with_capacity(n);
+
+    for i in 0..n {
+        if let Some(res_i) = &a[i].to_f64() {
+            res.push(*res_i);
+        } else {
+            println!("Could not convert to float");
+        }
+    }
+
+    return res;
+}
+
+pub fn bigint_to_i64_vec(a: Vec<BigInt>) -> Vec<i64> {
+    let n = a.len();
+    let mut res: Vec<i64> = Vec::with_capacity(n);
+
+    for i in 0..n {
+        if let Some(res_i) = &a[i].to_i64() {
+            res.push(*res_i);
+        } else {
+            println!("Could not convert to float");
+        }
+    }
+
+    return res;
+}
 // implements fast binary exponentiation for computing base^exp mod modulus
 // inputs base, exponent and modulus as generic, and returns a u128
+// note that this is an already implemented method for BigInt, which is probably better to use
 pub fn mod_pow<T: PrimInt>(base: T, exp: T, modulus: T) -> T
 where
     T: Num + FromPrimitive,
@@ -113,8 +155,12 @@ pub fn l2norm(f: &Vec<i64>) -> i64 {
     for i in 0..f.len() {
         sum += (f[i]).pow(2);
     }
-    println!("{}", sum);
     return sum;
+}
+
+pub fn infnorm(f: &Vec<i64>) -> i64 {
+    let max = f.iter().map(|x| x.abs()).max().unwrap();
+    return max;
 }
 
 pub fn adjoint(f: &Vec<i64>) -> Vec<i64> {

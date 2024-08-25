@@ -1,19 +1,31 @@
 use keygen::hawkkeygen;
-// use params::initialize_params;
 use rngcontext::RngContext;
 
+// simple rng library
+use rand::prelude::*;
+
 use crate::utils::{adjoint, bin, int, is_invertible, mod_pow, poly_add, poly_mult_ntt};
+use num_bigint::{BigInt, ToBigInt};
+use num_traits::{One, Zero};
+
+use std::time::{Duration, Instant};
 
 mod keygen;
-mod ntru_solve;
-mod ntt_fft;
+mod ntt;
 // mod params;
 mod fft;
 mod fft_constants;
+mod ntru_solve;
 mod rngcontext;
 mod sign;
 mod utils;
 mod verify;
+
+// memory measurement
+use peak_alloc::PeakAlloc;
+
+#[global_allocator]
+static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 /*
    Driver code for HAWK implementation.
 
@@ -26,20 +38,43 @@ mod verify;
 
 */
 fn main() {
-    // initialize_params(8);
-    hawkkeygen(8, None);
+    let mut rng = thread_rng();
+    let rand_seed = rng.gen_range(0..99999999);
 
-    // let f: Vec<i64> = vec![1, 1, 0, 0, 0, 0, -1, 2, 0, 0, -1, 1, -2, 1, 0, 0, -2, 1, 1, 1, 0, -1, 0, 0, 0, 0, -1, 1, 1, -2, -1, 2, 1, 0, 0, 1, -1, 1, 1, 1, 0, 1, 1, -1, 0, -1, 1, 0, 2, 1, -1, -1, 0, -1, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, -1, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, -1, -1, -1, -1, -2, 0, 0, -2, 0, 1, 0, 0, 1, 1, -2, 0, -1, -1, 0, -1, 0, 1, 1, -1, 0, -1, 0, 0, -1, -1, -1, -1, 0, -1, 1, -2, 1, 1, 2, 1, 1, 0, -1, 0, -2, 0, 0, 0, -1, -2, 1, 0, -1, 1, -1, 0, 0, 0, 1, 1, 2, 1, 0, 1, 0, -1, -2, 0, 0, -1, -1, 1, 1, 1, 1, 0, 0, -1, 1, 1, 1, -1, 2, 1, -1, 0, 1, 1, -1, 1, 0, 0, -1, 0, -2, 1, 0, 1, 1, -1, -1, 0, 1, 0, -1, 0, 0, 0, -2, 0, 2, 0, 0, -2, -1, -2, -1, 1, -1, 1, 1, -1, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, -1, 1, 2, 0, -1, -1, -1, 1, -1, -1, 1, 0, -1, -1, 0, 0, 0, 0, 1, -1, 0, 2, 2, 1, -1, 1, 0, 1, 0, 0, -1, 0, 0, 1, 0, -2, -2, 1, 1, 0, -2, 0, 2, -1, 1, -1, 1];
-    // let f: Vec<f64> = vec![1.0, 2.0, 3.0, 4.0];
-    // let f_fft = fft::fft(&f);
-    // println!("fft(f): {:?}", f_fft);
+    // we're generally interested in the lowest security level
+    let keypair = hawkkeygen(8, rand_seed);
+    // test_pipeline();
+}
 
-    // let f_orig = fft::ifft(&f_fft);
-    // println!("ifft(fft(f)): {:?}", f_orig);
+fn test_pipeline() {
+    let mut min = 0;
+    let mut min_seed = 0;
+    let mut sum = 0;
 
-    let p: Vec<i64> = vec![1,2,3,4];
-    let inverse_f_fft = fft::inverse_fft(&p);
-    // println!("inverse f_fft: {:?}", inverse_f_fft);
+    let mut rng = thread_rng();
+
+
+    let start = Instant::now();
+    for i in 0..100{
+        let randval = rng.gen_range(0..100000000);
+        println!("iteration: {} random value: {}", i, randval);
+        let key_pair = hawkkeygen(8, randval);
+        let counter = key_pair.7;
+        sum += counter;
+        if counter < min{
+            min = counter;
+            min_seed = i;
+        }
+    }
+    println!("Average attempts: {}",sum as f64/100.0);
+    println!("attempts: {} on seed {}", min, min_seed);
+    let duration = start.elapsed();
+    // println!("Keys: {:?}", key_pair);
+    println!("Generated in {:?} s", duration);
+    let peak_mem = PEAK_ALLOC.peak_usage_as_kb();
+    println!("Max memory use: {} kb", peak_mem);
+
+
 }
 
 fn print_type_of<T>(_: &T) {
