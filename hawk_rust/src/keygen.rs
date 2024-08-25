@@ -1,118 +1,79 @@
 use crate::fft::{mul_fft_i64, inverse_fft};
 use crate::ntru_solve::ntrusolve;
 use crate::rngcontext::{shake256x4, RngContext};
-use crate::utils::{adjoint,bigint_vec, bigint_to_i64_vec, is_invertible, l2norm, poly_add, poly_mult_ntt};
+use crate::utils::{adjoint,bigint_vec, bigint_to_i64_vec, is_invertible, l2norm, poly_add, poly_mult_ntt, infnorm};
 
 use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
 use num_traits::{One, Signed, ToPrimitive, Zero};
 
-pub fn hawkkeygen(logn: u8, rng: Option<RngContext>) {
-    // checks if rng-context is initialized or not. If not, initialize a new one and recursively call hawkkeygen
-    let mut rng = match rng {
-        Some(rng) => rng,
-        None => {
-            // this should be an actual random number
-            let new_rng = RngContext::new(1338);
-            return hawkkeygen(logn, Some(new_rng));
+pub fn hawkkeygen(logn: u8, initial_seed: usize) -> (Vec<i64>,Vec<i64>,Vec<i64>,Vec<i64>,Vec<i64>,Vec<i64>,usize, i32){
+    // not doing recursion 
+    let mut rng = RngContext::new(initial_seed as u128);
+    let mut counter = 0;
+    loop {
+        counter += 1;
+        // for each new loop, kgseed will be a new random value
+        let kgseed = rng.rnd(128) as usize;
+
+        // generate f and g from centered binomial distribution
+        let f_g = generate_f_g(kgseed, logn);
+        let f = f_g.0;
+        let g = f_g.1;
+
+        if !is_invertible(&f, 2) || !is_invertible(&g, 2) {
+            // println!("Restart 1");
+            continue
         }
-    };
 
-    // generate f and g
-    let f_g = generate_f_g(rng.rnd(128) as usize, logn);
-    let f = f_g.0.clone();
-    let g = f_g.1.clone();
+        let n = 1 << logn;
 
-    // let f = vec![1, -1, 0, 0, -1, 1, -1, 0, 2, 1, 0, 1, -1, 1, 0, -1, 1, 0, 0, 0, 1, 1, 0, 1, -1, 1, 0, 0, 1, 1, 1, 1, -2, 0, -1, 0, 0, 0, 0, 1, 1, 1, 0, 2, 0, 0, 0, 0, -1, -2, 0, 0, 2, -2, 1, 0, 2, -1, 1, 0, 1, 1, 0, -1, 2, 0, -1, 1, 1, 0, 0, -1, 2, 0, 1, 1, 0, -1, 1, -2, 0, 1, 1, 0, -1, 1, 0, 2, -2, -1, 1, 0, -1, 2, -1, 0, 1, 0, 2, -1, -2, -1, -1, 2, 1, -1, 0, -1, -1, -1, 1, 1, -2, 1, 0, 0, -1, 0, 1, 0, -1, 0, 0, 0, 0, 1, 1, -1, -1, 0, 1, -1, 1, 1, -1, 0, -1, -1, -1, 0, -2, -1, 0, 1, 0, -1, 0, 0, -1, 1, 1, -2, -2, 1, 1, 0, 1, 1, 1, -1, 0, 0, 2, -2, 0, -1, 2, -1, 1, 0, 1, 2, -1, 0, 0, 0, 1, 1, 0, 1, 0, 1, -1, 0, -2, 0, 2, 0, 1, -1, -1, -2, 1, 0, 0, 2, 1, 0, 2, 0, -1, 1, 1, 0, 0, 0, -1, 0, 1, 0, -1, 0, 0, 1, -1, 0, -1, -1, -1, 0, 1, 1, 0, 0, 0, 0, -1, -1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 2, 1, -2, -1, -1, 0, -2, 0, 0, 0, -2, 1, 1, 0, -2, 0, 2, 0, 0];
-    // let g = vec![1, 0, 2, -1, 0, -1, -1, 1, 0, 0, -1, 0, -2, -2, 1, 1, 0, -1, 0, 0, -1, 1, 0, 0, 0, 1, 2, 0, -2, 1, -1, 1, 1, -1, 0, 0, 0, 1, -1, 1, -1, -2, 0, -2, 0, -2, 0, -1, 1, 1, 1, 0, 1, -1, -1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, -1, 0, -1, -1, -1, -1, -1, 0, -1, -1, 1, 1, -2, -1, 0, -2, -2, 1, 2, -2, 1, 2, 1, -1, 1, 2, -1, 1, 1, -1, 1, 0, -1, 0, 2, 0, 0, 0, -1, 0, 2, 0, 0, 1, 0, -1, -1, 1, -1, -1, 2, -1, -1, -2, 0, 0, 2, -1, 1, 2, 0, 1, 0, 1, 0, -1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, -1, 1, 2, -1, 0, 0, 0, 0, 2, 0, 1, 1, 2, -1, -2, 1, -1, 0, 2, 1, 1, 0, 0, 0, 0, -2, 1, 2, 0, 1, 0, 1, 1, -1, -2, 0, -1, 0, 0, -1, 0, 0, 1, -2, -1, -2, 1, 0, 0, 0, 0, -1, 2, -1, 0, 1, 1, 0, 0, 1, 0, -2, 0, 0, 0, 1, 0, 0, 1, -1, -1, 2, 1, -1, 1, 0, 0, 0, -1, 2, -1, 0, -1, 1, -2, 1, -1, -1, -1, -2, -1, 0, 1, 1, 0, 0, 0, 2, -1, 1, 1, 1, 1, 2, 2, 1, -1, 1, -1, 0, 0, -1, -2];
+        if ((l2norm(&f) + l2norm(&g)) as f64) <= (2.0 * (n as f64) * (1.042 as f64).powi(2)) {
+            // println!("Restart 2");
+            continue
+        }
 
-    let f = vec![
-        1, -1, 0, 0, -1, 1, -1, 0, 2, 1, 0, 1, -1, 1, 0, -1, 1, 0, 0, 0, 1, 1, 0, 1, -1, 1, 0, 0,
-        1, 1, 1, 1, -2, 0, -1, 0, 0, 0, 0, 1, 1, 1, 0, 2, 0, 0, 0, 0, -1, -2, 0, 0, 2, -2, 1, 0, 2,
-        -1, 1, 0, 1, 1, 0, -1, 2, 0, -1, 1, 1, 0, 0, -1, 2, 0, 1, 1, 0, -1, 1, -2, 0, 1, 1, 0, -1,
-        1, 0, 2, -2, -1, 1, 0, -1, 2, -1, 0, 1, 0, 2, -1, -2, -1, -1, 2, 1, -1, 0, -1, -1, -1, 1,
-        1, -2, 1, 0, 0, -1, 0, 1, 0, -1, 0, 0, 0, 0, 1, 1, -1, -1, 0, 1, -1, 1, 1, -1, 0, -1, -1,
-        -1, 0, -2, -1, 0, 1, 0, -1, 0, 0, -1, 1, 1, -2, -2, 1, 1, 0, 1, 1, 1, -1, 0, 0, 2, -2, 0,
-        -1, 2, -1, 1, 0, 1, 2, -1, 0, 0, 0, 1, 1, 0, 1, 0, 1, -1, 0, -2, 0, 2, 0, 1, -1, -1, -2, 1,
-        0, 0, 2, 1, 0, 2, 0, -1, 1, 1, 0, 0, 0, -1, 0, 1, 0, -1, 0, 0, 1, -1, 0, -1, -1, -1, 0, 1,
-        1, 0, 0, 0, 0, -1, -1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 2, 1, -2, -1, -1, 0, -2, 0, 0, 0, -2, 1,
-        1, 0, -2, 0, 2, 0, 0,
-    ];
-    let g = vec![
-        1, 0, 2, -1, 0, -1, -1, 1, 0, 0, -1, 0, -2, -2, 1, 1, 0, -1, 0, 0, -1, 1, 0, 0, 0, 1, 2, 0,
-        -2, 1, -1, 1, 1, -1, 0, 0, 0, 1, -1, 1, -1, -2, 0, -2, 0, -2, 0, -1, 1, 1, 1, 0, 1, -1, -1,
-        0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, -1, 0, -1, -1, -1, -1, -1, 0, -1, -1, 1, 1, -2, -1, 0, -2,
-        -2, 1, 2, -2, 1, 2, 1, -1, 1, 2, -1, 1, 1, -1, 1, 0, -1, 0, 2, 0, 0, 0, -1, 0, 2, 0, 0, 1,
-        0, -1, -1, 1, -1, -1, 2, -1, -1, -2, 0, 0, 2, -1, 1, 2, 0, 1, 0, 1, 0, -1, 0, 0, 1, 0, 1,
-        1, 0, 1, 0, 0, 1, -1, 1, 2, -1, 0, 0, 0, 0, 2, 0, 1, 1, 2, -1, -2, 1, -1, 0, 2, 1, 1, 0, 0,
-        0, 0, -2, 1, 2, 0, 1, 0, 1, 1, -1, -2, 0, -1, 0, 0, -1, 0, 0, 1, -2, -1, -2, 1, 0, 0, 0, 0,
-        -1, 2, -1, 0, 1, 1, 0, 0, 1, 0, -2, 0, 0, 0, 1, 0, 0, 1, -1, -1, 2, 1, -1, 1, 0, 0, 0, -1,
-        2, -1, 0, -1, 1, -2, 1, -1, -1, -1, -2, -1, 0, 1, 1, 0, 0, 0, 2, -1, 1, 1, 1, 1, 2, 2, 1,
-        -1, 1, -1, 0, 0, -1, -2,
-    ];
+        let f_star = adjoint(&f);
+        let g_star = adjoint(&g);
 
-    // checks if f and g are invertible mod X^n + 1 and mod 2
-    // if not, restart
-    if !is_invertible(&f, 2) || !is_invertible(&g, 2) {
-        println!("restarting 1");
-        return hawkkeygen(logn, Some(rng));
+        let p = (1 << 16) + 1;
+
+        let q00 = poly_add(&poly_mult_ntt(&f, &f_star, p), &poly_mult_ntt(&g, &g_star, p));
+
+        let p1: u32 = 2147473409;
+        let p2: u32 = 2147389441;
+
+        if !is_invertible(&q00, p1) || !is_invertible(&q00, p2) {
+            // println!("Restart 3");
+            continue
+        }
+
+        let invq00 = inverse_fft(&q00);
+
+        if invq00[0] >= 1.0/250.0 {
+            // println!("Restart 4");
+            continue
+        }
+
+        // should have some test if ntrusolve fails
+        let (F, G) = ntrusolve(bigint_vec(&f), bigint_vec(&g));
+
+        let (F, G) = (bigint_to_i64_vec(F), bigint_to_i64_vec(G));
+
+
+        if infnorm(&F) > 127 || infnorm(&G) > 127 {
+            println!("Restart 5");
+            continue
+        }
+
+        let F_star = adjoint(&F);
+        let G_star = adjoint(&G);
+
+        let q01 = poly_add(&poly_mult_ntt(&F, &f_star, p), &poly_mult_ntt(&G, &g_star, p));
+
+        let p = 8380417;
+        let q01 = poly_add(&poly_mult_ntt(&F, &F_star, p), &poly_mult_ntt(&G, &G_star, p));
+        return (f.clone(), g.clone(), F, G, q00, q01, kgseed, counter);
     }
-    let n = 1 << logn;
-
-    // checks if the norm of f and g is large enough
-    // if not, restart
-    // 1.042 need to be retrieved from table of values based on which security level
-    if ((l2norm(&f) + l2norm(&g)) as f64) <= 2.0 * (n as f64) * (1.042 as f64).powi(2) {
-        println!("restarting 2");
-        return hawkkeygen(logn, Some(rng));
-    }
-
-    // construct the (hermitan) adjoints of f and g, f*, g*
-    let fstar = adjoint(&f);
-    let gstar = adjoint(&g);
-
-    // pseudocode says nothing about this p, but it is in the reference code
-    let p = (1 << 16) + 1;
-
-    // ff* + gg*
-    // here we can also use NTT for faster multiplication
-    //let q00 = poly_add(&poly_mult(&f, &fstar, p), &poly_mult(&g, &gstar, p));
-    let q00 = poly_add(&poly_mult_ntt(&f, &fstar, p), &poly_mult_ntt(&g, &gstar, p));
-
-    // two primes p1 and p2
-    let p1 = 2147473409;
-    let p2 = 2147389441;
-
-    if !(is_invertible(&q00, p1) && is_invertible(&q00, p2)) {
-        println!("restarting 3");
-        return hawkkeygen(logn, Some(rng));
-    }
-
-    let invq00 = inverse_fft(&q00);
-
-    if invq00[0] >= 0.004 {
-        println!("restarting 4");
-        return hawkkeygen(logn, Some(rng));
-    }
-
-    // generate F and G
-    let (F, G) = ntrusolve(bigint_vec(f.clone()), bigint_vec(g.clone()));
-
-    // convert the vectors to Vec<i64>
-    let (F, G) = (bigint_to_i64_vec(F), bigint_to_i64_vec(G));
-
-    // compute F* and G*
-    let Fstar = adjoint(&F);
-    let Gstar = adjoint(&G);
-
-    // compute q01 = Ff* + Gg*
-    let q01 = poly_add(&mul_fft_i64(&F, &f), &mul_fft_i64(&G, &g));
-
-    // compute q11 = FF* + GG*
-    let q11 = poly_add(&mul_fft_i64(&F, &Fstar), &mul_fft_i64(&G, &Gstar));
-
-    println!("q01: {:?} \nq11: {:?}", q01, q11);
-    // println!("f: {:?}, \nf: {:?}", f, g);
-    // println!("F: {:?}, \nG: {:?}", F, G);
 }
 
 // generates polynomials f and g
@@ -157,7 +118,7 @@ fn generate_f_g(seed: usize, logn: u8) -> (Vec<i64>, Vec<i64>) {
     for i in 0..n {
         sum = 0;
         for j in 0..b {
-            sum += ybits[i + n * b + j] as i64;
+            sum += ybits[(i + n) * b + j] as i64;
         }
 
         g[i] = sum - (b / 2) as i64;

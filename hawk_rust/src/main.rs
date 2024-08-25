@@ -1,10 +1,14 @@
 use keygen::hawkkeygen;
-// use params::initialize_params;
 use rngcontext::RngContext;
+
+// simple rng library
+use rand::prelude::*;
 
 use crate::utils::{adjoint, bin, int, is_invertible, mod_pow, poly_add, poly_mult_ntt};
 use num_bigint::{BigInt, ToBigInt};
 use num_traits::{One, Zero};
+
+use std::time::{Duration, Instant};
 
 mod keygen;
 mod ntt;
@@ -16,6 +20,12 @@ mod rngcontext;
 mod sign;
 mod utils;
 mod verify;
+
+// memory measurement
+use peak_alloc::PeakAlloc;
+
+#[global_allocator]
+static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 /*
    Driver code for HAWK implementation.
 
@@ -28,18 +38,43 @@ mod verify;
 
 */
 fn main() {
-    // initialize_params(8);
-    hawkkeygen(8, None);
+    let mut rng = thread_rng();
+    let rand_seed = rng.gen_range(0..99999999);
 
-    // test
-    // let a: Vec<BigInt> = bigint_vec(vec![13,4,2,99]);
-    // let b: Vec<BigInt> = bigint_vec(vec![8,7, 6, 66]);
-    // println!("{:?}", ntru_solve::galois_conjugate(a));
-    // let x = (194238123456789098676512312598 as u128).to_bigint().unwrap();
-    // let y = (133713371238909804523897987423987 as u128).to_bigint().unwrap();
-    // let z = ntru_solve::xgcd(x.clone(), y.clone());
-    // println!("gcd({:?}, {:?}) = {:?}",x,y,z);
-    //
+    // we're generally interested in the lowest security level
+    let keypair = hawkkeygen(8, rand_seed);
+    // test_pipeline();
+}
+
+fn test_pipeline() {
+    let mut min = 0;
+    let mut min_seed = 0;
+    let mut sum = 0;
+
+    let mut rng = thread_rng();
+
+
+    let start = Instant::now();
+    for i in 0..100{
+        let randval = rng.gen_range(0..100000000);
+        println!("iteration: {} random value: {}", i, randval);
+        let key_pair = hawkkeygen(8, randval);
+        let counter = key_pair.7;
+        sum += counter;
+        if counter < min{
+            min = counter;
+            min_seed = i;
+        }
+    }
+    println!("Average attempts: {}",sum as f64/100.0);
+    println!("attempts: {} on seed {}", min, min_seed);
+    let duration = start.elapsed();
+    // println!("Keys: {:?}", key_pair);
+    println!("Generated in {:?} s", duration);
+    let peak_mem = PEAK_ALLOC.peak_usage_as_kb();
+    println!("Max memory use: {} kb", peak_mem);
+
+
 }
 
 fn print_type_of<T>(_: &T) {

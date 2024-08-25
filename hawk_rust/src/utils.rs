@@ -60,7 +60,7 @@ where
     return T::from_i64(result).unwrap();
 }
 
-pub fn bigint_vec(v: Vec<i64>) -> Vec<BigInt> {
+pub fn bigint_vec(v: &Vec<i64>) -> Vec<BigInt> {
     let mut v_big: Vec<BigInt> = Vec::new();
     for i in v.iter() {
         v_big.push(i.to_bigint().unwrap());
@@ -155,8 +155,12 @@ pub fn l2norm(f: &Vec<i64>) -> i64 {
     for i in 0..f.len() {
         sum += (f[i]).pow(2);
     }
-    println!("{}", sum);
     return sum;
+}
+
+pub fn infnorm(f: &Vec<i64>) -> i64 {
+    let max = f.iter().map(|x| x.abs()).max().unwrap();
+    return max;
 }
 
 pub fn adjoint(f: &Vec<i64>) -> Vec<i64> {

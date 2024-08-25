@@ -35,12 +35,6 @@ pub fn ntt(f: Vec<i64>, p: u32) -> Vec<i64> {
     return ntt_f;
 }
 
-pub fn mul_ntt(f: &Vec<i64>, g: &Vec<i64>) -> Vec<i64> {
-    // UNFINISHED
-    // let (f_ntt, g_ntt) = (ntt(f), ntt(g));
-    return f.to_vec();
-}
-
 // inverse ntt of a polynomial
 pub fn intt(f: Vec<i64>, p: u32) -> Vec<i64> {
     let mut intt_f = f.clone();

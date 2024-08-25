@@ -300,7 +300,7 @@ pub fn reduce(
         let k_f = ifft(&div_fft(&num_fft, &den_fft));
 
         // convert to integers
-        let k: Vec<BigInt> = bigint_vec((0..k_f.len()).map(|x| k_f[x].round() as i64).collect());
+        let k: Vec<BigInt> = bigint_vec(&(0..k_f.len()).map(|x| k_f[x].round() as i64).collect());
 
         // check if k is zero
         let mut zero_flag = true;
