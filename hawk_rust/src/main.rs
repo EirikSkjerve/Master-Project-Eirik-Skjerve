@@ -1,4 +1,5 @@
 use keygen::hawkkeygen;
+use sign::sign;
 use rngcontext::RngContext;
 
 // simple rng library
@@ -20,6 +21,7 @@ mod rngcontext;
 mod sign;
 mod utils;
 mod verify;
+mod cdt;
 
 // memory measurement
 use peak_alloc::PeakAlloc;
@@ -43,6 +45,9 @@ fn main() {
 
     // we're generally interested in the lowest security level
     let keypair = hawkkeygen(8, rand_seed);
+    let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
+
+    let signature = sign(8, F, G, kgseed, 123456789);
     // test_pipeline();
 }
 

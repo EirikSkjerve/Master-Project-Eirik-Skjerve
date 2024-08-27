@@ -88,13 +88,6 @@ pub fn shake256x4(message: &[u8], num: usize) -> Vec<u64> {
     digest[2] = s_3.finalize_boxed((num * 8) / 4).to_vec();
     digest[3] = s_4.finalize_boxed((num * 8) / 4).to_vec();
 
-    // debugging
-    /*
-    for i in 0..4 {
-        println!("Digest {}: {:?}", i, digest[i]);
-    }
-    */
-
     // initialized a vector with the desired capacity
     let mut y: Vec<u64> = Vec::with_capacity(num);
 
