@@ -45,6 +45,18 @@ pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
     return res;
 }
 
+pub fn bytes_to_poly(h: &[u8], n: usize) -> Vec<i64>{
+    /*
+     * converts a byte-array to a vector/polynomial
+     */
+    let mut res: Vec<i64> = vec![0; n];
+    for i in 0..n{
+        res[i] = ((h[i/8] >> (i%8)) & 1) as i64;
+    }
+    return res;
+
+}
+
 // implements integer modulation
 pub fn modulo<T: PrimInt>(a: T, b: T) -> T
 where
