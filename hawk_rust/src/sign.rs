@@ -62,8 +62,8 @@ pub fn sign(logn: u8, F: Vec<i64>, G: Vec<i64>, kgseed: usize, msg: usize) {
         let mut h: [u8; 256/4] = [0; 256/4];
         shaker.finalize_xof_reset_into(&mut h);
 
-        let (h0, h1) = (&bytes_to_poly(&h[0..256/8], n), &bytes_to_poly(&h[(256/8)..256/4], n));
         // convert h to two polynomials
+        let (h0, h1) = (&bytes_to_poly(&h[0..256/8], n), &bytes_to_poly(&h[(256/8)..256/4], n));
         
         // compute target vectors t0, t1
             
@@ -82,6 +82,9 @@ pub fn sign(logn: u8, F: Vec<i64>, G: Vec<i64>, kgseed: usize, msg: usize) {
 
         // get random seed = M || kgseed || a+1 || rnd(320)
         let seed = rng.rnd(40);
+        let kgseed_b = to_bytes_sized(kgseed, 64);
+        let arr = vec![m.to_vec(),kgseed_b, (a+1).to_ne_bytes().to_vec(), seed.to_ne_bytes().to_vec()];
+        let s = add_bytes(arr);
 
         // compute (x0, x1) from sample()
 
@@ -92,7 +95,27 @@ pub fn sign(logn: u8, F: Vec<i64>, G: Vec<i64>, kgseed: usize, msg: usize) {
     }
 }
 
-fn add_bytes(arr: &[&[u8]]) -> Vec<u64> {
+fn to_bytes_sized(a: usize, size: usize) -> Vec<u8>{
+
+    let a_b = a.to_ne_bytes();
+    assert!(a_b.len() < size);
+    let mut res = Vec::with_capacity(size);
+    for i in 0..size{
+        if i < a_b.len(){
+            res.push(a_b[i]);
+        }
+        else{
+            res.push(0);
+        }
+    }
+    return res;
+}
+
+fn add_bytes(arr: Vec<Vec<u8>>) -> Vec<u64> {
+    /*
+     * adds together an arbitrary number of byte arrays into a vector
+     */
+    // find the max size array
     let mut n_temp = 0;
     for a in arr.iter(){
         let a_max = a.iter().max().unwrap();
@@ -103,9 +126,11 @@ fn add_bytes(arr: &[&[u8]]) -> Vec<u64> {
 
     let n = n_temp as usize;
 
+    // initialize vector
     let mut res: Vec<u64> = Vec::with_capacity(n);
     let mut temp = 0;
     for i in 0..n {
+        // sum together all values at index i
         temp = 0;
         for a in arr.iter(){
             if i < a.len(){
