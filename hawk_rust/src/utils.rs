@@ -63,13 +63,13 @@ where
     T: Num + FromPrimitive,
 {
     // convert the inputs to u64
-    let a_i64 = a.to_i64().unwrap();
-    let b_i64 = b.to_i64().unwrap();
+    let a_i128 = a.to_i128().unwrap();
+    let b_i128 = b.to_i128().unwrap();
 
     // perform the calculations
-    let result = ((a_i64 % b_i64) + b_i64) % b_i64;
+    let result = ((a_i128 % b_i128) + b_i128) % b_i128;
 
-    return T::from_i64(result).unwrap();
+    return T::from_i128(result).unwrap();
 }
 
 pub fn bigint_vec(v: &Vec<i64>) -> Vec<BigInt> {
