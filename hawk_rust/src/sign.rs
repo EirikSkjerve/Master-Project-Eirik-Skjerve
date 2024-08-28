@@ -9,12 +9,69 @@ use rand::prelude::*;
 
 use crate::cdt::get_table;
 use crate::keygen::generate_f_g;
-use crate::rngcontext::RngContext;
+use crate::rngcontext::{RngContext, shake256x4};
 use crate::utils::{bytes_to_poly, modulo, poly_add, poly_mult_ntt};
 
-pub fn sample(seed: Vec<u8>, t: Vec<i64>, n: u16) {
+pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
     let (T0, T1) = get_table();
+    let y = shake256x4(seed, 5*n/2);
 
+    // following HAWK's implementation
+
+    let mut v = 0;
+    let mut x: Vec<i8> = vec![0; 2*n];
+
+    let base: u64 = 2;
+    let base_pow_15 = base.pow(15);
+    let base_pow_63 = base.pow(63) as u128;
+    for j in 0..4 {
+        for i in 0..(n/8) {
+            for k in 0..4 {
+                let r = 16*i + 4*j + k;
+                let a = y[(j + 4*((5*i) + k)) as usize];
+                let pow_temp = base.pow(16*k as u32);
+
+                let temp1 = y[(j + 4*((5*i) + 4)) as usize]/pow_temp;
+                let b = modulo(temp1, base_pow_15) as u128;
+
+
+                let c = modulo(a as u128, base_pow_63) + base_pow_63*b;
+
+
+                let mut v0: i8 = 0;
+                let mut v1: i8 = 0;
+                let mut z = 0;
+
+                loop{
+                    if c < T0[z] {
+                        v0 += 1;
+                    }
+                    if c < T1[z] {
+                        v1 += 1;
+                    }
+                    if T0[z] == 0 || T1[z] == 0{
+                        break;
+                    }
+                    z += 1;
+                }
+
+                if t[r as usize] == 0 {
+                    v = 2*v0;
+                }
+                else {
+                    v = 2*v1 + 1;
+                }
+
+                if a >= base.pow(63) {
+                    v = -v;
+                }
+
+                x[r as usize] = v;
+                
+            }
+        }
+    }
+    return x;
 }
 
 pub fn sign(logn: u8, F: Vec<i64>, G: Vec<i64>, kgseed: usize, msg: usize) {
@@ -80,19 +137,47 @@ pub fn sign(logn: u8, F: Vec<i64>, G: Vec<i64>, kgseed: usize, msg: usize) {
             t1.push(modulo(temp_t1[i], 2) as u8);
         }
 
+        let t = concat_bytes(&vec![t0, t1]);
         // get random seed = M || kgseed || a+1 || rnd(320)
         let seed = rng.rnd(40);
         let kgseed_b = to_bytes_sized(kgseed, 64);
         let arr = vec![m.to_vec(),kgseed_b, (a+1).to_ne_bytes().to_vec(), seed.to_ne_bytes().to_vec()];
-        let s = add_bytes(arr);
+        // this should be concatenation
+        let s_temp = concat_bytes(&arr);
+        let s = vec_to_slice(&s_temp);
 
         // compute (x0, x1) from sample()
+        
+        let x = sample(s, t, n);
 
-        // continue if some requirements are not fulfilled 
+        println!("x: {:?}", x);
+        // continue loop if some requirements are not fulfilled 
         
         // compute and return sig = salt, s1
         break;
     }
+}
+
+fn concat_bytes(arr: &Vec<Vec<u8>>) -> Vec<u8> {
+    /*
+     * concatenates a vector of vectors into a single vector
+     */
+
+    let sum: usize = arr.iter().map(|slice| slice.len()).sum();
+
+    let mut res = Vec::with_capacity(sum);
+
+    for a in arr.iter() {
+        for i in 0..a.len(){
+            res.push(a[i]);
+        }
+    }
+
+    return res;
+}
+
+fn vec_to_slice(v: &Vec<u8>) -> &[u8] {
+    return v;
 }
 
 fn to_bytes_sized(a: usize, size: usize) -> Vec<u8>{

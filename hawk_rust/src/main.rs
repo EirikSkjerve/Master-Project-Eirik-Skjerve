@@ -44,7 +44,7 @@ fn main() {
     let rand_seed = rng.gen_range(0..99999999);
 
     // we're generally interested in the lowest security level
-    let keypair = hawkkeygen(8, rand_seed);
+    let keypair = hawkkeygen(8, 123222);
     let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
 
     let signature = sign(8, F, G, kgseed, 123456789);
