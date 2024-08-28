@@ -45,19 +45,31 @@ pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
     return res;
 }
 
+pub fn bytes_to_poly(h: &[u8], n: usize) -> Vec<i64>{
+    /*
+     * converts a byte-array to a vector/polynomial
+     */
+    let mut res: Vec<i64> = vec![0; n];
+    for i in 0..n{
+        res[i] = ((h[i/8] >> (i%8)) & 1) as i64;
+    }
+    return res;
+
+}
+
 // implements integer modulation
 pub fn modulo<T: PrimInt>(a: T, b: T) -> T
 where
     T: Num + FromPrimitive,
 {
     // convert the inputs to u64
-    let a_i64 = a.to_i64().unwrap();
-    let b_i64 = b.to_i64().unwrap();
+    let a_i128 = a.to_i128().unwrap();
+    let b_i128 = b.to_i128().unwrap();
 
     // perform the calculations
-    let result = ((a_i64 % b_i64) + b_i64) % b_i64;
+    let result = ((a_i128 % b_i128) + b_i128) % b_i128;
 
-    return T::from_i64(result).unwrap();
+    return T::from_i128(result).unwrap();
 }
 
 pub fn bigint_vec(v: &Vec<i64>) -> Vec<BigInt> {
@@ -178,6 +190,14 @@ pub fn poly_add(f: &Vec<i64>, g: &Vec<i64>) -> Vec<i64> {
     let mut q = vec![0; f.len()];
     for i in 0..q.len() {
         q[i] = f[i] + g[i];
+    }
+    return q;
+}
+
+pub fn poly_sub(f: &Vec<i64>, g: &Vec<i64>) -> Vec<i64> {
+    let mut q = vec![0; f.len()];
+    for i in 0..q.len() {
+        q[i] = f[i] - g[i];
     }
     return q;
 }

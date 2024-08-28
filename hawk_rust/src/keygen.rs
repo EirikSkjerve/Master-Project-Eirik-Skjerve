@@ -77,7 +77,7 @@ pub fn hawkkeygen(logn: u8, initial_seed: usize) -> (Vec<i64>,Vec<i64>,Vec<i64>,
 }
 
 // generates polynomials f and g
-fn generate_f_g(seed: usize, logn: u8) -> (Vec<i64>, Vec<i64>) {
+pub fn generate_f_g(seed: usize, logn: u8) -> (Vec<i64>, Vec<i64>) {
     // expand logn -> n
     let n = 1 << logn;
     let b = n / 64;
