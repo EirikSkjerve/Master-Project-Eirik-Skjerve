@@ -10,7 +10,7 @@ use rand::prelude::*;
 use crate::cdt::get_table;
 use crate::keygen::generate_f_g;
 use crate::rngcontext::{RngContext, shake256x4};
-use crate::utils::{bytes_to_poly, modulo, poly_add, poly_mult_ntt};
+use crate::utils::{bytes_to_poly, modulo, poly_add, poly_mult_ntt, poly_sub};
 
 pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
     let (T0, T1) = get_table();
@@ -74,7 +74,7 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
     return x;
 }
 
-pub fn sign(logn: u8, F: Vec<i64>, G: Vec<i64>, kgseed: usize, msg: usize) {
+pub fn sign(logn: u8, F: Vec<i64>, G: Vec<i64>, kgseed: usize, msg: usize) -> (Vec<u8>, Vec<i64>){
 
     let mut Fmod2: Vec<i64> = Vec::with_capacity(F.len());
     let mut Gmod2: Vec<i64> = Vec::with_capacity(G.len());
@@ -151,12 +151,66 @@ pub fn sign(logn: u8, F: Vec<i64>, G: Vec<i64>, kgseed: usize, msg: usize) {
         let x = sample(s, t, n);
 
         println!("x: {:?}", x);
+
+        let x0 = &x[0..n];
+        let x1 = &x[n..2*n];
+
+        // increment for new salt if failure
+        a += 2;
+
+        let sigmaverify: f64 = 1.024;
+        let factor: f64 = (8*n) as f64;
+        let l2normsumf64 = l2norm_sign(x0) + l2norm_sign(x1);
         // continue loop if some requirements are not fulfilled 
+        if l2normsumf64 > factor * sigmaverify.powi(2) {
+            println!("too large");
+            continue    
+        }
+
+        // convert x0 and x1 to Vec<i64>
+
+        let x0_i64: Vec<i64> = x0.iter().map(|&x| x as i64).collect();
+        let x1_i64: Vec<i64> = x1.iter().map(|&x| x as i64).collect();
+
+        let mut w1 = poly_sub(&poly_mult_ntt(&f, &x1_i64, p), &poly_mult_ntt(&g, &x0_i64, p));
+
+        // todo actually implement
+        if !symbreak(&w1){
+            w1 = w1.iter().map(|&x| -x).collect(); 
+        }
+
+        let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x/2).collect();
+        println!("valid sig: {:?}", sig);
         
-        // compute and return sig = salt, s1
-        break;
+        return (salt.to_vec(), sig);
     }
 }
+
+// TODO actually implement
+fn symbreak(v: &Vec<i64>) -> bool {
+
+    for x in v.iter(){
+        if *x != 0{
+            if *x > 0 {
+                return true;
+            }
+            else{
+                return false;
+            }
+        }
+    }
+    return false;
+}
+
+fn l2norm_sign(a: &[i8]) -> f64 {
+    // returns the l2 norm of polynomial/vector f as f[0]^2 + f[1]^2 +..+ f[n]^2
+    // converts to f64 for usage in signing procedure
+    let mut sum: f64 = 0.0;
+    for i in 0..a.len() {
+        sum += (a[i] as f64).powi(2);
+    }
+    return sum;
+}   
 
 fn concat_bytes(arr: &Vec<Vec<u8>>) -> Vec<u8> {
     /*

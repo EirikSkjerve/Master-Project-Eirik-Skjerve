@@ -194,6 +194,14 @@ pub fn poly_add(f: &Vec<i64>, g: &Vec<i64>) -> Vec<i64> {
     return q;
 }
 
+pub fn poly_sub(f: &Vec<i64>, g: &Vec<i64>) -> Vec<i64> {
+    let mut q = vec![0; f.len()];
+    for i in 0..q.len() {
+        q[i] = f[i] - g[i];
+    }
+    return q;
+}
+
 pub fn poly_mult(f: &Vec<i64>, g: &Vec<i64>, p: i64) -> Vec<i64> {
     // performs standard polynomial multiplication of two polynomials with mod p
     let mut q = vec![0; f.len() + g.len() - 1];
