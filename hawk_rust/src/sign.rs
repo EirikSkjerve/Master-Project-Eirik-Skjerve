@@ -109,7 +109,6 @@ pub fn sign(logn: u8, F: Vec<i64>, G: Vec<i64>, kgseed: usize, msg: usize) -> (V
         let mut salt: [u8; 14] = [0; 14];
         // resets the hasher instance
         shaker.finalize_xof_reset_into(&mut salt);
-        println!("Salt: {:?}", salt);
         
         // compute new hash h
 
@@ -150,7 +149,6 @@ pub fn sign(logn: u8, F: Vec<i64>, G: Vec<i64>, kgseed: usize, msg: usize) -> (V
         
         let x = sample(s, t, n);
 
-        println!("x: {:?}", x);
 
         let x0 = &x[0..n];
         let x1 = &x[n..2*n];
@@ -163,7 +161,6 @@ pub fn sign(logn: u8, F: Vec<i64>, G: Vec<i64>, kgseed: usize, msg: usize) -> (V
         let l2normsumf64 = l2norm_sign(x0) + l2norm_sign(x1);
         // continue loop if some requirements are not fulfilled 
         if l2normsumf64 > factor * sigmaverify.powi(2) {
-            println!("too large");
             continue    
         }
 
@@ -174,19 +171,16 @@ pub fn sign(logn: u8, F: Vec<i64>, G: Vec<i64>, kgseed: usize, msg: usize) -> (V
 
         let mut w1 = poly_sub(&poly_mult_ntt(&f, &x1_i64, p), &poly_mult_ntt(&g, &x0_i64, p));
 
-        // todo actually implement
         if !symbreak(&w1){
             w1 = w1.iter().map(|&x| -x).collect(); 
         }
 
         let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x/2).collect();
-        println!("valid sig: {:?}", sig);
         
         return (salt.to_vec(), sig);
     }
 }
 
-// TODO actually implement
 fn symbreak(v: &Vec<i64>) -> bool {
 
     for x in v.iter(){

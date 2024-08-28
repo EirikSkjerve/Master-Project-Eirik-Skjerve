@@ -42,13 +42,13 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 fn main() {
     let mut rng = thread_rng();
     let rand_seed = rng.gen_range(0..99999999);
-
     // we're generally interested in the lowest security level
-    let keypair = hawkkeygen(8, 123222);
-    let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
+    // let keypair = hawkkeygen(8, 123222);
+    // let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
 
-    let signature = sign(8, F, G, kgseed, 123456789);
-    // test_pipeline();
+
+    // let signature = sign(8, F, G, kgseed, 123456789);
+    test_pipeline();
 }
 
 fn test_pipeline() {
@@ -59,23 +59,18 @@ fn test_pipeline() {
     let mut rng = thread_rng();
 
 
+    let randval = rng.gen_range(0..100000000);
+    let key_pair = hawkkeygen(8, randval);
+    let (f, g, F, G, q00, q01, kgseed, counter) = key_pair;
     let start = Instant::now();
     for i in 0..100{
-        let randval = rng.gen_range(0..100000000);
-        println!("iteration: {} random value: {}", i, randval);
-        let key_pair = hawkkeygen(8, randval);
-        let counter = key_pair.7;
-        sum += counter;
-        if counter < min{
-            min = counter;
-            min_seed = i;
-        }
+        let F_clone = F.clone();
+        let G_clone = G.clone();
+        let sig = sign(8, F_clone, G_clone, kgseed, rng.gen_range(0..10000));
+        println!("signature {}: {:?}", i, sig.1);
     }
-    println!("Average attempts: {}",sum as f64/100.0);
-    println!("attempts: {} on seed {}", min, min_seed);
     let duration = start.elapsed();
-    // println!("Keys: {:?}", key_pair);
-    println!("Generated in {:?} s", duration);
+    println!("Generated in {:?}", duration);
     let peak_mem = PEAK_ALLOC.peak_usage_as_kb();
     println!("Max memory use: {} kb", peak_mem);
 
