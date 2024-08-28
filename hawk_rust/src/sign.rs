@@ -181,7 +181,7 @@ pub fn sign(logn: u8, F: Vec<i64>, G: Vec<i64>, kgseed: usize, msg: usize) -> (V
     }
 }
 
-fn symbreak(v: &Vec<i64>) -> bool {
+pub fn symbreak(v: &Vec<i64>) -> bool {
 
     for x in v.iter(){
         if *x != 0{

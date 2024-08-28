@@ -1,5 +1,6 @@
 use keygen::hawkkeygen;
 use sign::sign;
+use verify::verify;
 use rngcontext::RngContext;
 
 // simple rng library
@@ -13,7 +14,6 @@ use std::time::{Duration, Instant};
 
 mod keygen;
 mod ntt;
-// mod params;
 mod fft;
 mod fft_constants;
 mod ntru_solve;
@@ -43,12 +43,16 @@ fn main() {
     let mut rng = thread_rng();
     let rand_seed = rng.gen_range(0..99999999);
     // we're generally interested in the lowest security level
-    // let keypair = hawkkeygen(8, 123222);
-    // let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
+    let keypair = hawkkeygen(8, 123222);
+    let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
 
+    let message = 123456789 as usize;
+    // private polynomials in here
+    let signature = sign(8, F, G, kgseed, message);
 
-    // let signature = sign(8, F, G, kgseed, 123456789);
-    test_pipeline();
+    // public polynomials in here
+    let verify = verify(message, q00, q01, signature, 8);
+
 }
 
 fn test_pipeline() {
