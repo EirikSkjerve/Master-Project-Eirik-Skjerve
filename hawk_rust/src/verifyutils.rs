@@ -1,6 +1,8 @@
-use num::Zero;
-use num_complex::{Complex, ComplexFloat};
+use num_complex::Complex;
 use std::f64::consts::PI;
+use crate::ntt::*;
+use crate::utils::{adjoint, mod_pow, modulo};
+
 
 pub fn delta(k: usize) -> (u32, u32) {
 
@@ -37,11 +39,102 @@ fn brv(x: u32, log_n: usize) -> u32 {
 }
 
 
-pub fn sign(x: i32) -> u8 {
+fn sign(x: i64) -> i64 {
     if x < 0{
         return 1;
     }
     return 0;
+}
+
+fn scale_vec(f: &Vec<i32>, c: i32) -> Vec<i32> {
+    println!("f: {:?} * c: {}", f, c);
+    let mut f_scaled = Vec::with_capacity(f.len());
+    for i in 0..f.len() {
+        println!("{} * {} =...", f[i], c);
+        f_scaled.push(f[i]*c);
+    }
+    return f_scaled;
+}
+
+pub fn rebuildw0(logn: usize, q00: &Vec<i32>, q01: &Vec<i32>, w1: &Vec<i32>, h0: &Vec<i32>) -> Vec<i32> {
+
+    let n = 1 << logn;
+    let highs0 = 12;
+    let highs1 = 9;
+    let high00 = 9;
+    let high01 = 11;
+
+    let base: i32 = 2;
+    let base_i64: i64 = 2; 
+    let cw1 = base.pow(29 - (1 + highs1));
+    let cq00 = base.pow(29 - high00);
+    let cq01 = base.pow(29 - high01);
+    let cs0 = ((2*(cw1 as i64)*(cq01 as i64)) / ((n*cq00) as i64)) as i32;
+
+    println!("here 1");
+    let w1_fft = fft(&scale_vec(&w1, cw1));
+
+    let mut z00 = q00.clone();
+    
+    // some test here
+    if z00[0] < 0 {
+        return vec![0];
+    }
+
+    z00[0] = 0;
+
+    println!("here 2");
+    let q00_fft = fft(&scale_vec(&z00, cq00));
+    println!("here 3");
+    let scaled_q01 = scale_vec(&q01, cq01);
+    println!("here 4");
+    let mut q01_fft = fft(&scale_vec(&q01, cq01));
+
+    let alpha = (2*cq00*q00[0])/n;
+
+    let n_uz = n as usize;
+    for u in 0..(n_uz/2) {
+        let mut x_re = (q01_fft[u] * w1_fft[u+(n_uz/2)]) as i64;
+        x_re -= (q01_fft[u + (n_uz/2)] * w1_fft[u]) as i64;
+
+        let mut x_im = (q01_fft[u] * w1[u + n_uz/2]) as i64;
+        x_im += (q01_fft[u + (n_uz/2)] * w1_fft[u]) as i64;
+
+        let (x_re, z_re) = (x_re.abs(), sign(x_re));
+        let (x_im, z_im) = (x_im.abs(), sign(x_im));
+
+        let v = (alpha + q00_fft[u]) as i64;
+
+        if v <= 0 || v >= base_i64.pow(32) || (x_re as i64) >= v*base_i64.pow(32) || (x_im as i64) >= v*base_i64.pow(32)  {
+            // fix this also
+            return vec![0];
+        }
+
+        let y_re = x_re.div_floor(&v);
+        let y_im = x_im.div_floor(&v);
+
+        q01_fft[u] = (y_re - 2*z_re*y_re) as i32;
+        q01_fft[u + (n_uz/2)] = (y_im - 2*z_im*y_im) as i32;
+
+    }
+
+    let t = ifft(&q01_fft);
+
+    let mut w0: Vec<i32> = vec![0; n_uz];
+
+    for u in 0..n_uz {
+        let v = cs0 * h0[u] + t[u];
+        let z = (v + cs0) / (2*cs0);
+
+        if z < -((2 as i32).pow(highs0)) || z >= (2 as i32).pow(highs0) {
+            return vec![0];
+        }
+
+        w0[u] = h0[u] - (2*z);
+    }
+
+    // fix this
+    return w0;
 }
 
 // using this import to floor the quotient after division in the following algorithm
@@ -136,4 +229,75 @@ pub fn ifft(f_fft: &Vec<i32>) -> Vec<i32> {
 
     return f;
 
+}
+
+pub fn polyQnorm(q00: &Vec<i64>, q01: &Vec<i64>, w0: &Vec<i64>, w1: &Vec<i64>, p: i64) -> i64 {
+    let n = q00.len();
+    let p_u32 = p as u32;
+
+    let q00ntt = ntt(q00.to_vec(), p_u32);
+    let q01ntt = ntt(q01.to_vec(), p_u32);
+    let w0ntt = ntt(w0.to_vec(), p_u32);
+    let w1ntt = ntt(w1.to_vec(), p_u32);
+
+    let mut d: Vec<i64> = Vec::with_capacity(n);
+    let mut val = 0;
+    for i in 0..n {
+        val = modulo(w1ntt[i] * mod_pow(q00ntt[i], p - 2, p), p);
+        d.push(val);
+    }
+
+    let w1_adj_ntt = ntt(adjoint(&w1), p_u32);
+    let mut c: Vec<i64> = Vec::with_capacity(n);
+    for i in 0..n {
+        val = modulo(d[i] * w1_adj_ntt[i], p);
+        c.push(val);
+    }
+
+    let mut acc: i64 = c.iter().sum();
+
+    let mut e: Vec<i64> = Vec::with_capacity(n);
+    for i in 0..n {
+        val = modulo(w0ntt[i] + (d[i] * q01ntt[i]), p);
+        e.push(val);
+    }
+
+    let e_adj_ntt = nttadj(&e, p_u32);
+    for i in 0..n {
+        // preprocessing
+        let temp1 = modulo(q00ntt[i], p) as u128;
+        let temp2 = modulo(e[i], p) as u128;
+        let temp3 = modulo(e_adj_ntt[i], p) as u128;
+        val = modulo(temp1 * temp2 * temp3, p as u128) as i64;
+        acc += val;
+    }
+
+    return modulo(acc, p);
+}
+
+pub fn poly_div_const_i64(f: &Vec<i64>, c: i64) -> Vec<i64> {
+    return f.iter().map(|&x| x / c).collect();
+}
+pub fn poly_times_const(f: &Vec<i64>, c: i64) -> Vec<i64> {
+    return f.iter().map(|&x| x * c).collect();
+}
+
+pub fn poly_div_const_f64(f: &Vec<i64>, c: i64) -> Vec<f64> {
+    return f.iter().map(|&x| x as f64 / c as f64).collect();
+}
+
+fn poly_sub_f64(f: &Vec<f64>, g: &Vec<f64>) -> Vec<f64> {
+    let mut h: Vec<f64> = vec![0.0; f.len()];
+    for i in 0..h.len() {
+        h[i] = f[i] - g[i];
+    }
+    return h;
+}
+
+fn poly_add_f64(f: &Vec<f64>, g: &Vec<f64>) -> Vec<f64> {
+    let mut h: Vec<f64> = vec![0.0; f.len()];
+    for i in 0..h.len() {
+        h[i] = f[i] + g[i];
+    }
+    return h;
 }

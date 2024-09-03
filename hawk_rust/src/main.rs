@@ -7,7 +7,6 @@ use verify::verify;
 use rand::prelude::*;
 
 use crate::utils::{adjoint, bin, int, is_invertible, mod_pow, poly_add, poly_mult_ntt, modulo, poly_sub};
-use crate::verify::{poly_times_const};
 use num_bigint::{BigInt, ToBigInt};
 use num_traits::{One, Zero};
 
@@ -42,27 +41,27 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 */
 fn main() {
-    // let mut rng = thread_rng();
-    // let rand_seed = rng.gen_range(0..99999999);
-    // // we're generally interested in the lowest security level
-    // let startkg = Instant::now();
-    // let keypair = hawkkeygen(8, 123222);
-    // let durkg = startkg.elapsed();
-    // let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
-    //
-    // let message = 123456789 as usize;
-    // // private polynomials in here
-    // let startsg = Instant::now();
-    // let signature = sign(8, F, G, kgseed, message);
-    // let dursg = startsg.elapsed();
-    //
-    // println!("Keygen: {:?}", durkg);
-    // println!("Signature: {:?}", dursg);
-    //
-    // // public polynomials in here
-    // let verify = verify(8, message, q00, q01, signature);
-    // println!("verify: {}", verify);
-    //
+    let mut rng = thread_rng();
+    let rand_seed = rng.gen_range(0..99999999);
+    // we're generally interested in the lowest security level
+    let startkg = Instant::now();
+    let keypair = hawkkeygen(8, 123222);
+    let durkg = startkg.elapsed();
+    let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
+
+    let message = 123456789 as usize;
+    // private polynomials in here
+    let startsg = Instant::now();
+    let signature = sign(8, F, G, kgseed, message);
+    let dursg = startsg.elapsed();
+
+    println!("Keygen: {:?}", durkg);
+    println!("Signature: {:?}", dursg);
+
+    // public polynomials in here
+    let verify = verify(8, message, q00, q01, signature);
+    println!("verify: {}", verify);
+
     test_func();
 
 }
