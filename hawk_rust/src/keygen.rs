@@ -1,13 +1,27 @@
-use crate::fft::{mul_fft_i64, inverse_fft};
+use crate::fft::{inverse_fft, mul_fft_i64};
 use crate::ntru_solve::ntrusolve;
 use crate::rngcontext::{shake256x4, RngContext};
-use crate::utils::{adjoint,bigint_vec, bigint_to_i64_vec, is_invertible, l2norm, poly_add, poly_mult_ntt, infnorm};
+use crate::utils::{
+    adjoint, bigint_to_i64_vec, bigint_vec, infnorm, is_invertible, l2norm, poly_add, poly_mult_ntt,
+};
 
 use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
 use num_traits::{One, Signed, ToPrimitive, Zero};
 
-pub fn hawkkeygen(logn: u8, initial_seed: usize) -> (Vec<i64>,Vec<i64>,Vec<i64>,Vec<i64>,Vec<i64>,Vec<i64>,usize, i32){
-    // not doing recursion 
+pub fn hawkkeygen(
+    logn: u8,
+    initial_seed: usize,
+) -> (
+    Vec<i64>,
+    Vec<i64>,
+    Vec<i64>,
+    Vec<i64>,
+    Vec<i64>,
+    Vec<i64>,
+    usize,
+    i32,
+) {
+    // not doing recursion
     let mut rng = RngContext::new(initial_seed as u128);
     let mut counter = 0;
     loop {
@@ -22,14 +36,14 @@ pub fn hawkkeygen(logn: u8, initial_seed: usize) -> (Vec<i64>,Vec<i64>,Vec<i64>,
 
         if !is_invertible(&f, 2) || !is_invertible(&g, 2) {
             // println!("Restart 1");
-            continue
+            continue;
         }
 
         let n = 1 << logn;
 
         if ((l2norm(&f) + l2norm(&g)) as f64) <= (2.0 * (n as f64) * (1.042 as f64).powi(2)) {
             // println!("Restart 2");
-            continue
+            continue;
         }
 
         let f_star = adjoint(&f);
@@ -37,21 +51,24 @@ pub fn hawkkeygen(logn: u8, initial_seed: usize) -> (Vec<i64>,Vec<i64>,Vec<i64>,
 
         let p = (1 << 16) + 1;
 
-        let q00 = poly_add(&poly_mult_ntt(&f, &f_star, p), &poly_mult_ntt(&g, &g_star, p));
+        let q00 = poly_add(
+            &poly_mult_ntt(&f, &f_star, p),
+            &poly_mult_ntt(&g, &g_star, p),
+        );
 
         let p1: u32 = 2147473409;
         let p2: u32 = 2147389441;
 
         if !is_invertible(&q00, p1) || !is_invertible(&q00, p2) {
             // println!("Restart 3");
-            continue
+            continue;
         }
 
         let invq00 = inverse_fft(&q00);
 
-        if invq00[0] >= 1.0/250.0 {
+        if invq00[0] >= 1.0 / 250.0 {
             // println!("Restart 4");
-            continue
+            continue;
         }
 
         // should have some test if ntrusolve fails
@@ -59,19 +76,24 @@ pub fn hawkkeygen(logn: u8, initial_seed: usize) -> (Vec<i64>,Vec<i64>,Vec<i64>,
 
         let (F, G) = (bigint_to_i64_vec(F), bigint_to_i64_vec(G));
 
-
         if infnorm(&F) > 127 || infnorm(&G) > 127 {
             println!("Restart 5");
-            continue
+            continue;
         }
 
         let F_star = adjoint(&F);
         let G_star = adjoint(&G);
 
-        let q01 = poly_add(&poly_mult_ntt(&F, &f_star, p), &poly_mult_ntt(&G, &g_star, p));
+        let q01 = poly_add(
+            &poly_mult_ntt(&F, &f_star, p),
+            &poly_mult_ntt(&G, &g_star, p),
+        );
 
         let p = 8380417;
-        let q01 = poly_add(&poly_mult_ntt(&F, &F_star, p), &poly_mult_ntt(&G, &G_star, p));
+        let q01 = poly_add(
+            &poly_mult_ntt(&F, &F_star, p),
+            &poly_mult_ntt(&G, &G_star, p),
+        );
         return (f.clone(), g.clone(), F, G, q00, q01, kgseed, counter);
     }
 }
