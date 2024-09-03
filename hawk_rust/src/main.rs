@@ -70,7 +70,8 @@ fn main() {
 fn test_func() {
     let a: Vec<i32> = vec![1, 2, 3, 4, 5, 6, 7, 8];
     let b: Vec<i32> = vec![-2,-4,-6,-1];
-    let a_fft = verifyutils::fft(&a);
+    let a_ifft = verifyutils::ifft(&a);
+    println!("a invfft: {:?}", a_ifft);
 
     // println!("a_fft = {:?} \nb_fft = {:?}", a_fft, b_fft);
 }
