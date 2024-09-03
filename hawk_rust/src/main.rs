@@ -23,6 +23,7 @@ mod rngcontext;
 mod sign;
 mod utils;
 mod verify;
+mod verifyutils;
 
 // memory measurement
 use peak_alloc::PeakAlloc;
@@ -41,41 +42,37 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 */
 fn main() {
-    let mut rng = thread_rng();
-    let rand_seed = rng.gen_range(0..99999999);
-    // we're generally interested in the lowest security level
-    let startkg = Instant::now();
-    let keypair = hawkkeygen(8, 123222);
-    let durkg = startkg.elapsed();
-    let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
-
-    let message = 123456789 as usize;
-    // private polynomials in here
-    let startsg = Instant::now();
-    let signature = sign(8, F, G, kgseed, message);
-    let dursg = startsg.elapsed();
-
-    println!("Keygen: {:?}", durkg);
-    println!("Signature: {:?}", dursg);
-
-    // public polynomials in here
-    let verify = verify(8, message, q00, q01, signature);
-    println!("verify: {}", verify);
+    // let mut rng = thread_rng();
+    // let rand_seed = rng.gen_range(0..99999999);
+    // // we're generally interested in the lowest security level
+    // let startkg = Instant::now();
+    // let keypair = hawkkeygen(8, 123222);
+    // let durkg = startkg.elapsed();
+    // let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
+    //
+    // let message = 123456789 as usize;
+    // // private polynomials in here
+    // let startsg = Instant::now();
+    // let signature = sign(8, F, G, kgseed, message);
+    // let dursg = startsg.elapsed();
+    //
+    // println!("Keygen: {:?}", durkg);
+    // println!("Signature: {:?}", dursg);
+    //
+    // // public polynomials in here
+    // let verify = verify(8, message, q00, q01, signature);
+    // println!("verify: {}", verify);
+    //
+    test_func();
 
 }
 
 fn test_func() {
-    let a: Vec<i64> = vec![1,2,-2,3];
-    let b: Vec<i64> = vec![2,0,0,1];
-    let c: Vec<i64> = vec![6,5,4,3];
-    let d: Vec<i64> = vec![2,-2,2,-2];
-    let e: Vec<i64> = vec![4,0,3,0];
+    let a: Vec<i32> = vec![1, 2, 3, 4, 5, 6, 7, 8];
+    let b: Vec<i32> = vec![-2,-4,-6,-1];
+    let a_fft = verifyutils::fft(&a);
 
-    let h = poly_sub(&a, &poly_times_const(&b, 2));
-    println!("{:?} - 2{:?} = {:?}",a,b,h);
-   
-
-
+    // println!("a_fft = {:?} \nb_fft = {:?}", a_fft, b_fft);
 }
 
 fn test_pipeline() {
