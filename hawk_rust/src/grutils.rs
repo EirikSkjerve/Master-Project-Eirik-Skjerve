@@ -45,9 +45,11 @@ pub fn bin(a: i32, x: usize) -> Vec<u8> {
 }
 
 pub fn int(a: &Vec<u8>) -> i32 {
+    let mut a_rev = a.clone();
+    a_rev.reverse();
     let mut res: i32 = 0;
     for i in 0..a.len() {
-        if a[i] == 1 {
+        if a_rev[i] == 1 {
             res += 1<<(a.len() - (i+1));
         }
     }

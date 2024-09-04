@@ -16,6 +16,7 @@ pub fn decompressgr(y: &Vec<u8>, k: usize, low: usize, high: usize) -> (Vec<i64>
         x[i] = int(&y[((i*low)+k)..(((i+1)*low)+k)].to_vec()) as i64;
     }
 
+    println!("x: {:?}", x);
     let mut j = k*(low+1);
 
     for i in 0..k{
