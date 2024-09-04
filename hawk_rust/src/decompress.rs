@@ -5,6 +5,7 @@ pub fn decompressgr(y: &Vec<u8>, k: usize, low: usize, high: usize) -> (Vec<i64>
 
     if y.len() < k*(low+2) {
         // return some failure value here
+        println!("failure from decompress 1");
         return (vec![0], 0);
     }
 
@@ -12,7 +13,7 @@ pub fn decompressgr(y: &Vec<u8>, k: usize, low: usize, high: usize) -> (Vec<i64>
 
 
     for i in 0..k {
-        x[i] = int(&y[((i*low)+k)..((i+1)*low+k)].to_vec()) as i64;
+        x[i] = int(&y[((i*low)+k)..(((i+1)*low)+k)].to_vec()) as i64;
     }
 
     let mut j = k*(low+1);
@@ -25,8 +26,9 @@ pub fn decompressgr(y: &Vec<u8>, k: usize, low: usize, high: usize) -> (Vec<i64>
         while t != 1{
             z += 1;
 
-            if j >= y.len() && z >= (i<<(high-low)) as i64 {
+            if j >= y.len() && z >= (1<<(high-low)) {
                 // return some failure value here
+                println!("failure from decompress 2");
                 return (vec![0], 0);
             }
             t = y[j];

@@ -24,7 +24,8 @@ pub fn bin(a: i32, x: usize) -> Vec<u8> {
 
     if x == 0 {
         // returns a as binary with *default* size
-        return bin(a, (a as f64).log2().ceil() as usize + 1);
+        // return bin(a, (a as f64).log2().ceil() as usize + 1);
+        return vec![];
     }
 
     let mut res: Vec<u8> = vec![];
@@ -39,7 +40,7 @@ pub fn bin(a: i32, x: usize) -> Vec<u8> {
         b /= 2;
     }
 
-    res.reverse();
+    // depending on bit-order, this should be reversed
     return res;
 }
 

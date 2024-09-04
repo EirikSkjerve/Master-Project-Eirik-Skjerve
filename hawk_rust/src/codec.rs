@@ -32,6 +32,9 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
     for b_t in bin_temp{
         y00.push(b_t);
     }
+    while modulo(y00.len(), 8) != 0 {
+        y00.push(0);
+    }
 
     let y01 = compressgr(q01, params_i(logn, "low01") as usize, params_i(logn, "high01") as usize);
 
@@ -44,7 +47,6 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
     for i in 0..y00.len(){
         y.push(y00[i]);
     }
-
     for i in 0..y01.len(){
         y.push(y01[i]);
     }
@@ -75,6 +77,7 @@ pub fn dec_pub(logn: usize, pub_enc: &Vec<u8>) -> (Vec<i16>, Vec<i16>){
 
     if pub_enc.len() != params_i(logn, "lenpub") as usize {
         // failure return value
+        println!("failure from decpub 1");
         return (vec![0], vec![0]);
     }
 
@@ -83,6 +86,7 @@ pub fn dec_pub(logn: usize, pub_enc: &Vec<u8>) -> (Vec<i16>, Vec<i16>){
 
     let r00 = decompressgr(&y, n/2, params_i(logn, "low00") as usize, params_i(logn, "high00") as usize);
     if r00.0[0] == 0 && (r00.0).len() == 1 {
+        println!("failure from decpub 2");
         return (vec![0], vec![0]);
     }
 
@@ -90,11 +94,12 @@ pub fn dec_pub(logn: usize, pub_enc: &Vec<u8>) -> (Vec<i16>, Vec<i16>){
 
     let mut q00: Vec<i16> = vec![0; n];
 
-    for i in 0..r00.len() {
+    for i in 0..(n/2) {
         q00[i] = r00[i] as i16;
     }
 
     if y.len()*8 < j+v {
+        println!("failure from decpub 3");
         return (vec![0], vec![0]);
     }
 
@@ -105,13 +110,14 @@ pub fn dec_pub(logn: usize, pub_enc: &Vec<u8>) -> (Vec<i16>, Vec<i16>){
 
     while modulo(j, 8) != 0 {
         if j >= y.len() || y[j] != 0{
+            println!("failure from decpub 4");
             return (vec![0], vec![0]);
         }
         j += 1;
     }
 
     q00[n/2] = 0;
-    for i in (n/2)+1..n {
+    for i in ((n/2)+1)..n {
         q00[i] = -q00[n-i];
     }
 
@@ -120,6 +126,7 @@ pub fn dec_pub(logn: usize, pub_enc: &Vec<u8>) -> (Vec<i16>, Vec<i16>){
                            params_i(logn, "high01") as usize);
 
     if r01.0[0]==0 && r01.0.len()==1 {
+        println!("failure from decpub 5");
         return (vec![0], vec![0]);
     }
 
@@ -133,6 +140,7 @@ pub fn dec_pub(logn: usize, pub_enc: &Vec<u8>) -> (Vec<i16>, Vec<i16>){
 
     while j < y.len(){
         if y[j] != 0{
+            println!("failure from decpub 6");
             return (vec![0], vec![0]);
         }
         j += 1;

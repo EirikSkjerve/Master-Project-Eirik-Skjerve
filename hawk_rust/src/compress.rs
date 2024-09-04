@@ -1,4 +1,4 @@
-use crate::grutils::*;
+use crate::grutils;
 
 // using Golomb-Rice compression algorithm
 pub fn compressgr(x: &Vec<i64>, low: usize, high: usize) -> Vec<u8> {
@@ -40,19 +40,25 @@ pub fn compressgr(x: &Vec<i64>, low: usize, high: usize) -> Vec<u8> {
     }
 
     for i in 0..k { 
-        let res = bin(modulo(v[i] as i32, (1<<low) as i32), low);
+        let res = grutils::bin(grutils::modulo(v[i] as i32, (1<<low) as i32), low);
         for r in res{
             y.push(r);
         }
     }
 
+    println!("k: {}", k);
     for i in 0..k{
-        for z in 0..(v[i]/(1<<low)) as usize {
-            y.push(0);
+        println!("{}", v[i]);
+        println!("{}", 1<<low);
+        let res = grutils::bin(0,(v[i]>>low) as usize);
+        println!("res: {:?}", res);
+        for r in res{
+            y.push(r);
         }
         y.push(1);
     }
 
+    println!("len y: {}", y.len());
     return y;
 }
 

@@ -47,17 +47,14 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 */
 fn main() {
 
-    test_compress();
-
     let mut rng = thread_rng();
     let rand_seed = rng.gen_range(0..99999999);
     // we're generally interested in the lowest security level
     let startkg = Instant::now();
     let keypair = hawkkeygen(8, 123222);
     let durkg = startkg.elapsed();
-    let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
 
-    // 
+    test_compress();
     // let message = 123456789 as usize;
     // // private polynomials in here
     // let startsg = Instant::now();
@@ -78,6 +75,15 @@ fn test_compress(){
     let a: Vec<i64> = vec![1,2,3,4,5,6,7,8];
     let a_comp = compress::compressgr(&a, 5, 9);
     let a_orig = decompress::decompressgr(&a_comp, 8, 5, 9);
+    println!("b: {:?}", a_comp);
+    println!("a orig: {:?}", a_orig);
+    //
+    let test: Vec<u8> = vec![1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1];   
+    let test_packed = grutils::packbits(&test);
+    // println!("packed bits: {:?}", test_packed);
+    let test_orig = grutils::unpackbits(&test_packed);
+    // println!("unpacked bits: {:?}", test_orig);
+
 }
 
 fn test_func() {
