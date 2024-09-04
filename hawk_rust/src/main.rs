@@ -6,28 +6,30 @@ use verify::verify;
 // simple rng library
 use rand::prelude::*;
 
-use crate::utils::{adjoint, bin, int, is_invertible, mod_pow, poly_add, poly_mult_ntt, modulo, poly_sub};
+use crate::utils::{
+    adjoint, bin, int, is_invertible, mod_pow, modulo, poly_add, poly_mult_ntt, poly_sub,
+};
 use num_bigint::{BigInt, ToBigInt};
 use num_traits::{One, Zero};
 
 use std::time::{Duration, Instant};
 
 mod cdt;
+mod codec;
+mod compress;
+mod decompress;
 mod fft;
 mod fft_constants;
+mod grutils;
 mod keygen;
 mod ntru_solve;
 mod ntt;
+mod params;
 mod rngcontext;
 mod sign;
 mod utils;
 mod verify;
 mod verifyutils;
-mod codec;
-mod params;
-mod compress;
-mod decompress;
-mod grutils;
 
 // memory measurement
 use peak_alloc::PeakAlloc;
@@ -46,7 +48,6 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 */
 fn main() {
-
     let mut rng = thread_rng();
     let rand_seed = rng.gen_range(0..99999999);
     // we're generally interested in the lowest security level
@@ -68,27 +69,20 @@ fn main() {
     // let verify = verify(8, message, q00, q01, signature);
     // println!("verify: {}", verify);
     //
-
 }
 
-fn test_compress(){
-    let a: Vec<i64> = vec![1,2,3,4,5,6,7,8];
-    let a_comp = compress::compressgr(&a, 5, 9);
-    let a_orig = decompress::decompressgr(&a_comp, 8, 5, 9);
-    println!("b: {:?}", a_comp);
-    println!("a orig: {:?}", a_orig);
-    //
-    let test: Vec<u8> = vec![1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1];   
-    let test_packed = grutils::packbits(&test);
-    // println!("packed bits: {:?}", test_packed);
-    let test_orig = grutils::unpackbits(&test_packed);
-    // println!("unpacked bits: {:?}", test_orig);
-
+fn test_compress() {
+    let a: Vec<i64> = vec![0;256];
+    let b: Vec<i64> = vec![1;256];
+    let enc_pub = codec::enc_pub(8, &a, &b);
+    println!("enc pub: {:?}", enc_pub);
+    let ab = codec::dec_pub(8, &enc_pub);
+    println!("original: {:?}", ab);
 }
 
 fn test_func() {
     let a: Vec<i32> = vec![1, 2, 3, 4, 5, 6, 7, 8];
-    let b: Vec<i32> = vec![-2,-4,-6,-1];
+    let b: Vec<i32> = vec![-2, -4, -6, -1];
     let a_ifft = verifyutils::ifft(&a);
     println!("a invfft: {:?}", a_ifft);
 

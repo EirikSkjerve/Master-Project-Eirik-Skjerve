@@ -2,18 +2,17 @@ use crate::grutils;
 
 // using Golomb-Rice compression algorithm
 pub fn compressgr(x: &Vec<i64>, low: usize, high: usize) -> Vec<u8> {
-
     /*
-     Input: sequence x, low and high
-     Output: compressed sequence of bits 
-     If failure, [0] is returned
-     */
+    Input: sequence x, low and high
+    Output: compressed sequence of bits
+    If failure, [0] is returned
+    */
 
     let k = x.len();
-    assert_eq!(k%8, 0);
+    assert_eq!(k % 8, 0);
 
-    for i in 0..k{
-        if !(x[i] < (1<<high) && x[i] > -(1<<high)) {
+    for i in 0..k {
+        if !(x[i] < (1 << high) && x[i] > -(1 << high)) {
             println!("failure from compressgr 1");
             return vec![0];
         }
@@ -31,34 +30,28 @@ pub fn compressgr(x: &Vec<i64>, low: usize, high: usize) -> Vec<u8> {
         };
 
         y.push(si);
-        v.push((x[i]- (si as i64)*(2*x[i] + 1)) as i16);
-        if v[i] >= (1<<high){
+        v.push((x[i] - (si as i64) * (2 * x[i] + 1)) as i16);
+        if v[i] >= (1 << high) {
             // empty vec indicates failed attempt
             println!("failure from compressgr 2");
             return vec![0];
         }
     }
 
-    for i in 0..k { 
-        let res = grutils::bin(grutils::modulo(v[i] as i32, (1<<low) as i32), low);
-        for r in res{
+    for i in 0..k {
+        let res = grutils::bin(grutils::modulo(v[i] as i32, (1 << low) as i32), low);
+        for r in res {
             y.push(r);
         }
     }
 
-    println!("k: {}", k);
-    for i in 0..k{
-        println!("{}", v[i]);
-        println!("{}", 1<<low);
-        let res = grutils::bin(0,(v[i]>>low) as usize);
-        println!("res: {:?}", res);
-        for r in res{
+    for i in 0..k {
+        let res = grutils::bin(0, (v[i] >> low) as usize);
+        for r in res {
             y.push(r);
         }
         y.push(1);
     }
 
-    println!("len y: {}", y.len());
     return y;
 }
-

@@ -50,11 +50,10 @@ pub fn int(a: &Vec<u8>) -> i32 {
     let mut res: i32 = 0;
     for i in 0..a.len() {
         if a_rev[i] == 1 {
-            res += 1<<(a.len() - (i+1));
+            res += 1 << (a.len() - (i + 1));
         }
     }
     return res;
-
 }
 
 pub fn packbits(bits: &Vec<u8>) -> Vec<u8> {
@@ -64,7 +63,6 @@ pub fn packbits(bits: &Vec<u8>) -> Vec<u8> {
         let mut byte: u8 = 0;
 
         for (i, &bit) in chunk.iter().enumerate() {
-
             if bit == 1 {
                 byte |= 1 << i;
             }
@@ -80,7 +78,7 @@ pub fn unpackbits(arr: &Vec<u8>) -> Vec<u8> {
 
     for &byte in arr {
         for i in 0..8 {
-            let bit = (byte>>i) & 1;
+            let bit = (byte >> i) & 1;
             bits.push(bit);
         }
     }

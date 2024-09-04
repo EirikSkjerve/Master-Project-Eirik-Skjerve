@@ -71,7 +71,6 @@ where
     return T::from_i128(result).unwrap();
 }
 
-
 pub fn bigint_vec(v: &Vec<i64>) -> Vec<BigInt> {
     let mut v_big: Vec<BigInt> = Vec::new();
     for i in v.iter() {

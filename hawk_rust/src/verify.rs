@@ -14,7 +14,7 @@ pub fn verify(
     msg: usize,
     q00: Vec<i64>,
     q01: Vec<i64>,
-    signature: (Vec<u8>, Vec<i64>)
+    signature: (Vec<u8>, Vec<i64>),
 ) -> bool {
     let n = 1 << logn;
 
@@ -48,7 +48,6 @@ pub fn verify(
         return false;
     }
 
-
     let q00_i32 = i64vec_to_i32vec(&q00);
     let q01_i32 = i64vec_to_i32vec(&q01);
     let w1_i32 = i64vec_to_i32vec(&w1);
@@ -80,7 +79,7 @@ pub fn verify(
 
 fn i64vec_to_i32vec(f: &Vec<i64>) -> Vec<i32> {
     let res: Vec<i32> = f.iter().map(|&x| x as i32).collect();
- 
+
     return res;
 }
 
@@ -116,4 +115,3 @@ pub fn vec_to_slice(vec: &Vec<u8>) -> &[u8] {
 //     return w0;
 // }
 //
-
