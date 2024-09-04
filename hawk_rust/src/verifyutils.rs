@@ -47,7 +47,6 @@ fn sign(x: i64) -> i64 {
 }
 
 fn scale_vec(f: &Vec<i32>, c: i32) -> Vec<i32> {
-    println!("f: {:?} * c: {}", f, c);
     let mut f_scaled = Vec::with_capacity(f.len());
     for i in 0..f.len() {
         println!("{} * {} =...", f[i], c);
@@ -169,11 +168,14 @@ pub fn fft(f: &Vec<i32>) -> Vec<i32> {
                 let t_re = x2_re*e_re - x2_im*e_im;
                 let t_im = x2_re*e_im + x2_im*e_re;
 
-                f_fft[v] = ((f2p31*x1_re + t_re).div_floor(&f2p32)) as i32;
-                f_fft[v + (n/2)] = ((f2p31*x1_im + t_im).div_floor(&f2p32)) as i32;
-                f_fft[v + (t/2)] = ((f2p31*x1_re - t_re).div_floor(&f2p32)) as i32;
-                f_fft[v + (t/2) + (n/2)] = ((f2p31*x1_im - t_im).div_floor(&f2p32)) as i32;
-
+                // f_fft[v] = ((f2p31*x1_re + t_re).div_floor(&f2p32)) as i32;
+                f_fft[v] = (((x1_re << 31) + t_re) >> 32) as i32;
+                // f_fft[v + (n/2)] = ((f2p31*x1_im + t_im).div_floor(&f2p32)) as i32;
+                f_fft[v + (n/2)] = (((x1_im << 31) + t_im) >> 32) as i32;
+                // f_fft[v + (t/2)] = ((f2p31*x1_re - t_re).div_floor(&f2p32)) as i32;
+                f_fft[v + (t/2)] = (((x1_re << 31) - t_re) >> 32) as i32;
+                // f_fft[v + (t/2) + (n/2)] = ((f2p31*x1_im - t_im).div_floor(&f2p32)) as i32;
+                f_fft[v + (t/2) + (n/2)] = (((x1_im << 31) - t_im) >> 32) as i32;
             }
             v0 += t;
         }
@@ -216,10 +218,14 @@ pub fn ifft(f_fft: &Vec<i32>) -> Vec<i32> {
                 let t2_re = x1_re - x2_re;
                 let t2_im = x1_im - x2_im;
 
-                f[v] = t1_re.div_floor(&2) as i32;
-                f[v + (n/2)] = t1_im.div_floor(&2) as i32;
-                f[v + (t/2)] = (t2_re * e_re - t2_im*e_im).div_floor(&f2p32) as i32;
-                f[v + (t/2) + (n/2)] = (t2_re*e_im + t2_im*e_re).div_floor(&f2p32) as i32;
+                // f[v] = t1_re.div_floor(&2) as i32;
+                f[v] = (t1_re >> 1) as i32;
+                // f[v + (n/2)] = t1_im.div_floor(&2) as i32;
+                f[v + (n/2)] = (t1_im >> 1) as i32;
+                // f[v + (t/2)] = (t2_re * e_re - t2_im*e_im).div_floor(&f2p32) as i32;
+                f[v + (t/2)] = ((t2_re * e_re - t2_im*e_im) >> 32) as i32;
+                // f[v + (t/2) + (n/2)] = (t2_re*e_im + t2_im*e_re).div_floor(&f2p32) as i32;
+                f[v + (t/2) + (n/2)] = ((t2_re*e_im + t2_im*e_re) >> 32 ) as i32;
             }
             v0 += t;
         }
