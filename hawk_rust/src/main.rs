@@ -25,6 +25,9 @@ mod verify;
 mod verifyutils;
 mod codec;
 mod params;
+mod compress;
+mod decompress;
+mod grutils;
 
 // memory measurement
 use peak_alloc::PeakAlloc;
@@ -64,14 +67,16 @@ fn main() {
     // let verify = verify(8, message, q00, q01, signature);
     // println!("verify: {}", verify);
     //
-    test_codec();
+    test_compress();
 
 }
 
-fn test_codec(){
-    let test1 = "beta0";
-    let param = params::params_f(8, test1);
-    println!("{}: {}", test1, param);
+fn test_compress(){
+    let a: Vec<i64> = vec![1,2,3,4,5,6,7,8];
+    let a_comp = compress::compressgr(&a, 5, 9);
+    let a_orig = decompress::decompressgr(&a_comp, 8, 5, 9);
+    println!("{:?}", a_comp);
+    println!("{:?}", a_orig.0);
 
 }
 
