@@ -46,28 +46,30 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 */
 fn main() {
-    // let mut rng = thread_rng();
-    // let rand_seed = rng.gen_range(0..99999999);
-    // // we're generally interested in the lowest security level
-    // let startkg = Instant::now();
-    // let keypair = hawkkeygen(8, 123222);
-    // let durkg = startkg.elapsed();
-    // let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
-    //
-    // let message = 123456789 as usize;
-    // // private polynomials in here
-    // let startsg = Instant::now();
-    // let signature = sign(8, F, G, kgseed, message);
-    // let dursg = startsg.elapsed();
-    //
-    // println!("Keygen: {:?}", durkg);
-    // println!("Signature: {:?}", dursg);
-    //
-    // // public polynomials in here
-    // let verify = verify(8, message, q00, q01, signature);
-    // println!("verify: {}", verify);
-    //
+
     test_compress();
+
+    let mut rng = thread_rng();
+    let rand_seed = rng.gen_range(0..99999999);
+    // we're generally interested in the lowest security level
+    let startkg = Instant::now();
+    let keypair = hawkkeygen(8, 123222);
+    let durkg = startkg.elapsed();
+    let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
+
+    let message = 123456789 as usize;
+    // private polynomials in here
+    let startsg = Instant::now();
+    let signature = sign(8, F, G, kgseed, message);
+    let dursg = startsg.elapsed();
+
+    println!("Keygen: {:?}", durkg);
+    println!("Signature: {:?}", dursg);
+
+    // public polynomials in here
+    let verify = verify(8, message, q00, q01, signature);
+    println!("verify: {}", verify);
+
 
 }
 
@@ -77,7 +79,6 @@ fn test_compress(){
     let a_orig = decompress::decompressgr(&a_comp, 8, 5, 9);
     println!("{:?}", a_comp);
     println!("{:?}", a_orig.0);
-
 }
 
 fn test_func() {

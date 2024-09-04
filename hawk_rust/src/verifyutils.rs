@@ -49,7 +49,6 @@ fn sign(x: i64) -> i64 {
 fn scale_vec(f: &Vec<i32>, c: i32) -> Vec<i32> {
     let mut f_scaled = Vec::with_capacity(f.len());
     for i in 0..f.len() {
-        println!("{} * {} =...", f[i], c);
         f_scaled.push(f[i]*c);
     }
     return f_scaled;

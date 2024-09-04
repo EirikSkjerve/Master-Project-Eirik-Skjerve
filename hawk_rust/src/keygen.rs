@@ -4,6 +4,7 @@ use crate::rngcontext::{shake256x4, RngContext};
 use crate::utils::{
     adjoint, bigint_to_i64_vec, bigint_vec, infnorm, is_invertible, l2norm, poly_add, poly_mult_ntt,
 };
+use crate::codec::enc_pub;
 
 use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
 use num_traits::{One, Signed, ToPrimitive, Zero};
@@ -94,6 +95,10 @@ pub fn hawkkeygen(
             &poly_mult_ntt(&F, &F_star, p),
             &poly_mult_ntt(&G, &G_star, p),
         );
+
+        let encoded = enc_pub(logn as usize,&q00, &q01);
+        println!("encoded: {:?}", encoded);
+
         return (f.clone(), g.clone(), F, G, q00, q01, kgseed, counter);
     }
 }

@@ -53,3 +53,21 @@ pub fn int(a: &Vec<u8>) -> i32 {
     return res;
 
 }
+
+pub fn packbits(bits: &Vec<u8>) -> Vec<u8> {
+    let mut packed_bytes = Vec::new();
+
+    for chunk in bits.chunks(8) {
+        let mut byte: u8 = 0;
+
+        for (i, &bit) in chunk.iter().enumerate() {
+
+            if bit == 1 {
+                byte |= 1 << i;
+            }
+        }
+        packed_bytes.push(byte);
+    }
+
+    return packed_bytes;
+}
