@@ -71,3 +71,15 @@ pub fn packbits(bits: &Vec<u8>) -> Vec<u8> {
 
     return packed_bytes;
 }
+
+pub fn unpackbits(arr: &Vec<u8>) -> Vec<u8> {
+    let mut bits = Vec::new();
+
+    for &byte in arr {
+        for i in 0..8 {
+            let bit = (byte>>i) & 1;
+            bits.push(bit);
+        }
+    }
+    return bits;
+}

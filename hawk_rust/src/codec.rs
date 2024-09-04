@@ -6,6 +6,11 @@ use crate::grutils::*;
 
 pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
 
+    /*
+     * encode public key
+     * failure to encode yields [0] as a result
+     */
+
     let n = 1 << logn;
     if q00[0] < -(1<<15) || q00[0] >= (1<<15){
         // default failure value
@@ -59,9 +64,83 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
     return packed;
 }
 
-pub fn dec_pub() {
+pub fn dec_pub(logn: usize, pub_enc: &Vec<u8>) -> (Vec<i16>, Vec<i16>){
+    /*
+     * Decodes an encoded public key
+     * Serves as the inverse function of enc_pub()
+     * failure returns ([0], [0])
+     */
 
+    let n = 1<<logn;
+
+    if pub_enc.len() != params_i(logn, "lenpub") as usize {
+        // failure return value
+        return (vec![0], vec![0]);
+    }
+
+    let v = 16 - params_i(logn, "high00") as usize;
+    let y = unpackbits(&pub_enc);
+
+    let r00 = decompressgr(&y, n/2, params_i(logn, "low00") as usize, params_i(logn, "high00") as usize);
+    if r00.0[0] == 0 && (r00.0).len() == 1 {
+        return (vec![0], vec![0]);
+    }
+
+    let (r00, j) = (r00.0, r00.1);
+
+    let mut q00: Vec<i16> = vec![0; n];
+
+    for i in 0..r00.len() {
+        q00[i] = r00[i] as i16;
+    }
+
+    if y.len()*8 < j+v {
+        return (vec![0], vec![0]);
+    }
+
+    q00[0] *= 1<<v;
+    q00[0] += int(&y[j..(j+v)].to_vec()) as i16;
+
+    let mut j = j+v;
+
+    while modulo(j, 8) != 0 {
+        if j >= y.len() || y[j] != 0{
+            return (vec![0], vec![0]);
+        }
+        j += 1;
+    }
+
+    q00[n/2] = 0;
+    for i in (n/2)+1..n {
+        q00[i] = -q00[n-i];
+    }
+
+    let r01 = decompressgr(&y[j..y.len()].to_vec(), n, 
+                           params_i(logn, "low01") as usize, 
+                           params_i(logn, "high01") as usize);
+
+    if r01.0[0]==0 && r01.0.len()==1 {
+        return (vec![0], vec![0]);
+    }
+
+    let (r01, jp) = (r01.0, r01.1);
+
+    j += jp;
+    let mut q01 = Vec::with_capacity(r01.len());
+    for i in 0..r01.len(){
+        q01.push(r01[i] as i16);
+    }
+
+    while j < y.len(){
+        if y[j] != 0{
+            return (vec![0], vec![0]);
+        }
+        j += 1;
+    }
+
+    return (q00, q01)
 }
+
 
 pub fn enc_priv() {
 

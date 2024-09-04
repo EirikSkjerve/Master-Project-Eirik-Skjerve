@@ -57,19 +57,20 @@ fn main() {
     let durkg = startkg.elapsed();
     let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
 
-    let message = 123456789 as usize;
-    // private polynomials in here
-    let startsg = Instant::now();
-    let signature = sign(8, F, G, kgseed, message);
-    let dursg = startsg.elapsed();
-
-    println!("Keygen: {:?}", durkg);
-    println!("Signature: {:?}", dursg);
-
-    // public polynomials in here
-    let verify = verify(8, message, q00, q01, signature);
-    println!("verify: {}", verify);
-
+    // 
+    // let message = 123456789 as usize;
+    // // private polynomials in here
+    // let startsg = Instant::now();
+    // let signature = sign(8, F, G, kgseed, message);
+    // let dursg = startsg.elapsed();
+    //
+    // println!("Keygen: {:?}", durkg);
+    // println!("Signature: {:?}", dursg);
+    //
+    // // public polynomials in here
+    // let verify = verify(8, message, q00, q01, signature);
+    // println!("verify: {}", verify);
+    //
 
 }
 
@@ -77,8 +78,6 @@ fn test_compress(){
     let a: Vec<i64> = vec![1,2,3,4,5,6,7,8];
     let a_comp = compress::compressgr(&a, 5, 9);
     let a_orig = decompress::decompressgr(&a_comp, 8, 5, 9);
-    println!("{:?}", a_comp);
-    println!("{:?}", a_orig.0);
 }
 
 fn test_func() {

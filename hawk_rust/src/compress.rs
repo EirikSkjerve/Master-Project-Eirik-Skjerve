@@ -13,7 +13,11 @@ pub fn compressgr(x: &Vec<i64>, low: usize, high: usize) -> Vec<u8> {
     assert_eq!(k%8, 0);
 
     for i in 0..k{
-        assert!(x[i] < (1<<high) && x[i] > -(1<<high));
+        if !(x[i] < (1<<high) && x[i] > -(1<<high)) {
+            println!("failure from compressgr 1");
+            return vec![0];
+        }
+        // assert!(x[i] < (1<<high) && x[i] > -(1<<high));
     }
 
     let mut y: Vec<u8> = Vec::new();
@@ -30,6 +34,7 @@ pub fn compressgr(x: &Vec<i64>, low: usize, high: usize) -> Vec<u8> {
         v.push((x[i]- (si as i64)*(2*x[i] + 1)) as i16);
         if v[i] >= (1<<high){
             // empty vec indicates failed attempt
+            println!("failure from compressgr 2");
             return vec![0];
         }
     }
