@@ -23,6 +23,8 @@ mod sign;
 mod utils;
 mod verify;
 mod verifyutils;
+mod codec;
+mod params;
 
 // memory measurement
 use peak_alloc::PeakAlloc;
@@ -41,28 +43,35 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 */
 fn main() {
-    let mut rng = thread_rng();
-    let rand_seed = rng.gen_range(0..99999999);
-    // we're generally interested in the lowest security level
-    let startkg = Instant::now();
-    let keypair = hawkkeygen(8, 123222);
-    let durkg = startkg.elapsed();
-    let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
+    // let mut rng = thread_rng();
+    // let rand_seed = rng.gen_range(0..99999999);
+    // // we're generally interested in the lowest security level
+    // let startkg = Instant::now();
+    // let keypair = hawkkeygen(8, 123222);
+    // let durkg = startkg.elapsed();
+    // let (f, g, F, G, q00, q01, kgseed, counter) = keypair;
+    //
+    // let message = 123456789 as usize;
+    // // private polynomials in here
+    // let startsg = Instant::now();
+    // let signature = sign(8, F, G, kgseed, message);
+    // let dursg = startsg.elapsed();
+    //
+    // println!("Keygen: {:?}", durkg);
+    // println!("Signature: {:?}", dursg);
+    //
+    // // public polynomials in here
+    // let verify = verify(8, message, q00, q01, signature);
+    // println!("verify: {}", verify);
+    //
+    test_codec();
 
-    let message = 123456789 as usize;
-    // private polynomials in here
-    let startsg = Instant::now();
-    let signature = sign(8, F, G, kgseed, message);
-    let dursg = startsg.elapsed();
+}
 
-    println!("Keygen: {:?}", durkg);
-    println!("Signature: {:?}", dursg);
-
-    // public polynomials in here
-    let verify = verify(8, message, q00, q01, signature);
-    println!("verify: {}", verify);
-
-    test_func();
+fn test_codec(){
+    let test1 = "beta0";
+    let param = params::params_f(8, test1);
+    println!("{}: {}", test1, param);
 
 }
 
