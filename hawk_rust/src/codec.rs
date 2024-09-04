@@ -46,7 +46,7 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
         params_i(logn, "high01") as usize,
     );
 
-    if y01[0] == 0 && y00.len() == 1 {
+    if y01[0] == 0 && y01.len() == 1 {
         // failure return value
         return vec![0];
     }

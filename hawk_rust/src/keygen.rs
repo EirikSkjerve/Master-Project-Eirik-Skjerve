@@ -108,9 +108,11 @@ pub fn hawkkeygen(
         println!("encoded public key: {:?}", encoded);
 
         let decoded = dec_pub(logn as usize, &encoded);
+
         if decoded.0.len() == 1 && decoded.1.len() == 1 {
             println!("decoded public key: {:?}", decoded);
         }
+
         println!("decoded public key: {:?}", decoded);
 
         return (f.clone(), g.clone(), F, G, q00, q01, kgseed, counter);
