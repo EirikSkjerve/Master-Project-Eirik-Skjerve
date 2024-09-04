@@ -5,8 +5,13 @@ use crate::rngcontext::{shake256x4, RngContext};
 use crate::utils::{
     adjoint, bigint_to_i64_vec, bigint_vec, infnorm, is_invertible, l2norm, poly_add, poly_mult_ntt,
 };
-
 use crate::params::params_i;
+
+use sha3::{
+    digest::{ExtendableOutput, ExtendableOutputReset, Update},
+    Shake256,
+};
+
 
 use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
 use num_traits::{One, Signed, ToPrimitive, Zero};
@@ -19,10 +24,9 @@ pub fn hawkkeygen(
     Vec<i64>,
     Vec<i64>,
     Vec<i64>,
-    Vec<i64>,
-    Vec<i64>,
     usize,
-    i32,
+    Vec<u8>,
+    Vec<u8>
 ) {
     // not doing recursion
     let mut rng = RngContext::new(initial_seed as u128);
@@ -108,26 +112,26 @@ pub fn hawkkeygen(
             continue;
         }
 
-        let encoded = enc_pub(logn as usize, &q00, &q01);
+        let pub_key = enc_pub(logn as usize, &q00, &q01);
 
         // encoding failed if the following is true
-        if encoded[0] == 0 && encoded.len() == 1 {
-            println!("encoded public key: {:?}", encoded);
+        if pub_key[0] == 0 && pub_key.len() == 1 {
             continue;
         }
 
-        println!("q00: {:?}, q01: {:?}", q00, q01);
-        println!("encoded public key: {:?}", encoded);
+        let mut shaker = Shake256::default();
+        let pk: &[u8] = &pub_key;
+        shaker.update(pk);
+        // this should be retrieved from params later 
+        let mut hpub: [u8;16] = [0;16];
+        shaker.finalize_xof_into(&mut hpub);
 
-        let decoded = dec_pub(logn as usize, &encoded);
+        // encode private key as encode_private(kgseed, F, G, hpub);
 
-        if decoded.0.len() == 1 && decoded.1.len() == 1 {
-            println!("decoded public key: {:?}", decoded);
-        }
+        println!("hpub: {:?}", hpub);
+        return (f, g, F, G, kgseed, pub_key, hpub.to_vec());
 
-        println!("decoded public key: {:?}", decoded);
-
-        return (f.clone(), g.clone(), F, G, q00, q01, kgseed, counter);
+        // return (f.clone(), g.clone(), F, G, q00, q01, kgseed, counter);
     }
 }
 

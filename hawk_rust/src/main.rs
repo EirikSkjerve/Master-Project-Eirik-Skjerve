@@ -55,20 +55,22 @@ fn main() {
     let keypair = hawkkeygen(8, 123222);
     let durkg = startkg.elapsed();
 
-    // test_compress();
-    // let message = 123456789 as usize;
-    // // private polynomials in here
-    // let startsg = Instant::now();
-    // let signature = sign(8, F, G, kgseed, message);
-    // let dursg = startsg.elapsed();
-    //
-    // println!("Keygen: {:?}", durkg);
-    // println!("Signature: {:?}", dursg);
+    let (f, g, F, G, kgseed, pub_key, hpub) = keypair;
+
+    let message = 123456789 as usize;
+    // private polynomials in here
+    let startsg = Instant::now();
+    let signature = sign(8, F, G, kgseed, message);
+    let dursg = startsg.elapsed();
+    println!("signature: {:?}", signature);
+
+    println!("Keygen: {:?}", durkg);
+    println!("Signature: {:?}", dursg);
     //
     // // public polynomials in here
     // let verify = verify(8, message, q00, q01, signature);
     // println!("verify: {}", verify);
-    //
+
 }
 
 fn test_compress() {
@@ -95,25 +97,25 @@ fn test_pipeline() {
     let mut sum = 0;
 
     let mut rng = thread_rng();
-
-    let randval = rng.gen_range(0..100000000);
-    let key_pair = hawkkeygen(8, randval);
-    let (f, g, F, G, q00, q01, kgseed, counter) = key_pair;
-    let start = Instant::now();
-    for i in 0..10000 {
-        let message = rng.gen_range(0..10000);
-        let F_clone = F.clone();
-        let G_clone = G.clone();
-        let sig = sign(8, F_clone, G_clone, kgseed, message);
-        let ver = verify(8, message, q00.clone(), q01.clone(), sig);
-        if ver {
-            println!("{}", randval);
-        }
-    }
-    let duration = start.elapsed();
-    println!("Generated in {:?}", duration);
-    let peak_mem = PEAK_ALLOC.peak_usage_as_kb();
-    println!("Max memory use: {} kb", peak_mem);
+    //
+    // let randval = rng.gen_range(0..100000000);
+    // let key_pair = hawkkeygen(8, randval);
+    // let (f, g, F, G, q00, q01, kgseed, counter) = key_pair;
+    // let start = Instant::now();
+    // for i in 0..10000 {
+    //     let message = rng.gen_range(0..10000);
+    //     let F_clone = F.clone();
+    //     let G_clone = G.clone();
+    //     let sig = sign(8, F_clone, G_clone, kgseed, message);
+    //     let ver = verify(8, message, q00.clone(), q01.clone(), sig);
+    //     if ver {
+    //         println!("{}", randval);
+    //     }
+    // }
+    // let duration = start.elapsed();
+    // println!("Generated in {:?}", duration);
+    // let peak_mem = PEAK_ALLOC.peak_usage_as_kb();
+    // println!("Max memory use: {} kb", peak_mem);
 }
 
 fn print_type_of<T>(_: &T) {
