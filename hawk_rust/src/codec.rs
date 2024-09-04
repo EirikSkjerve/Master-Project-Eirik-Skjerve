@@ -12,6 +12,7 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
 
     let n = 1 << logn;
     if q00[0] < -(1 << 15) || q00[0] >= (1 << 15) {
+        println!("failure from encpub 1");
         // default failure value
         return vec![0];
     }
@@ -28,6 +29,7 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
     );
 
     if y00[0] == 0 && y00.len() == 1 {
+        println!("failure from encpub 2");
         // this is the failure return value
         return vec![0];
     }
@@ -48,6 +50,7 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
 
     if y01[0] == 0 && y01.len() == 1 {
         // failure return value
+        println!("failure from encpub 3");
         return vec![0];
     }
 
@@ -61,6 +64,7 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
 
     if y.len() > (params_i(logn, "lenpub") * 8) as usize {
         // failure return value
+        println!("failure from encpub 4");
         return vec![0];
     }
     println!("y len: {}", y.len());

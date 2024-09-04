@@ -6,6 +6,8 @@ use crate::utils::{
     adjoint, bigint_to_i64_vec, bigint_vec, infnorm, is_invertible, l2norm, poly_add, poly_mult_ntt,
 };
 
+use crate::params::params_i;
+
 use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
 use num_traits::{One, Signed, ToPrimitive, Zero};
 
@@ -91,10 +93,20 @@ pub fn hawkkeygen(
         );
 
         let p = 8380417;
-        let q01 = poly_add(
+        let q11 = poly_add(
             &poly_mult_ntt(&F, &F_star, p),
             &poly_mult_ntt(&G, &G_star, p),
         );
+
+        let mut flag = false;
+        for i in 1..q11.len() {
+            if q11[i].abs() >= 1<<(params_i(logn as usize, "high11")) {
+                flag = true;
+            }
+        }
+        if flag{
+            continue;
+        }
 
         let encoded = enc_pub(logn as usize, &q00, &q01);
 

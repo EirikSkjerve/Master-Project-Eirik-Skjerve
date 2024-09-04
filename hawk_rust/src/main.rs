@@ -55,7 +55,7 @@ fn main() {
     let keypair = hawkkeygen(8, 123222);
     let durkg = startkg.elapsed();
 
-    test_compress();
+    // test_compress();
     // let message = 123456789 as usize;
     // // private polynomials in here
     // let startsg = Instant::now();
