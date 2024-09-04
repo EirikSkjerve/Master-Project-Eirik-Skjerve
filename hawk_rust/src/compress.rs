@@ -1,7 +1,7 @@
 use crate::grutils::*;
 
 // using Golomb-Rice compression algorithm
-pub fn compressgr(x: &Vec<i64>, low: usize, high: usize) -> Vec<bool> {
+pub fn compressgr(x: &Vec<i64>, low: usize, high: usize) -> Vec<u8> {
 
     /*
      Input: sequence x, low and high
@@ -16,7 +16,7 @@ pub fn compressgr(x: &Vec<i64>, low: usize, high: usize) -> Vec<bool> {
         assert!(x[i] < (1<<high) && x[i] > -(1<<high));
     }
 
-    let mut y: Vec<bool> = Vec::new();
+    let mut y: Vec<u8> = Vec::new();
     let mut v: Vec<i16> = Vec::new();
 
     for i in 0..k {
@@ -26,31 +26,26 @@ pub fn compressgr(x: &Vec<i64>, low: usize, high: usize) -> Vec<bool> {
             true => 1,
         };
 
-        y.push(s);
-        v.push((x[i]- si*(2*x[i] + 1)) as i16);
+        y.push(si);
+        v.push((x[i]- (si as i64)*(2*x[i] + 1)) as i16);
         if v[i] >= (1<<high){
             // empty vec indicates failed attempt
-            return vec![false];
+            return vec![0];
         }
     }
 
     for i in 0..k { 
         let res = bin(modulo(v[i] as i32, (1<<low) as i32), low);
         for r in res{
-            if r==1{
-                y.push(true);
-            }
-            if r==0{
-                y.push(false)
-            }
+            y.push(r);
         }
     }
 
     for i in 0..k{
         for z in 0..(v[i]/(1<<low)) as usize {
-            y.push(false);
+            y.push(0);
         }
-        y.push(true);
+        y.push(1);
     }
 
     return y;
