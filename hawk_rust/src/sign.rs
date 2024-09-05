@@ -71,7 +71,7 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
     return x;
 }
 
-pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> (Vec<u8>, Vec<i64>) {
+pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
 
     let (kgseed, Fmod2, Gmod2, hpub) = dec_priv(logn, pk);
     // this should be from logn
@@ -175,9 +175,13 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> (Vec<u8>, Vec<i64>) {
             w1 = w1.iter().map(|&x| -x).collect();
         }
 
-        let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x / 2).collect();
+        let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x>>1).collect();
 
-        return (salt.to_vec(), sig);
+        let sig = enc_sig(logn, &salt.to_vec(), &sig);
+        if sig[0] == 0 && sig.len() == 1 {
+            continue
+        }
+        return sig;
     }
 }
 

@@ -241,10 +241,11 @@ pub fn dec_priv(logn: usize, priv_enc: &Vec<u8>) -> (usize, Vec<i64>, Vec<i64>, 
 pub fn enc_sig(logn: usize, salt: &Vec<u8>, s1: &Vec<i64>) -> Vec<u8> {
 
     // compress s1
-    let mut y = compressgr(&s1, params_i(logn, "losw1") as usize, params_i(logn, "highs1") as usize);
+    let mut y = compressgr(&s1, params_i(logn, "lows1") as usize, params_i(logn, "highs1") as usize);
 
     // check if compression has failed
     if y[0] == 0 && y.len() == 1 {
+        println!("failure from enc sig 1");
         return vec![0];
     }
 
@@ -253,6 +254,7 @@ pub fn enc_sig(logn: usize, salt: &Vec<u8>, s1: &Vec<i64>) -> Vec<u8> {
 
     // return failure if y is longer than prescribed
     if y.len() > leny {
+        println!("failure from enc sig 2");
         return vec![0];
     }
 
