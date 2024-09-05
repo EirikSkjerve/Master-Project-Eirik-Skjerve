@@ -1,4 +1,4 @@
-use crate::codec::{dec_pub, enc_pub};
+use crate::codec::{enc_pub, enc_priv};
 use crate::fft::{inverse_fft, mul_fft_i64};
 use crate::ntru_solve::ntrusolve;
 use crate::rngcontext::{shake256x4, RngContext};
@@ -17,14 +17,9 @@ use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
 use num_traits::{One, Signed, ToPrimitive, Zero};
 
 pub fn hawkkeygen(
-    logn: u8,
+    logn: usize,
     initial_seed: usize,
 ) -> (
-    Vec<i64>,
-    Vec<i64>,
-    Vec<i64>,
-    Vec<i64>,
-    usize,
     Vec<u8>,
     Vec<u8>
 ) {
@@ -112,31 +107,30 @@ pub fn hawkkeygen(
             continue;
         }
 
-        let pub_key = enc_pub(logn as usize, &q00, &q01);
+        let pub_enc = enc_pub(logn as usize, &q00, &q01);
 
         // encoding failed if the following is true
-        if pub_key[0] == 0 && pub_key.len() == 1 {
+        if pub_enc[0] == 0 && pub_enc.len() == 1 {
             continue;
         }
 
         let mut shaker = Shake256::default();
-        let pk: &[u8] = &pub_key;
+        let pk: &[u8] = &pub_enc;
         shaker.update(pk);
         // this should be retrieved from params later 
         let mut hpub: [u8;16] = [0;16];
         shaker.finalize_xof_into(&mut hpub);
 
+        let priv_enc = enc_priv(kgseed, &F, &G, &hpub);
         // encode private key as encode_private(kgseed, F, G, hpub);
 
-        println!("hpub: {:?}", hpub);
-        return (f, g, F, G, kgseed, pub_key, hpub.to_vec());
+        return (pub_enc, priv_enc);
 
-        // return (f.clone(), g.clone(), F, G, q00, q01, kgseed, counter);
     }
 }
 
 // generates polynomials f and g
-pub fn generate_f_g(seed: usize, logn: u8) -> (Vec<i64>, Vec<i64>) {
+pub fn generate_f_g(seed: usize, logn: usize) -> (Vec<i64>, Vec<i64>) {
     // expand logn -> n
     let n = 1 << logn;
     let b = n / 64;

@@ -55,12 +55,13 @@ fn main() {
     let keypair = hawkkeygen(8, 123222);
     let durkg = startkg.elapsed();
 
-    let (f, g, F, G, kgseed, pub_key, hpub) = keypair;
+    // public key, secret key
+    let (pk, sk) = keypair;
 
     let message = 123456789 as usize;
     // private polynomials in here
     let startsg = Instant::now();
-    let signature = sign(8, F, G, kgseed, message);
+    let signature = sign(8, &pk, message);
     let dursg = startsg.elapsed();
     println!("signature: {:?}", signature);
 
@@ -76,6 +77,7 @@ fn main() {
 fn test_compress() {
     let a: Vec<i64> = vec![0;256];
     let b: Vec<i64> = vec![1;256];
+
     let enc_pub = codec::enc_pub(8, &a, &b);
     println!("enc pub: {:?}", enc_pub);
     let ab = codec::dec_pub(8, &enc_pub);

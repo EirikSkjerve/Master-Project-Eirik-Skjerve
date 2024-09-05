@@ -11,6 +11,8 @@ use crate::keygen::generate_f_g;
 use crate::rngcontext::{shake256x4, RngContext};
 use crate::utils::{bytes_to_poly, modulo, poly_add, poly_mult_ntt, poly_sub};
 
+use crate::codec::{dec_priv, enc_sig};
+
 pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
     let (T0, T1) = get_table();
     let y = shake256x4(seed, 5 * n / 2);
@@ -69,14 +71,10 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
     return x;
 }
 
-pub fn sign(logn: u8, F: Vec<i64>, G: Vec<i64>, kgseed: usize, msg: usize) -> (Vec<u8>, Vec<i64>) {
-    let mut Fmod2: Vec<i64> = Vec::with_capacity(F.len());
-    let mut Gmod2: Vec<i64> = Vec::with_capacity(G.len());
+pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> (Vec<u8>, Vec<i64>) {
 
-    for i in 0..F.len() {
-        Fmod2.push(modulo(F[i], 2));
-        Gmod2.push(modulo(G[i], 2));
-    }
+    let (kgseed, Fmod2, Gmod2, hpub) = dec_priv(logn, pk);
+    // this should be from logn
     // initialize a new RngContext with some random seed
     // use random() instead of fixed seed
     let mut rng = RngContext::new(1337);
@@ -179,7 +177,6 @@ pub fn sign(logn: u8, F: Vec<i64>, G: Vec<i64>, kgseed: usize, msg: usize) -> (V
 
         let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x / 2).collect();
 
-        println!("h0: {:?} \nh1: {:?}", h0, h1);
         return (salt.to_vec(), sig);
     }
 }
