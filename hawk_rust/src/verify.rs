@@ -80,8 +80,8 @@ pub fn verify(
     // println!("rebuilt w0: {:?}", w0);
 
     let (p1, p2): (i64, i64) = (2147473409, 2147389441);
-    println!("q00 = {:?} \nq01 = {:?} \nw0 = {:?} \nw1 = {:?}", q00, q01, w0, w1);
-    println!("h0 = {:?}", h0);
+    // println!("q00 = {:?} \nq01 = {:?} \nw0 = {:?} \nw1 = {:?}", q00, q01, w0, w1);
+    // println!("h0 = {:?}", h0);
 
     let r1 = polyQnorm(&q00_i64, &q01_i64, &i32vec_to_i64vec(&w0), &w1, p1);
     let r2 = polyQnorm(&q00_i64, &q01_i64, &i32vec_to_i64vec(&w0), &w1, p2);

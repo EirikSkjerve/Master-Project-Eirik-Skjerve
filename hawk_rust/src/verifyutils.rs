@@ -63,12 +63,11 @@ pub fn rebuildw0(
     let high00 = 9;
     let high01 = 11;
 
-    let base: i32 = 2;
     let base_i64: i64 = 2;
 
-    let cw1 = base.pow(29 - (1 + highs1));
-    let cq00 = base.pow(29 - high00);
-    let cq01 = base.pow(29 - high01);
+    let cw1 = 1<<(29-(1 + highs1));
+    let cq00 = 1<<(29 - high00);
+    let cq01 = 1<<(29 - high01);
 
     let cs0 = ((2 * (cw1 as i64) * (cq01 as i64)) / ((n * cq00) as i64)) as i32;
     let w1_fft = fft(&scale_vec(&w1, cw1));
@@ -83,11 +82,11 @@ pub fn rebuildw0(
 
     z00[0] = 0;
 
-    println!("z00: {:?} \n cq00: {} \n scaled: {:?}", z00, cq00, &scale_vec(&z00, cq00));
+    // compute fft(q00*cq00) and fft(q01*cq01)
     let q00_fft = fft(&scale_vec(&z00, cq00));
-    println!("q00_fft: {:?}", q00_fft);
     let mut q01_fft = fft(&scale_vec(&q01, cq01));
 
+    println!("{}", q00[0]);
     let alpha = (2 * (cq00 as i64) * (q00[0] as i64)) / n as i64;
     let alpha = alpha as i32;
 
@@ -96,7 +95,7 @@ pub fn rebuildw0(
         let mut x_re = q01_fft[u] as i64 * w1_fft[u] as i64;
         x_re -= q01_fft[u + (n_uz / 2)] as i64 * w1_fft[u + (n_uz/2)] as i64;
 
-        let mut x_im = (q01_fft[u] * w1[u + n_uz / 2]) as i64;
+        let mut x_im = q01_fft[u] as i64 * w1_fft[u + n_uz / 2] as i64;
         x_im += q01_fft[u + (n_uz / 2)] as i64 * w1_fft[u] as i64;
 
         let (x_re, z_re) = (x_re.abs(), sign(x_re));
