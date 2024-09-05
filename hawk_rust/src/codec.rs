@@ -238,6 +238,79 @@ pub fn dec_priv(logn: usize, priv_enc: &Vec<u8>) -> (usize, Vec<i64>, Vec<i64>, 
     return (kgseed, Fmod2.to_vec(), Gmod2.to_vec(), hpub.clone());
 }
 
-pub fn enc_sig() {}
+pub fn enc_sig(logn: usize, salt: &Vec<u8>, s1: &Vec<i64>) -> Vec<u8> {
 
-pub fn dec_sig() {}
+    // compress s1
+    let mut y = compressgr(&s1, params_i(logn, "losw1") as usize, params_i(logn, "highs1") as usize);
+
+    // check if compression has failed
+    if y[0] == 0 && y.len() == 1 {
+        return vec![0];
+    }
+
+    // get the prescribed length of y
+    let leny = ((params_i(logn, "lensig") - params_i(logn, "lensalt")) * 8) as usize;
+
+    // return failure if y is longer than prescribed
+    if y.len() > leny {
+        return vec![0];
+    }
+
+    // pad y with 0's
+    while y.len() < leny {
+        y.push(0);
+    }
+
+    // append salt || packedbits(y)
+    let mut res = salt.clone();
+    let y_packed = packbits(&y);
+    for yp in y_packed.iter() {
+        res.push(*yp);
+    }
+
+    return res;
+
+}
+
+pub fn dec_sig(logn: usize, sig_enc: &Vec<u8>) -> (Vec<u8>, Vec<i16>){
+    let n = 1<<logn;
+
+    // check length of encoded signature
+    if sig_enc.len() != params_i(logn, "lensig") as usize{
+        return (vec![0], vec![0]);
+    }
+
+    let salt = &sig_enc[0..(params_i(logn, "lensalt") as usize)];
+    
+    // unpack encoded sig to bits
+    let y = unpackbits(&sig_enc);
+
+    let s1 = decompressgr(
+        &y[((params_i(logn, "lensalt")*8) as usize)..y.len()].to_vec(),
+        n,
+        params_i(logn, "lows1") as usize,
+        params_i(logn, "highs1") as usize
+        );
+
+    // unpack the values in the tuple
+    let mut j = s1.1;
+    let s1 = s1.0;
+
+    // return failure value if decompress fails
+    if s1[0] == 0 && s1.len() == 1 {
+        return (vec![0], vec![0]);
+    }
+
+    let s1: Vec<i16> = s1.iter().map(|&x| x as i16).collect();
+
+    j += (params_i(logn, "lensalt") * 8) as usize;
+
+    while j < y.len() {
+        if y[j] != 0{
+            return (vec![0], vec![0]);
+        }
+        j += 1;
+    }
+
+    return (salt.to_vec(), s1);
+}
