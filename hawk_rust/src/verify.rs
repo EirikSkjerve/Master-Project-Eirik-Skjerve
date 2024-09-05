@@ -86,6 +86,7 @@ pub fn verify(
     let r1 = polyQnorm(&q00_i64, &q01_i64, &i32vec_to_i64vec(&w0), &w1, p1);
     let r2 = polyQnorm(&q00_i64, &q01_i64, &i32vec_to_i64vec(&w0), &w1, p2);
 
+
     // println!("q00: {:?} \nq01: {:?}", q00_i32, q01_i32);
     println!("r1: {} \nr2: {}", r1, r2);
 
@@ -94,10 +95,11 @@ pub fn verify(
         return false;
     }
 
-    let r1 = r1 / n as i64;
+    let r1 = r1>>logn;
 
     let sigmaverify: f64 = 1.042;
 
+    println!("r1: {} \n limit: {}", r1, (8 * n) as f64 * sigmaverify.powi(2));
     if (r1 as f64) > (8 * n) as f64 * sigmaverify.powi(2) {
         println!("Too big");
         return false;
