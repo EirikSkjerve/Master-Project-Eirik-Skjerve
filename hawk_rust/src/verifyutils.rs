@@ -201,7 +201,7 @@ pub fn ifft(f_fft: &Vec<i32>) -> Vec<i32> {
         for u in 0..(m / 2) {
             let e = delta(u + m);
             let e_re = e.0 as i64;
-            let e_im = -e.0 as i64;
+            let e_im = -e.1 as i64;
 
             for v in v0..v0 + (t / 2) {
                 let x1_re = f[v] as i64;
