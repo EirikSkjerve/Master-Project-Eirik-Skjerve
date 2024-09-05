@@ -3,7 +3,7 @@ use crate::utils::{adjoint, mod_pow, modulo};
 use num_complex::Complex;
 use std::f64::consts::PI;
 
-pub fn delta(k: usize) -> (u32, u32) {
+pub fn delta(k: usize) -> (i32, i32) {
     let i = Complex::new(0.0, 1.0);
     let pi_complex = Complex::new(PI, 0.0);
     let temp = Complex::new(brv(k as u32, 10) as f64, 0.0);
@@ -17,8 +17,8 @@ pub fn delta(k: usize) -> (u32, u32) {
     let factor: Complex<f64> = Complex::new(base.powi(31), 0.0);
     d *= factor;
 
-    let re: u32 = d.re.round() as u32;
-    let im: u32 = d.im.round() as u32;
+    let re: i32 = d.re.round() as i32;
+    let im: i32 = d.im.round() as i32;
 
     return (re, im);
 }
@@ -165,6 +165,7 @@ pub fn fft(f: &Vec<i32>) -> Vec<i32> {
         v0 = 0;
         for u in 0..(m / 2) {
             let e = delta(u + m);
+            println!("delta: {:?}", e);
             let e_re: i64 = e.0 as i64;
             let e_im: i64 = e.1 as i64;
 
