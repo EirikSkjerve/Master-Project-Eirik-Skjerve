@@ -103,22 +103,12 @@ pub fn rebuildw0(
         let (x_im, z_im) = (x_im.abs(), sign(x_im));
 
         let v = (alpha + q00_fft[u]) as i64;
-        //
-        // println!("u: {}", u);
-        // println!("v: {}", v);
-        // println!("alpha: {}", alpha);
-        // println!("q00_fft[u]: {}", q00_fft[u]);
-        //
+
         if v <= 0
             || v >= base_i64.pow(32)
             || (x_re as i64) >= v * base_i64.pow(32)
             || (x_im as i64) >= v * base_i64.pow(32)
         {
-            // fix this also
-            println!("rebuild failure 2");
-            println!("x_re: {}", x_re);
-            println!("x_im: {}", x_im);
-            println!("{}", q00_fft.len());
             return vec![0];
         }
 
@@ -165,7 +155,6 @@ pub fn fft(f: &Vec<i32>) -> Vec<i32> {
         v0 = 0;
         for u in 0..(m / 2) {
             let e = delta(u + m);
-            println!("delta: {:?}", e);
             let e_re: i64 = e.0 as i64;
             let e_im: i64 = e.1 as i64;
 
@@ -206,14 +195,12 @@ pub fn ifft(f_fft: &Vec<i32>) -> Vec<i32> {
 
     let mut v0 = 0;
 
-    let f2p32 = (2 as i64).pow(32);
-
     while m > 1 {
         v0 = 0;
         for u in 0..(m / 2) {
             let e = delta(u + m);
             let e_re = e.0 as i64;
-            let e_im = -(e.0 as i64);
+            let e_im = -e.0 as i64;
 
             for v in v0..v0 + (t / 2) {
                 let x1_re = f[v] as i64;
@@ -280,10 +267,12 @@ pub fn polyQnorm(q00: &Vec<i64>, q01: &Vec<i64>, w0: &Vec<i64>, w1: &Vec<i64>, p
     let e_adj_ntt = nttadj(&e, p_u32);
     for i in 0..n {
         // preprocessing
-        let temp1 = modulo(q00ntt[i], p) as u128;
-        let temp2 = modulo(e[i], p) as u128;
-        let temp3 = modulo(e_adj_ntt[i], p) as u128;
-        val = modulo(temp1 * temp2 * temp3, p as u128) as i64;
+        let temp1 = modulo(q00ntt[i], p) as i64;
+        let temp2 = modulo(e[i], p) as i64;
+        let temp3 = modulo(e_adj_ntt[i], p) as i64;
+        val = modulo(temp1 as i128 * temp2 as i128 * temp3 as i128, p as i128) as i64;
+
+        acc = modulo(acc, p);
         acc += val;
     }
 

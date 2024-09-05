@@ -24,16 +24,16 @@ pub fn verify(
     let salt = r.0;
     let s1 = r.1;
 
-    println!("salt from verify: {:?}", salt);
-    println!("s1 from verify: {:?}", s1);
+    // println!("salt from verify: {:?}", salt);
+    // println!("s1 from verify: {:?}", s1);
     // TODO check signature
     
     // decode public key
     let r = dec_pub(logn, &pub_key);
     let q00 = r.0;
     let q01 = r.1;
-    println!("q00 from verify: {:?}", q00);
-    println!("q01 from verify: {:?}", q01);
+    // println!("q00 from verify: {:?}", q00);
+    // println!("q01 from verify: {:?}", q01);
 
     // TODO check public key decoding 
     // TODO make hash of public key
@@ -77,15 +77,16 @@ pub fn verify(
         println!("failed on rebuild");
         return false;
     }
-    println!("rebuilt w0: {:?}", w0);
+    // println!("rebuilt w0: {:?}", w0);
 
     let (p1, p2): (i64, i64) = (2147473409, 2147389441);
-    // println!("q00 = {:?} \nq01 = {:?} \nw0 = {:?} \nw1 = {:?}", q00, q01, w0, w1);
+    println!("q00 = {:?} \nq01 = {:?} \nw0 = {:?} \nw1 = {:?}", q00, q01, w0, w1);
+    println!("h0 = {:?}", h0);
 
     let r1 = polyQnorm(&q00_i64, &q01_i64, &i32vec_to_i64vec(&w0), &w1, p1);
     let r2 = polyQnorm(&q00_i64, &q01_i64, &i32vec_to_i64vec(&w0), &w1, p2);
 
-    println!("q00: {:?} \nq01: {:?}", q00_i32, q01_i32);
+    // println!("q00: {:?} \nq01: {:?}", q00_i32, q01_i32);
     println!("r1: {} \nr2: {}", r1, r2);
 
     if r1 != r2 || modulo(r1, n as i64) != 0 {
