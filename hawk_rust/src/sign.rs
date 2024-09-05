@@ -177,6 +177,8 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
 
         let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x>>1).collect();
 
+        println!("salt from sign: {:?}", salt);
+        println!("sig from sign: {:?}", sig);
         let sig = enc_sig(logn, &salt.to_vec(), &sig);
         if sig[0] == 0 && sig.len() == 1 {
             continue

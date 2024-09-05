@@ -65,59 +65,68 @@ pub fn rebuildw0(
 
     let base: i32 = 2;
     let base_i64: i64 = 2;
+
     let cw1 = base.pow(29 - (1 + highs1));
     let cq00 = base.pow(29 - high00);
     let cq01 = base.pow(29 - high01);
-    let cs0 = ((2 * (cw1 as i64) * (cq01 as i64)) / ((n * cq00) as i64)) as i32;
 
-    println!("here 1");
+    let cs0 = ((2 * (cw1 as i64) * (cq01 as i64)) / ((n * cq00) as i64)) as i32;
     let w1_fft = fft(&scale_vec(&w1, cw1));
 
     let mut z00 = q00.clone();
 
     // some test here
     if z00[0] < 0 {
+        println!("rebuild failure 1");
         return vec![0];
     }
 
     z00[0] = 0;
 
-    println!("here 2");
+    println!("z00: {:?} \n cq00: {} \n scaled: {:?}", z00, cq00, &scale_vec(&z00, cq00));
     let q00_fft = fft(&scale_vec(&z00, cq00));
-    println!("here 3");
-    let scaled_q01 = scale_vec(&q01, cq01);
-    println!("here 4");
+    println!("q00_fft: {:?}", q00_fft);
     let mut q01_fft = fft(&scale_vec(&q01, cq01));
 
-    let alpha = (2 * cq00 * q00[0]) / n;
+    let alpha = (2 * (cq00 as i64) * (q00[0] as i64)) / n as i64;
+    let alpha = alpha as i32;
 
     let n_uz = n as usize;
     for u in 0..(n_uz / 2) {
-        let mut x_re = (q01_fft[u] * w1_fft[u + (n_uz / 2)]) as i64;
-        x_re -= (q01_fft[u + (n_uz / 2)] * w1_fft[u]) as i64;
+        let mut x_re = q01_fft[u] as i64 * w1_fft[u] as i64;
+        x_re -= q01_fft[u + (n_uz / 2)] as i64 * w1_fft[u + (n_uz/2)] as i64;
 
         let mut x_im = (q01_fft[u] * w1[u + n_uz / 2]) as i64;
-        x_im += (q01_fft[u + (n_uz / 2)] * w1_fft[u]) as i64;
+        x_im += q01_fft[u + (n_uz / 2)] as i64 * w1_fft[u] as i64;
 
         let (x_re, z_re) = (x_re.abs(), sign(x_re));
         let (x_im, z_im) = (x_im.abs(), sign(x_im));
 
         let v = (alpha + q00_fft[u]) as i64;
-
+        //
+        // println!("u: {}", u);
+        // println!("v: {}", v);
+        // println!("alpha: {}", alpha);
+        // println!("q00_fft[u]: {}", q00_fft[u]);
+        //
         if v <= 0
             || v >= base_i64.pow(32)
             || (x_re as i64) >= v * base_i64.pow(32)
             || (x_im as i64) >= v * base_i64.pow(32)
         {
             // fix this also
+            println!("rebuild failure 2");
+            println!("x_re: {}", x_re);
+            println!("x_im: {}", x_im);
+            println!("{}", q00_fft.len());
             return vec![0];
         }
 
         let y_re = x_re.div_floor(&v);
         let y_im = x_im.div_floor(&v);
 
-        q01_fft[u] = (y_re - 2 * z_re * y_re) as i32;
-        q01_fft[u + (n_uz / 2)] = (y_im - 2 * z_im * y_im) as i32;
+        q01_fft[u] = (y_re - (2 * z_re * y_re)) as i32;
+        q01_fft[u + (n_uz / 2)] = (y_im - (2 * z_im * y_im)) as i32;
     }
 
     let t = ifft(&q01_fft);
@@ -125,10 +134,11 @@ pub fn rebuildw0(
     let mut w0: Vec<i32> = vec![0; n_uz];
 
     for u in 0..n_uz {
-        let v = cs0 * h0[u] + t[u];
-        let z = (v + cs0) / (2 * cs0);
+        let v = (cs0 * h0[u]) + t[u];
+        let z = (v + cs0).div_floor(&(2 * cs0));
 
         if z < -((2 as i32).pow(highs0)) || z >= (2 as i32).pow(highs0) {
+            println!("rebuild failure 3");
             return vec![0];
         }
 
@@ -136,6 +146,7 @@ pub fn rebuildw0(
     }
 
     // fix this
+    println!("w0: {:?}", w0);
     return w0;
 }
 
@@ -150,12 +161,9 @@ pub fn fft(f: &Vec<i32>) -> Vec<i32> {
 
     let mut v0 = 0;
 
-    let f2p31 = (2 as i64).pow(31);
-    let f2p32 = (2 as i64).pow(32);
-
     while m < n {
         v0 = 0;
-        for u in 0..m / 2 {
+        for u in 0..(m / 2) {
             let e = delta(u + m);
             let e_re: i64 = e.0 as i64;
             let e_im: i64 = e.1 as i64;
@@ -167,8 +175,8 @@ pub fn fft(f: &Vec<i32>) -> Vec<i32> {
                 let x2_re: i64 = f_fft[v + (t / 2)] as i64;
                 let x2_im: i64 = f_fft[v + (t / 2) + (n / 2)] as i64;
 
-                let t_re = x2_re * e_re - x2_im * e_im;
-                let t_im = x2_re * e_im + x2_im * e_re;
+                let t_re = (x2_re * e_re) - (x2_im * e_im);
+                let t_im = (x2_re * e_im) + (x2_im * e_re);
 
                 // f_fft[v] = ((f2p31*x1_re + t_re).div_floor(&f2p32)) as i32;
                 f_fft[v] = (((x1_re << 31) + t_re) >> 32) as i32;
@@ -284,8 +292,9 @@ pub fn polyQnorm(q00: &Vec<i64>, q01: &Vec<i64>, w0: &Vec<i64>, w1: &Vec<i64>, p
 pub fn poly_div_const_i64(f: &Vec<i64>, c: i64) -> Vec<i64> {
     return f.iter().map(|&x| x / c).collect();
 }
-pub fn poly_times_const(f: &Vec<i64>, c: i64) -> Vec<i64> {
-    return f.iter().map(|&x| x * c).collect();
+pub fn poly_times_const(f: &Vec<i32>, c: i32) -> Vec<i64> {
+    let res = f.iter().map(|&x| (x * c) as i64).collect();
+    return res;
 }
 
 pub fn poly_div_const_f64(f: &Vec<i64>, c: i64) -> Vec<f64> {

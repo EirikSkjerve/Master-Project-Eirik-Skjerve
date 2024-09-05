@@ -52,7 +52,7 @@ fn main() {
     let rand_seed = rng.gen_range(0..99999999);
     // we're generally interested in the lowest security level
     let startkg = Instant::now();
-    let keypair = hawkkeygen(8, 123222);
+    let keypair = hawkkeygen(8, 13000000001);
     let durkg = startkg.elapsed();
 
     // public key, secret key
@@ -67,10 +67,10 @@ fn main() {
 
     println!("Keygen: {:?}", durkg);
     println!("Signature: {:?}", dursg);
-    //
-    // // public polynomials in here
-    // let verify = verify(8, message, q00, q01, signature);
-    // println!("verify: {}", verify);
+
+    // public polynomials in here
+    let verify = verify(8, message, &pk, &signature);
+    println!("verify: {}", verify);
 
 }
 
