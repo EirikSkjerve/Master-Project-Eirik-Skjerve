@@ -85,9 +85,7 @@ pub fn rebuildw0(
     // compute fft(q00*cq00) and fft(q01*cq01)
     let q00_fft = fft(&scale_vec(&z00, cq00));
     let mut q01_fft = fft(&scale_vec(&q01, cq01));
-    println!("q00 fft: {:?}", q00_fft);
 
-    println!("{}", q00[0]);
     let alpha = (2 * (cq00 as i64) * (q00[0] as i64)) / n as i64;
     let alpha = alpha as i32;
 
@@ -120,7 +118,6 @@ pub fn rebuildw0(
     }
 
     let t = ifft(&q01_fft);
-    println!("t: {:?}", t);
 
     let mut w0: Vec<i32> = vec![0; n_uz];
 
@@ -136,8 +133,6 @@ pub fn rebuildw0(
         w0[u] = h0[u] - (2 * z);
     }
 
-    // fix this
-    println!("w0: {:?}", w0);
     return w0;
 }
 

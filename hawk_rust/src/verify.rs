@@ -24,6 +24,8 @@ pub fn verify(
     let salt = r.0;
     let s1 = r.1;
 
+    println!("sig from verify: {:?}", s1);
+
     // println!("salt from verify: {:?}", salt);
     // println!("s1 from verify: {:?}", s1);
     // TODO check signature
@@ -32,8 +34,8 @@ pub fn verify(
     let r = dec_pub(logn, &pub_key);
     let q00 = r.0;
     let q01 = r.1;
-    // println!("q00 from verify: {:?}", q00);
-    // println!("q01 from verify: {:?}", q01);
+    println!("q00 = {:?}", q00);
+    println!("q01 = {:?}", q01);
 
     // TODO check public key decoding 
     // TODO make hash of public key
@@ -56,8 +58,10 @@ pub fn verify(
         &bytes_to_poly(&h[(256 / 8)..256 / 4], n),
     );
 
+    println!("h0 and h1 in verify: {:?}, {:?}", h0, h1);
 
     let w1 = poly_sub(&h1, &poly_times_const(&i16vec_to_i32vec(&s1), 2));
+    println!("w1 from verify: {:?}", w1);
 
     if !symbreak(&w1) {
         println!("Symbreak failed");
@@ -95,7 +99,7 @@ pub fn verify(
         return false;
     }
 
-    let r1 = r1>>logn;
+    let r1 = r1/(n as i64);
 
     let sigmaverify: f64 = 1.042;
 

@@ -42,14 +42,14 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
                 let mut z = 0;
 
                 loop {
+                    if T0[z] == 0 || T1[z] == 0 {
+                        break;
+                    }
                     if c < T0[z] {
                         v0 += 1;
                     }
                     if c < T1[z] {
                         v1 += 1;
-                    }
-                    if T0[z] == 0 || T1[z] == 0 {
-                        break;
                     }
                     z += 1;
                 }
@@ -77,7 +77,8 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
     // this should be from logn
     // initialize a new RngContext with some random seed
     // use random() instead of fixed seed
-    let mut rng = RngContext::new(1337);
+    let mut seed_rng = rand::thread_rng();
+    let mut rng = RngContext::new(seed_rng.gen());
 
     let n = 1 << logn;
     let (f, g) = generate_f_g(kgseed, logn);
@@ -97,6 +98,7 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
         shaker.update(&kgseed.to_ne_bytes());
         shaker.update(&a.to_ne_bytes());
         shaker.update(&rng.rnd(14).to_ne_bytes());
+        // saltlen should be from parameters
         let mut salt: [u8; 14] = [0; 14];
         // resets the hasher instance
         shaker.finalize_xof_reset_into(&mut salt);
@@ -114,6 +116,8 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
             &bytes_to_poly(&h[0..256 / 8], n),
             &bytes_to_poly(&h[(256 / 8)..256 / 4], n),
         );
+
+
 
         // compute target vectors t0, t1
 
@@ -148,16 +152,17 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
         let x = sample(s, t, n);
 
         let x0 = &x[0..n];
-        let x1 = &x[n..2 * n];
+        let x1 = &x[n..];
 
         // increment for new salt if failure
         a += 2;
 
         let sigmaverify: f64 = 1.024;
         let factor: f64 = (8 * n) as f64;
-        let l2normsumf64 = l2norm_sign(x0) + l2norm_sign(x1);
+        let l2normsum = l2norm_sign(x0) + l2norm_sign(x1);
+        println!("l2norm(x0) + l2norm(x1) = {}", l2normsum);
         // continue loop if some requirements are not fulfilled
-        if l2normsumf64 > factor * sigmaverify.powi(2) {
+        if (l2normsum as f64) > factor * sigmaverify.powi(2) {
             continue;
         }
 
@@ -175,15 +180,18 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
             w1 = w1.iter().map(|&x| -x).collect();
         }
 
+        println!("w1 from sign: {:?}", w1);
         let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x>>1).collect();
 
-        println!("salt from sign: {:?}", salt);
-        println!("sig from sign: {:?}", sig);
-        let sig = enc_sig(logn, &salt.to_vec(), &sig);
-        if sig[0] == 0 && sig.len() == 1 {
+        // println!("sig un-encoded from sig: {:?}", sig);
+
+        let sig_enc = enc_sig(logn, &salt.to_vec(), &sig);
+        if sig_enc[0] == 0 && sig_enc.len() == 1 {
             continue
         }
-        return sig;
+        println!("s1 = {:?}", sig);
+        println!("h0 = {:?} \nh1 = {:?}", h0, h1);
+        return sig_enc;
     }
 }
 
@@ -200,12 +208,12 @@ pub fn symbreak(v: &Vec<i64>) -> bool {
     return false;
 }
 
-fn l2norm_sign(a: &[i8]) -> f64 {
+pub fn l2norm_sign(a: &[i8]) -> i64 {
     // returns the l2 norm of polynomial/vector f as f[0]^2 + f[1]^2 +..+ f[n]^2
     // converts to f64 for usage in signing procedure
-    let mut sum: f64 = 0.0;
+    let mut sum: i64 = 0;
     for i in 0..a.len() {
-        sum += (a[i] as f64).powi(2);
+        sum += (a[i]*a[i]) as i64;
     }
     return sum;
 }

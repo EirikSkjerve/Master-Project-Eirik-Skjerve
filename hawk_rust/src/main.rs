@@ -48,6 +48,8 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 */
 fn main() {
+    loop{
+
     let mut rng = thread_rng();
     let rand_seed = rng.gen_range(0..99999999);
     // we're generally interested in the lowest security level
@@ -63,18 +65,27 @@ fn main() {
     let startsg = Instant::now();
     let signature = sign(8, &pk, message);
     let dursg = startsg.elapsed();
-    println!("signature: {:?}", signature);
-
-    println!("Keygen: {:?}", durkg);
-    println!("Signature: {:?}", dursg);
+    //
+    // println!("signature: {:?}", signature);
+    //
+    // println!("Keygen: {:?}", durkg);
+    // println!("Signature: {:?}", dursg);
 
     // public polynomials in here
     let verify = verify(8, message, &pk, &signature);
-    println!("verify: {}", verify);
+    // println!("verify: {}", verify);
+    if verify{
+        break;
+    }
+    }
+
 
 }
 
-fn test_polyqnorm(){
+use crate::sign::l2norm_sign;
+fn test_func(){
+
+    println!("l2norm: {:?} = {}", vec![1,2,3,4,5,6,7,8,9,10], l2norm_sign(&vec![1,2,3,4,5,6,7,8,9,10]));
 
 }
 
