@@ -16,6 +16,7 @@ use crate::codec::{dec_priv, enc_sig};
 pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
     let (T0, T1) = get_table();
     let y = shake256x4(seed, 5 * n / 2);
+    println!("y = {:?}", y);
 
     // following HAWK's implementation
 
@@ -78,7 +79,8 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
     // initialize a new RngContext with some random seed
     // use random() instead of fixed seed
     let mut seed_rng = rand::thread_rng();
-    let mut rng = RngContext::new(seed_rng.gen());
+    // let mut rng = RngContext::new(seed_rng.gen());
+    let mut rng = RngContext::new(13378);
 
     let n = 1 << logn;
     let (f, g) = generate_f_g(kgseed, logn);
@@ -92,7 +94,9 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
     let mut a: usize = 0;
     let p = (1 << 16) + 1;
 
+    let mut counter = 0;
     loop {
+        counter += 1;
         // compute salt
         shaker.update(&m);
         shaker.update(&kgseed.to_ne_bytes());
@@ -116,8 +120,6 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
             &bytes_to_poly(&h[0..256 / 8], n),
             &bytes_to_poly(&h[(256 / 8)..256 / 4], n),
         );
-
-
 
         // compute target vectors t0, t1
 
@@ -149,7 +151,7 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
 
         // compute (x0, x1) from sample()
 
-        let x = sample(s, t, n);
+        let x = sample(s, t.clone(), n);
 
         let x0 = &x[0..n];
         let x1 = &x[n..];
@@ -189,8 +191,12 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
         if sig_enc[0] == 0 && sig_enc.len() == 1 {
             continue
         }
-        println!("s1 = {:?}", sig);
-        println!("h0 = {:?} \nh1 = {:?}", h0, h1);
+
+        println!("s = {:?} \nt = {:?} \nf = {:?} \ng = {:?} \nh1 = {:?}  \nd = {:?}", s, t, f, g, h1, x);
+
+        println!("sig = {:?} \nsalt = {:?} ", sig, salt);
+        println!("sig encoded= {:?}", sig_enc);
+        println!("counter sig: {}", counter);
         return sig_enc;
     }
 }

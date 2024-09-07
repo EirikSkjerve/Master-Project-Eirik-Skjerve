@@ -124,7 +124,9 @@ pub fn hawkkeygen(
         let priv_enc = enc_priv(kgseed, &F, &G, &hpub);
         // encode private key as encode_private(kgseed, F, G, hpub);
 
-        println!("q00 from kgen: {:?} \nq01 from kgen: {:?}", q00, q01);
+        println!("f = {:?} \ng = {:?}", f, g);
+        println!("F: {:?} \nG : {:?}", F, G);
+        println!("q00: {:?} \nq01: {:?} \nq11: {:?}", q00, q01, q11);
         return (pub_enc, priv_enc);
 
     }

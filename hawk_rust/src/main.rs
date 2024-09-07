@@ -48,7 +48,6 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 */
 fn main() {
-    loop{
 
     let mut rng = thread_rng();
     let rand_seed = rng.gen_range(0..99999999);
@@ -63,7 +62,7 @@ fn main() {
     let message = 123456789 as usize;
     // private polynomials in here
     let startsg = Instant::now();
-    let signature = sign(8, &pk, message);
+    // let signature = sign(8, &pk, message);
     let dursg = startsg.elapsed();
     //
     // println!("signature: {:?}", signature);
@@ -72,13 +71,9 @@ fn main() {
     // println!("Signature: {:?}", dursg);
 
     // public polynomials in here
-    let verify = verify(8, message, &pk, &signature);
+    // let verify = verify(8, message, &pk, &signature);
     // println!("verify: {}", verify);
-    if verify{
-        break;
-    }
-    }
-
+    // break;
 
 }
 
