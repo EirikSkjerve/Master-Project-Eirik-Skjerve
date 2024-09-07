@@ -24,7 +24,7 @@ pub fn verify(
     let salt = r.0;
     let s1 = r.1;
 
-    println!("sig from verify: {:?}", s1);
+    // println!("sig from verify: {:?}", s1);
 
     // println!("salt from verify: {:?}", salt);
     // println!("s1 from verify: {:?}", s1);
@@ -34,8 +34,8 @@ pub fn verify(
     let r = dec_pub(logn, &pub_key);
     let q00 = r.0;
     let q01 = r.1;
-    println!("q00 = {:?}", q00);
-    println!("q01 = {:?}", q01);
+    // println!("q00 = {:?}", q00);
+    // println!("q01 = {:?}", q01);
 
     // TODO check public key decoding 
     // TODO make hash of public key
@@ -58,10 +58,10 @@ pub fn verify(
         &bytes_to_poly(&h[(256 / 8)..256 / 4], n),
     );
 
-    println!("h0 and h1 in verify: {:?}, {:?}", h0, h1);
+    // println!("h0 and h1 in verify: {:?}, {:?}", h0, h1);
 
     let w1 = poly_sub(&h1, &poly_times_const(&i16vec_to_i32vec(&s1), 2));
-    println!("w1 from verify: {:?}", w1);
+    // println!("w1 from verify: {:?}", w1);
 
     if !symbreak(&w1) {
         println!("Symbreak failed");
@@ -92,7 +92,7 @@ pub fn verify(
 
 
     // println!("q00: {:?} \nq01: {:?}", q00_i32, q01_i32);
-    println!("r1: {} \nr2: {}", r1, r2);
+    // println!("r1: {} \nr2: {}", r1, r2);
 
     if r1 != r2 || modulo(r1, n as i64) != 0 {
         println!("failed here");
@@ -103,7 +103,7 @@ pub fn verify(
 
     let sigmaverify: f64 = 1.042;
 
-    println!("r1: {} \n limit: {}", r1, (8 * n) as f64 * sigmaverify.powi(2));
+    // println!("r1: {} \n limit: {}", r1, (8 * n) as f64 * sigmaverify.powi(2));
     if (r1 as f64) > (8 * n) as f64 * sigmaverify.powi(2) {
         println!("Too big");
         return false;

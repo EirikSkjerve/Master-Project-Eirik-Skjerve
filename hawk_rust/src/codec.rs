@@ -67,13 +67,11 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
         println!("failure from encpub 4");
         return vec![0];
     }
-    println!("y len: {}", y.len());
 
     // padding of the y vector
     while y.len() < (params_i(logn, "lenpub") * 8) as usize {
         y.push(0);
     }
-    println!("y len: {}", y.len());
     let packed = packbits(&y);
 
     return packed;

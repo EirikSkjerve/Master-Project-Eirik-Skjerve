@@ -10,7 +10,6 @@ pub fn compressgr(x: &Vec<i64>, low: usize, high: usize) -> Vec<u8> {
 
     let k = x.len();
     assert_eq!(k % 8, 0);
-    println!("x: {:?}", x);
 
     for i in 0..k {
         if !(x[i] < (1 << high) && x[i] > -(1 << high)) {

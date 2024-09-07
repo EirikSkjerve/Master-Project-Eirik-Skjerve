@@ -1,16 +1,9 @@
 use keygen::hawkkeygen;
-use rngcontext::RngContext;
 use sign::sign;
 use verify::verify;
 
 // simple rng library
 use rand::prelude::*;
-
-use crate::utils::{
-    adjoint, bin, int, is_invertible, mod_pow, modulo, poly_add, poly_mult_ntt, poly_sub,
-};
-use num_bigint::{BigInt, ToBigInt};
-use num_traits::{One, Zero};
 
 use std::time::{Duration, Instant};
 
@@ -49,31 +42,34 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 */
 fn main() {
 
+    loop {
     let mut rng = thread_rng();
     let rand_seed = rng.gen_range(0..99999999);
     // we're generally interested in the lowest security level
     let startkg = Instant::now();
-    let keypair = hawkkeygen(8, 13000000001);
+    let keypair = hawkkeygen(8, rand_seed);
     let durkg = startkg.elapsed();
 
     // public key, secret key
     let (pk, sk) = keypair;
+    // println!("pk: {:?} \nsk: {:?}", pk, sk);
 
     let message = 123456789 as usize;
     // private polynomials in here
     let startsg = Instant::now();
-    let signature = sign(8, &pk, message);
+    let signature = sign(8, &sk, message);
     let dursg = startsg.elapsed();
     //
-    println!("signature: {:?}", signature);
     //
-    println!("Keygen: {:?}", durkg);
-    println!("Signature: {:?}", dursg);
 
     // public polynomials in here
     let verify = verify(8, message, &pk, &signature);
-    println!("verify: {}", verify);
+    if verify {
+        break;
+    }
     // break;
+
+    }
 
 }
 

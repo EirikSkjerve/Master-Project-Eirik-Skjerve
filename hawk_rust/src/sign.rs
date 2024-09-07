@@ -17,16 +17,13 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
     let (T0, T1) = get_table();
     let y = shake256x4(seed, 5 * n / 2);
 
-    println!("y: {:?}", y);
+    // println!("y: {:?}", y);
 
     // following HAWK's implementation
 
     let mut v = 0;
     let mut x: Vec<i8> = vec![0; 2 * n];
 
-    let base: u64 = 2;
-    let base_pow_15 = base.pow(15);
-    let base_pow_63 = base.pow(63) as u128;
     for j in 0..4 {
         for i in 0..(n / 8) {
             for k in 0..4 {
@@ -69,7 +66,7 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
             }
         }
     }
-    println!("d = {:?}", x);
+    // println!("d = {:?}", x);
     return x;
 }
 
@@ -80,8 +77,8 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
     // initialize a new RngContext with some random seed
     // use random() instead of fixed seed
     let mut seed_rng = rand::thread_rng();
-    // let mut rng = RngContext::new(seed_rng.gen());
-    let mut rng = RngContext::new(13378);
+    let mut rng = RngContext::new(seed_rng.gen());
+    // let mut rng = RngContext::new(13378);
 
     let n = 1 << logn;
     let (f, g) = generate_f_g(kgseed, logn);
@@ -163,7 +160,7 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
         let sigmaverify: f64 = 1.024;
         let factor: f64 = (8 * n) as f64;
         let l2normsum = l2norm_sign(x0) + l2norm_sign(x1);
-        println!("l2norm(x0) + l2norm(x1) = {}", l2normsum);
+        // println!("l2norm(x0) + l2norm(x1) = {}", l2normsum);
         // continue loop if some requirements are not fulfilled
         if (l2normsum as f64) > factor * sigmaverify.powi(2) {
             continue;
@@ -183,7 +180,7 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
             w1 = w1.iter().map(|&x| -x).collect();
         }
 
-        println!("w1 from sign: {:?}", w1);
+        // println!("w1 from sign: {:?}", w1);
         let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x>>1).collect();
 
         // println!("sig un-encoded from sig: {:?}", sig);
@@ -193,11 +190,11 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
             continue
         }
 
-        println!("s = {:?} \nt = {:?} \nf = {:?} \ng = {:?} \nh1 = {:?}  \nd = {:?}", s, t, f, g, h1, x);
+        // println!("s = {:?} \nt = {:?} \nf = {:?} \ng = {:?} \nh1 = {:?}  \nd = {:?}", s, t, f, g, h1, x);
 
-        println!("sig = {:?} \nsalt = {:?} ", sig, salt);
-        println!("sig encoded= {:?}", sig_enc);
-        println!("counter sig: {}", counter);
+        // println!("sig = {:?} \nsalt = {:?} ", sig, salt);
+        // println!("sig encoded= {:?}", sig_enc);
+        // println!("counter sig: {}", counter);
         return sig_enc;
     }
 }
