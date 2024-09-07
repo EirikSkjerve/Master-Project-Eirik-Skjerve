@@ -16,7 +16,8 @@ use crate::codec::{dec_priv, enc_sig};
 pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
     let (T0, T1) = get_table();
     let y = shake256x4(seed, 5 * n / 2);
-    println!("y = {:?}", y);
+
+    println!("y: {:?}", y);
 
     // following HAWK's implementation
 
@@ -30,13 +31,12 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
         for i in 0..(n / 8) {
             for k in 0..4 {
                 let r = 16 * i + 4 * j + k;
+
                 let a = y[(j + 4 * ((5 * i) + k)) as usize];
-                let pow_temp = base.pow(16 * k as u32);
 
-                let temp1 = y[(j + 4 * ((5 * i) + 4)) as usize] / pow_temp;
-                let b = modulo(temp1, base_pow_15) as u128;
+                let b = modulo(y[j + 4 * (5*i+4)] >>(16*k), 1<<15);
 
-                let c = modulo(a as u128, base_pow_63) + base_pow_63 * b;
+                let c = modulo(a as u128, 1<<63) + (1<<63) * b as u128;
 
                 let mut v0: i8 = 0;
                 let mut v1: i8 = 0;
@@ -61,7 +61,7 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
                     v = 2 * v1 + 1;
                 }
 
-                if a >= base.pow(63) {
+                if a >= 1<<63 {
                     v = -v;
                 }
 
@@ -69,6 +69,7 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
             }
         }
     }
+    println!("d = {:?}", x);
     return x;
 }
 

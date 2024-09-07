@@ -23,7 +23,6 @@ impl RngContext {
      */
     pub fn rnd(&mut self, size: u8) -> u128 {
         self.i += size as usize;
-        // println!("Recursion step {}", self.i);
 
         let temp = self.seed + self.i as u128;
         // set seed to hash of input seed + incremented variable
@@ -83,10 +82,10 @@ pub fn shake256x4(message: &[u8], num: usize) -> Vec<u64> {
     s_4.update(&[4 as u8]);
 
     // store the digests
-    digest[0] = s_1.finalize_boxed((num * 8) / 4).to_vec();
-    digest[1] = s_2.finalize_boxed((num * 8) / 4).to_vec();
-    digest[2] = s_3.finalize_boxed((num * 8) / 4).to_vec();
-    digest[3] = s_4.finalize_boxed((num * 8) / 4).to_vec();
+    digest[0] = s_1.finalize_boxed(num * 8 / 4).to_vec();
+    digest[1] = s_2.finalize_boxed(num * 8 / 4).to_vec();
+    digest[2] = s_3.finalize_boxed(num * 8 / 4).to_vec();
+    digest[3] = s_4.finalize_boxed(num * 8 / 4).to_vec();
 
     // initialized a vector with the desired capacity
     let mut y: Vec<u64> = Vec::with_capacity(num);

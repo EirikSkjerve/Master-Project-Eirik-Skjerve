@@ -62,25 +62,18 @@ fn main() {
     let message = 123456789 as usize;
     // private polynomials in here
     let startsg = Instant::now();
-    // let signature = sign(8, &pk, message);
+    let signature = sign(8, &pk, message);
     let dursg = startsg.elapsed();
     //
-    // println!("signature: {:?}", signature);
+    println!("signature: {:?}", signature);
     //
-    // println!("Keygen: {:?}", durkg);
-    // println!("Signature: {:?}", dursg);
+    println!("Keygen: {:?}", durkg);
+    println!("Signature: {:?}", dursg);
 
     // public polynomials in here
-    // let verify = verify(8, message, &pk, &signature);
-    // println!("verify: {}", verify);
+    let verify = verify(8, message, &pk, &signature);
+    println!("verify: {}", verify);
     // break;
-
-}
-
-use crate::sign::l2norm_sign;
-fn test_func(){
-
-    println!("l2norm: {:?} = {}", vec![1,2,3,4,5,6,7,8,9,10], l2norm_sign(&vec![1,2,3,4,5,6,7,8,9,10]));
 
 }
 
