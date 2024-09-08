@@ -1,28 +1,21 @@
-use crate::codec::{enc_pub, enc_priv};
+use crate::codec::{enc_priv, enc_pub};
 use crate::fft::{inverse_fft, mul_fft_i64};
 use crate::ntru_solve::ntrusolve;
+use crate::params::params_i;
 use crate::rngcontext::{shake256x4, RngContext};
 use crate::utils::{
     adjoint, bigint_to_i64_vec, bigint_vec, infnorm, is_invertible, l2norm, poly_add, poly_mult_ntt,
 };
-use crate::params::params_i;
 
 use sha3::{
     digest::{ExtendableOutput, ExtendableOutputReset, Update},
     Shake256,
 };
 
-
 use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
 use num_traits::{One, Signed, ToPrimitive, Zero};
 
-pub fn hawkkeygen(
-    logn: usize,
-    initial_seed: usize,
-) -> (
-    Vec<u8>,
-    Vec<u8>
-) {
+pub fn hawkkeygen(logn: usize, initial_seed: usize) -> (Vec<u8>, Vec<u8>) {
     // not doing recursion
     let mut rng = RngContext::new(initial_seed as u128);
     let mut counter = 0;
@@ -99,11 +92,11 @@ pub fn hawkkeygen(
 
         let mut flag = false;
         for i in 1..q11.len() {
-            if q11[i].abs() >= 1<<(params_i(logn as usize, "high11")) {
+            if q11[i].abs() >= 1 << (params_i(logn as usize, "high11")) {
                 flag = true;
             }
         }
-        if flag{
+        if flag {
             continue;
         }
 
@@ -117,8 +110,8 @@ pub fn hawkkeygen(
         let mut shaker = Shake256::default();
         let pk: &[u8] = &pub_enc;
         shaker.update(pk);
-        // this should be retrieved from params later 
-        let mut hpub: [u8;16] = [0;16];
+        // this should be retrieved from params later
+        let mut hpub: [u8; 16] = [0; 16];
         shaker.finalize_xof_into(&mut hpub);
 
         let priv_enc = enc_priv(kgseed, &F, &G, &hpub);
@@ -128,7 +121,6 @@ pub fn hawkkeygen(
         // println!("F: {:?} \nG : {:?}", F, G);
         // println!("q00: {:?} \nq01: {:?} \nq11: {:?}", q00, q01, q11);
         return (pub_enc, priv_enc);
-
     }
 }
 

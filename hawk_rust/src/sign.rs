@@ -31,9 +31,9 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
 
                 let a = y[(j + 4 * ((5 * i) + k)) as usize];
 
-                let b = modulo(y[j + 4 * (5*i+4)] >>(16*k), 1<<15);
+                let b = modulo(y[j + 4 * (5 * i + 4)] >> (16 * k), 1 << 15);
 
-                let c = modulo(a as u128, 1<<63) + (1<<63) * b as u128;
+                let c = modulo(a as u128, 1 << 63) + (1 << 63) * b as u128;
 
                 let mut v0: i8 = 0;
                 let mut v1: i8 = 0;
@@ -58,7 +58,7 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
                     v = 2 * v1 + 1;
                 }
 
-                if a >= 1<<63 {
+                if a >= 1 << 63 {
                     v = -v;
                 }
 
@@ -70,31 +70,32 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
     return x;
 }
 
-pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
+pub fn sign(logn: usize, sk: &Vec<u8>, msg: &str) -> Vec<u8> {
 
-    let (kgseed, Fmod2, Gmod2, hpub) = dec_priv(logn, pk);
+    let (kgseed, Fmod2, Gmod2, hpub) = dec_priv(logn, sk);
     // this should be from logn
     // initialize a new RngContext with some random seed
     // use random() instead of fixed seed
     let mut seed_rng = rand::thread_rng();
-    let mut rng = RngContext::new(seed_rng.gen());
-    // let mut rng = RngContext::new(13378);
+    // let mut rng = RngContext::new(seed_rng.gen());
+    let mut rng = RngContext::new(13378);
 
     let n = 1 << logn;
     let (f, g) = generate_f_g(kgseed, logn);
 
+    // println!("f = {:?} \ng = {:?}", f, g);
+
     // compute hash M
     let mut shaker = Shake256::default();
-    shaker.update(&msg.to_ne_bytes());
+    shaker.update(&msg.as_bytes());
+    shaker.update(&hpub[..]);
     let mut m: [u8; 64] = [0; 64];
     shaker.finalize_xof_reset_into(&mut m);
 
     let mut a: usize = 0;
     let p = (1 << 16) + 1;
 
-    let mut counter = 0;
     loop {
-        counter += 1;
         // compute salt
         shaker.update(&m);
         shaker.update(&kgseed.to_ne_bytes());
@@ -134,16 +135,18 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
         }
 
         let t = concat_bytes(&vec![t0, t1]);
+    
         // get random seed = M || kgseed || a+1 || rnd(320)
         let seed = rng.rnd(40);
         let kgseed_b = to_bytes_sized(kgseed, 64);
+
         let arr = vec![
             m.to_vec(),
             kgseed_b,
             (a + 1).to_ne_bytes().to_vec(),
             seed.to_ne_bytes().to_vec(),
         ];
-        // this should be concatenation
+
         let s_temp = concat_bytes(&arr);
         let s = vec_to_slice(&s_temp);
 
@@ -160,7 +163,7 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
         let sigmaverify: f64 = 1.024;
         let factor: f64 = (8 * n) as f64;
         let l2normsum = l2norm_sign(x0) + l2norm_sign(x1);
-        // println!("l2norm(x0) + l2norm(x1) = {}", l2normsum);
+
         // continue loop if some requirements are not fulfilled
         if (l2normsum as f64) > factor * sigmaverify.powi(2) {
             continue;
@@ -175,19 +178,22 @@ pub fn sign(logn: usize, pk: &Vec<u8>, msg: usize) -> Vec<u8> {
             &poly_mult_ntt(&f, &x1_i64, p),
             &poly_mult_ntt(&g, &x0_i64, p),
         );
+        
+        // stupid test
+        // w1.reverse();
 
         if !symbreak(&w1) {
             w1 = w1.iter().map(|&x| -x).collect();
         }
 
-        // println!("w1 from sign: {:?}", w1);
-        let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x>>1).collect();
+
+        let mut sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x >> 1).collect();
 
         // println!("sig un-encoded from sig: {:?}", sig);
 
         let sig_enc = enc_sig(logn, &salt.to_vec(), &sig);
         if sig_enc[0] == 0 && sig_enc.len() == 1 {
-            continue
+            continue;
         }
 
         // println!("s = {:?} \nt = {:?} \nf = {:?} \ng = {:?} \nh1 = {:?}  \nd = {:?}", s, t, f, g, h1, x);
@@ -214,10 +220,10 @@ pub fn symbreak(v: &Vec<i64>) -> bool {
 
 pub fn l2norm_sign(a: &[i8]) -> i64 {
     // returns the l2 norm of polynomial/vector f as f[0]^2 + f[1]^2 +..+ f[n]^2
-    // converts to f64 for usage in signing procedure
+    // converts to i64 for usage in signing procedure
     let mut sum: i64 = 0;
     for i in 0..a.len() {
-        sum += (a[i]*a[i]) as i64;
+        sum += (a[i] * a[i]) as i64;
     }
     return sum;
 }

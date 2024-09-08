@@ -3,19 +3,12 @@ use sha3::{
     Shake256,
 };
 
-use crate::fft::{div_fft_f64, mul_fft_f64};
-use crate::ntt::*;
+use crate::codec::{dec_pub, dec_sig};
 use crate::sign::symbreak;
-use crate::utils::{adjoint, bytes_to_poly, mod_pow, modulo, poly_add, poly_mult_ntt, poly_sub};
+use crate::utils::{bytes_to_poly, modulo, poly_sub};
 use crate::verifyutils::*;
-use crate::codec::{dec_sig, dec_pub};
 
-pub fn verify(
-    logn: usize,
-    msg: usize,
-    pub_key: &Vec<u8>,
-    signature: &Vec<u8>
-) -> bool {
+pub fn verify(logn: usize, msg: &str, pub_key: &Vec<u8>, signature: &Vec<u8>) -> bool {
     let n = 1 << logn;
 
     // decode encoded signature
@@ -29,7 +22,7 @@ pub fn verify(
     // println!("salt from verify: {:?}", salt);
     // println!("s1 from verify: {:?}", s1);
     // TODO check signature
-    
+
     // decode public key
     let r = dec_pub(logn, &pub_key);
     let q00 = r.0;
@@ -37,12 +30,22 @@ pub fn verify(
     // println!("q00 = {:?}", q00);
     // println!("q01 = {:?}", q01);
 
-    // TODO check public key decoding 
-    // TODO make hash of public key
+    // check if public key decoding failed
+    if q00[0] == 0 && q00.len() == 1 && q01[0] == 0 && q01.len() == 1 {
+        println!("failed on decoding public key");
+        return false;
+    }
+
+    // compute hash of public key
+    let mut hpubshaker = Shake256::default();
+    hpubshaker.update(&pub_key[..]);
+    let mut hpub: [u8; 16] = [0; 16];
+    hpubshaker.finalize_xof_reset_into(&mut hpub);
 
     // compute hash M
     let mut shaker = Shake256::default();
-    shaker.update(&msg.to_ne_bytes());
+    shaker.update(&msg.as_bytes());
+    shaker.update(&hpub);
     let mut m: [u8; 64] = [0; 64];
     shaker.finalize_xof_reset_into(&mut m);
 
@@ -58,10 +61,11 @@ pub fn verify(
         &bytes_to_poly(&h[(256 / 8)..256 / 4], n),
     );
 
-    // println!("h0 and h1 in verify: {:?}, {:?}", h0, h1);
 
     let w1 = poly_sub(&h1, &poly_times_const(&i16vec_to_i32vec(&s1), 2));
-    // println!("w1 from verify: {:?}", w1);
+    // println!("w1 <- h1 - 2*s1: \n {:?} <- \n{:?} -")
+
+    println!("w1 from verify: {:?}", w1);
 
     if !symbreak(&w1) {
         println!("Symbreak failed");
@@ -76,7 +80,12 @@ pub fn verify(
     let h0_i32 = i64vec_to_i32vec(&h0);
 
     let w0 = rebuildw0(logn, &q00_i32, &q01_i32, &w1_i32, &h0_i32);
-
+    // println!("q00 = {:?}", q00_i32);
+    // println!("q01 = {:?}", q01_i32);
+    // println!("w1 = {:?}", w1_i32);
+    // println!("h0 = {:?}", h0_i32);
+    //
+    // println!("\n w0 = {:?}", w0);
     if w0[0] == 0 && w0.len() == 1 {
         println!("failed on rebuild");
         return false;
@@ -90,7 +99,6 @@ pub fn verify(
     let r1 = polyQnorm(&q00_i64, &q01_i64, &i32vec_to_i64vec(&w0), &w1, p1);
     let r2 = polyQnorm(&q00_i64, &q01_i64, &i32vec_to_i64vec(&w0), &w1, p2);
 
-
     // println!("q00: {:?} \nq01: {:?}", q00_i32, q01_i32);
     // println!("r1: {} \nr2: {}", r1, r2);
 
@@ -99,11 +107,15 @@ pub fn verify(
         return false;
     }
 
-    let r1 = r1/(n as i64);
+    let r1 = r1 / (n as i64);
 
     let sigmaverify: f64 = 1.042;
 
-    // println!("r1: {} \n limit: {}", r1, (8 * n) as f64 * sigmaverify.powi(2));
+    println!(
+        "r1: {} \n limit: {}",
+        r1,
+        (8 * n) as f64 * sigmaverify.powi(2)
+    );
     if (r1 as f64) > (8 * n) as f64 * sigmaverify.powi(2) {
         println!("Too big");
         return false;
