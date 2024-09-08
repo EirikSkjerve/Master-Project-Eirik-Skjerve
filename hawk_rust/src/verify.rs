@@ -1,5 +1,5 @@
 use sha3::{
-    digest::{ExtendableOutput, ExtendableOutputReset, Update},
+    digest::{ExtendableOutputReset, Update},
     Shake256,
 };
 
@@ -8,7 +8,8 @@ use crate::sign::symbreak;
 use crate::utils::{bytes_to_poly, modulo, poly_sub};
 use crate::verifyutils::*;
 
-pub fn verify(logn: usize, msg: &str, pub_key: &Vec<u8>, signature: &Vec<u8>) -> bool {
+
+pub fn hawkverify(logn: usize, msg: &[u8;128], pub_key: &Vec<u8>, signature: &Vec<u8>) -> bool {
     let n = 1 << logn;
 
     // decode encoded signature
@@ -44,7 +45,7 @@ pub fn verify(logn: usize, msg: &str, pub_key: &Vec<u8>, signature: &Vec<u8>) ->
 
     // compute hash M
     let mut shaker = Shake256::default();
-    shaker.update(&msg.as_bytes());
+    shaker.update(msg);
     shaker.update(&hpub);
     let mut m: [u8; 64] = [0; 64];
     shaker.finalize_xof_reset_into(&mut m);
@@ -64,8 +65,6 @@ pub fn verify(logn: usize, msg: &str, pub_key: &Vec<u8>, signature: &Vec<u8>) ->
 
     let w1 = poly_sub(&h1, &poly_times_const(&i16vec_to_i32vec(&s1), 2));
     // println!("w1 <- h1 - 2*s1: \n {:?} <- \n{:?} -")
-
-    println!("w1 from verify: {:?}", w1);
 
     if !symbreak(&w1) {
         println!("Symbreak failed");
@@ -112,9 +111,9 @@ pub fn verify(logn: usize, msg: &str, pub_key: &Vec<u8>, signature: &Vec<u8>) ->
     let sigmaverify: f64 = 1.042;
 
     println!(
-        "r1: {} \n limit: {}",
+        "r1: {} \nlimit: {}",
         r1,
-        (8 * n) as f64 * sigmaverify.powi(2)
+        ((8 * n) as f64 * sigmaverify.powi(2)).round()
     );
     if (r1 as f64) > (8 * n) as f64 * sigmaverify.powi(2) {
         println!("Too big");

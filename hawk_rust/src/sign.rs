@@ -70,7 +70,7 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
     return x;
 }
 
-pub fn sign(logn: usize, sk: &Vec<u8>, msg: &str) -> Vec<u8> {
+pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8; 128]) -> Vec<u8> {
 
     let (kgseed, Fmod2, Gmod2, hpub) = dec_priv(logn, sk);
     // this should be from logn
@@ -87,7 +87,7 @@ pub fn sign(logn: usize, sk: &Vec<u8>, msg: &str) -> Vec<u8> {
 
     // compute hash M
     let mut shaker = Shake256::default();
-    shaker.update(&msg.as_bytes());
+    shaker.update(msg);
     shaker.update(&hpub[..]);
     let mut m: [u8; 64] = [0; 64];
     shaker.finalize_xof_reset_into(&mut m);

@@ -32,11 +32,11 @@ pub fn decompressgr(y: &Vec<u8>, k: usize, low: usize, high: usize) -> (Vec<i64>
             t = y[j];
             j += 1;
         }
-        x[i] += z * (1 << low);
+        x[i] = x[i] + z * (1 << low);
     }
 
     for i in 0..k {
-        x[i] -= (y[i] as i64) * ((2 * x[i]) + 1);
+        x[i] = x[i] - (y[i] as i64) * ((2 * x[i]) + 1);
     }
 
     return (x, j);

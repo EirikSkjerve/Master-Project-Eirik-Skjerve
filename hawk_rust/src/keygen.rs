@@ -120,7 +120,7 @@ pub fn hawkkeygen(logn: usize, initial_seed: usize) -> (Vec<u8>, Vec<u8>) {
         // println!("f = {:?} \ng = {:?}", f, g);
         // println!("F: {:?} \nG : {:?}", F, G);
         // println!("q00: {:?} \nq01: {:?} \nq11: {:?}", q00, q01, q11);
-        return (pub_enc, priv_enc);
+        return (priv_enc, pub_enc);
     }
 }
 
