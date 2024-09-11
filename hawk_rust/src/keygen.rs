@@ -15,19 +15,17 @@ use sha3::{
 use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
 use num_traits::{One, Signed, ToPrimitive, Zero};
 
-pub fn hawkkeygen(logn: usize, initial_seed: usize) -> (Vec<u8>, Vec<u8>) {
+pub fn hawkkeygen(logn: usize, initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
     // not doing recursion
-    let mut rng = RngContext::new(initial_seed as u128);
+    let mut rng = RngContext::new(initial_seed);
     let mut counter = 0;
     loop {
         counter += 1;
         // for each new loop, kgseed will be a new random value
-        let kgseed = rng.rnd(128) as usize;
-        println!("kgseed: {:?}", kgseed);
-        println!("kgseed bytes: {:?}", kgseed.to_ne_bytes());
+        let kgseed = rng.random(128/8);
 
         // generate f and g from centered binomial distribution
-        let f_g = generate_f_g(kgseed, logn);
+        let f_g = generate_f_g(&kgseed, logn);
         let f = f_g.0;
         let g = f_g.1;
 
@@ -116,7 +114,8 @@ pub fn hawkkeygen(logn: usize, initial_seed: usize) -> (Vec<u8>, Vec<u8>) {
         let mut hpub: [u8; 16] = [0; 16];
         shaker.finalize_xof_into(&mut hpub);
 
-        let priv_enc = enc_priv(kgseed, &F, &G, &hpub);
+        println!("kgseed before compression: {:?}", kgseed);
+        let priv_enc = enc_priv(&kgseed, &F, &G, &hpub);
         // encode private key as encode_private(kgseed, F, G, hpub);
 
         // println!("f = {:?} \ng = {:?}", f, g);
@@ -127,14 +126,14 @@ pub fn hawkkeygen(logn: usize, initial_seed: usize) -> (Vec<u8>, Vec<u8>) {
 }
 
 // generates polynomials f and g
-pub fn generate_f_g(seed: usize, logn: usize) -> (Vec<i64>, Vec<i64>) {
+pub fn generate_f_g(seed: &[u8], logn: usize) -> (Vec<i64>, Vec<i64>) {
     // expand logn -> n
     let n = 1 << logn;
     let b = n / 64;
     assert!(b == 4 || b == 8 || b == 16);
 
     // get an array of 64-bit values
-    let y = shake256x4(&seed.to_ne_bytes(), 2 * n * b / 64);
+    let y = shake256x4(&seed, 2 * n * b / 64);
 
     // construct a sequence of bits from y
     let mut ybits: Vec<u8> = vec![0; b * 2 * n];

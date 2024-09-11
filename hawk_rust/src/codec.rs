@@ -168,7 +168,7 @@ pub fn dec_pub(logn: usize, pub_enc: &Vec<u8>) -> (Vec<i16>, Vec<i16>) {
     return (q00, q01);
 }
 
-pub fn enc_priv(kgseed: usize, F: &Vec<i64>, G: &Vec<i64>, hpub: &[u8]) -> Vec<u8> {
+pub fn enc_priv(kgseed: &[u8], F: &Vec<i64>, G: &Vec<i64>, hpub: &[u8]) -> Vec<u8> {
     let mut FGmod2 = Vec::with_capacity(F.len() + G.len());
 
     // compute F mod 2 and G mod 2 and append them into a single vector
@@ -179,14 +179,11 @@ pub fn enc_priv(kgseed: usize, F: &Vec<i64>, G: &Vec<i64>, hpub: &[u8]) -> Vec<u
         FGmod2.push(modulo(G[i], 2) as u8);
     }
 
-    // convert the seed to bytes
-    let kgseed_bytes = kgseed.to_ne_bytes();
-
     // initialize result vector
     let mut res: Vec<u8> = Vec::new();
 
     // append bytes of kgseed to result vector
-    for kb in kgseed_bytes.iter() {
+    for kb in kgseed.iter() {
         res.push(*kb);
     }
 
@@ -207,13 +204,13 @@ pub fn enc_priv(kgseed: usize, F: &Vec<i64>, G: &Vec<i64>, hpub: &[u8]) -> Vec<u
     return res;
 }
 
-pub fn dec_priv(logn: usize, priv_enc: &Vec<u8>) -> (usize, Vec<i64>, Vec<i64>, Vec<u8>) {
+pub fn dec_priv(logn: usize, priv_enc: &Vec<u8>) -> (Vec<u8>, Vec<i64>, Vec<i64>, Vec<u8>) {
     let n = 1 << logn;
     // make input encoded private key to a vector
     let priv_vec = priv_enc.to_vec();
     // get the length of kgseed
     let lenkgseed = params_i(logn, "lenkgseed") as usize;
-    let kgseed_vec = &priv_vec[0..lenkgseed];
+    let kgseed_arr = &priv_vec[0..lenkgseed];
 
     // vectors for the polynomials F mod 2 and G mod 2
     let Fmod2 = bytes_to_poly(&priv_vec[lenkgseed..lenkgseed + (n / 8)], 1 << logn);
@@ -225,14 +222,7 @@ pub fn dec_priv(logn: usize, priv_enc: &Vec<u8>) -> (usize, Vec<i64>, Vec<i64>, 
     let lenhpub = params_i(logn, "lenhpub") as usize;
     let hpub = &priv_vec[(priv_vec.len() - lenhpub)..priv_vec.len()].to_vec();
 
-    // convert kgseed to usize
-    let mut kgseed: [u8; 8] = [0; 8];
-    for i in 0..8 {
-        kgseed[i] = kgseed_vec[i];
-    }
-    let kgseed = usize::from_ne_bytes(kgseed);
-
-    return (kgseed, Fmod2.to_vec(), Gmod2.to_vec(), hpub.clone());
+    return (kgseed_arr.to_vec(), Fmod2.to_vec(), Gmod2.to_vec(), hpub.clone());
 }
 
 pub fn enc_sig(logn: usize, salt: &Vec<u8>, s1: &Vec<i64>) -> Vec<u8> {
