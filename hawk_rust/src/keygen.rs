@@ -23,6 +23,8 @@ pub fn hawkkeygen(logn: usize, initial_seed: usize) -> (Vec<u8>, Vec<u8>) {
         counter += 1;
         // for each new loop, kgseed will be a new random value
         let kgseed = rng.rnd(128) as usize;
+        println!("kgseed: {:?}", kgseed);
+        println!("kgseed bytes: {:?}", kgseed.to_ne_bytes());
 
         // generate f and g from centered binomial distribution
         let f_g = generate_f_g(kgseed, logn);
