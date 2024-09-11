@@ -3,9 +3,6 @@ use sha3::{
     Shake256,
 };
 
-use rand::prelude::*;
-use rand::{rngs::StdRng, Rng, SeedableRng};
-
 use crate::cdt::get_table;
 use crate::keygen::generate_f_g;
 use crate::rngcontext::{get_random_bytes, shake256x4, RngContext};
@@ -14,10 +11,8 @@ use crate::utils::{bytes_to_poly, modulo, poly_add, poly_mult_ntt, poly_sub};
 use crate::codec::{dec_priv, enc_sig};
 
 pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
-    let (T0, T1) = get_table();
+    let (t0, t1) = get_table();
     let y = shake256x4(seed, 5 * n / 2);
-
-    // println!("y: {:?}", y);
 
     // following HAWK's implementation
 
@@ -40,13 +35,13 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
                 let mut z = 0;
 
                 loop {
-                    if T0[z] == 0 || T1[z] == 0 {
+                    if t0[z] == 0 || t1[z] == 0 {
                         break;
                     }
-                    if c < T0[z] {
+                    if c < t0[z] {
                         v0 += 1;
                     }
-                    if c < T1[z] {
+                    if c < t1[z] {
                         v1 += 1;
                     }
                     z += 1;
@@ -66,12 +61,11 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
             }
         }
     }
-    // println!("d = {:?}", x);
     return x;
 }
 
 pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
-    let (kgseed, Fmod2, Gmod2, hpub) = dec_priv(logn, sk);
+    let (kgseed, bigfmod2, biggmod2, hpub) = dec_priv(logn, sk);
 
     // convert the Vec<u8> kgseed to a &[u8]
     let kgseed = &kgseed;
@@ -129,8 +123,8 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
         let mut t0: Vec<u8> = Vec::with_capacity(n);
         let mut t1: Vec<u8> = Vec::with_capacity(n);
 
-        let temp_t0 = poly_add(&poly_mult_ntt(&h0, &f, p), &poly_mult_ntt(&h1, &Fmod2, p));
-        let temp_t1 = poly_add(&poly_mult_ntt(&h0, &g, p), &poly_mult_ntt(&h1, &Gmod2, p));
+        let temp_t0 = poly_add(&poly_mult_ntt(&h0, &f, p), &poly_mult_ntt(&h1, &bigfmod2, p));
+        let temp_t1 = poly_add(&poly_mult_ntt(&h0, &g, p), &poly_mult_ntt(&h1, &biggmod2, p));
 
         for i in 0..n {
             // we can be sure these values fit inside an u8 since values are 0 and 1
@@ -186,7 +180,7 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
             w1 = w1.iter().map(|&x| -x).collect();
         }
 
-        let mut sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x >> 1).collect();
+        let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x >> 1).collect();
 
         let sig_enc = enc_sig(logn, &salt.to_vec(), &sig);
         if sig_enc[0] == 0 && sig_enc.len() == 1 {
@@ -242,47 +236,3 @@ fn vec_to_slice(v: &Vec<u8>) -> &[u8] {
     return v;
 }
 
-fn to_bytes_sized(a: usize, size: usize) -> Vec<u8> {
-    let a_b = a.to_ne_bytes();
-    assert!(a_b.len() < size);
-    let mut res = Vec::with_capacity(size);
-    for i in 0..size {
-        if i < a_b.len() {
-            res.push(a_b[i]);
-        } else {
-            res.push(0);
-        }
-    }
-    return res;
-}
-
-fn add_bytes(arr: Vec<Vec<u8>>) -> Vec<u64> {
-    /*
-     * adds together an arbitrary number of byte arrays into a vector
-     */
-    // find the max size array
-    let mut n_temp = 0;
-    for a in arr.iter() {
-        let a_max = a.iter().max().unwrap();
-        if *a_max > n_temp {
-            n_temp = *a_max;
-        }
-    }
-
-    let n = n_temp as usize;
-
-    // initialize vector
-    let mut res: Vec<u64> = Vec::with_capacity(n);
-    let mut temp = 0;
-    for i in 0..n {
-        // sum together all values at index i
-        temp = 0;
-        for a in arr.iter() {
-            if i < a.len() {
-                temp += a[i];
-            }
-        }
-        res.push(temp as u64);
-    }
-    return res;
-}

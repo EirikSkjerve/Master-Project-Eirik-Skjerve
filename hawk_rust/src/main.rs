@@ -2,6 +2,7 @@ use keygen::hawkkeygen;
 use rngcontext::get_random_bytes;
 use sign::hawksign;
 use verify::hawkverify;
+use codec::dec_sig;
 
 use std::time::{Duration, Instant};
 
@@ -45,26 +46,28 @@ fn main() {
 
 fn test1() {
     let start = Instant::now();
-    let attempts = 100;
-    for i in 0..attempts {
-        let logn = 8;
+    let samples = 1000;
 
-        // let init_seed: [u8;10] = [1,2,3,4,5,6,7,8,9,10];
-        let init_seed = get_random_bytes(10);
+    let logn = 8;
+    let init_seed = get_random_bytes(10);
+    let keypair = hawkkeygen(logn, &init_seed);
+    let (privkey, pubkey) = &keypair;
+
+    let mut failed = 0;
+    for _ in 0..samples {
+
         let message = get_random_bytes(100);
 
-        let keypair = hawkkeygen(logn, &init_seed);
-        let (privkey, pubkey) = keypair;
-
         let signature = hawksign(logn, &privkey, &message);
+        let (_salt, _s1) = dec_sig(logn, &signature);
 
         let verify = hawkverify(logn, &message, &pubkey, &signature);
+        if !verify{
+            failed += 1;
+        }
     }
 
     let duration = start.elapsed();
-    println!("time used for 100 keygen, sign and verify: {:?}", duration);
-}
-
-fn print_type_of<T>(_: &T) {
-    println!("{}", std::any::type_name::<T>())
+    println!("time used for {} sign and verify on random messages: {:?}", samples, duration);
+    println!("{} failed.", failed);
 }

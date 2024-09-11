@@ -1,5 +1,5 @@
 use crate::codec::{enc_priv, enc_pub};
-use crate::fft::{inverse_fft, mul_fft_i64};
+use crate::fft::inverse_fft;
 use crate::ntru_solve::ntrusolve;
 use crate::params::params_i;
 use crate::rngcontext::{shake256x4, RngContext};
@@ -8,19 +8,16 @@ use crate::utils::{
 };
 
 use sha3::{
-    digest::{ExtendableOutput, ExtendableOutputReset, Update},
+    digest::{ExtendableOutput, Update},
     Shake256,
 };
 
-use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
-use num_traits::{One, Signed, ToPrimitive, Zero};
+use num_bigint::BigInt;
 
 pub fn hawkkeygen(logn: usize, initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
     // not doing recursion
     let mut rng = RngContext::new(initial_seed);
-    let mut counter = 0;
     loop {
-        counter += 1;
         // for each new loop, kgseed will be a new random value
         let kgseed = rng.random(128 / 8);
 
@@ -66,34 +63,34 @@ pub fn hawkkeygen(logn: usize, initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
             continue;
         }
 
-        // calculate F and G
-        let (F, G) = ntrusolve(bigint_vec(&f), bigint_vec(&g));
+        // calculate bigf and bigg
+        let (bigf, bigg) = ntrusolve(bigint_vec(&f), bigint_vec(&g));
 
-        // if F and G are not found, retry
-        if (F.len() == 1 && F[0] == BigInt::ZERO) && (G.len() == 1 && G[0] == BigInt::ZERO) {
-            println!("Could not calculate F and G. Retrying");
+        // if bigf and bigg are not found, retry
+        if (bigf.len() == 1 && bigf[0] == BigInt::ZERO) && (bigg.len() == 1 && bigg[0] == BigInt::ZERO) {
+            println!("Could not calculate bigf and bigg. Retrying");
             continue;
         }
 
-        let (F, G) = (bigint_to_i64_vec(F), bigint_to_i64_vec(G));
+        let (bigf, bigg) = (bigint_to_i64_vec(bigf), bigint_to_i64_vec(bigg));
 
-        if infnorm(&F) > 127 || infnorm(&G) > 127 {
+        if infnorm(&bigf) > 127 || infnorm(&bigg) > 127 {
             println!("Restart 5");
             continue;
         }
 
-        let F_star = adjoint(&F);
-        let G_star = adjoint(&G);
+        let bigf_star = adjoint(&bigf);
+        let bigg_star = adjoint(&bigg);
 
         let q01 = poly_add(
-            &poly_mult_ntt(&F, &f_star, p),
-            &poly_mult_ntt(&G, &g_star, p),
+            &poly_mult_ntt(&bigf, &f_star, p),
+            &poly_mult_ntt(&bigg, &g_star, p),
         );
 
         let p = 8380417;
         let q11 = poly_add(
-            &poly_mult_ntt(&F, &F_star, p),
-            &poly_mult_ntt(&G, &G_star, p),
+            &poly_mult_ntt(&bigf, &bigf_star, p),
+            &poly_mult_ntt(&bigg, &bigg_star, p),
         );
 
         let mut flag = false;
@@ -120,8 +117,8 @@ pub fn hawkkeygen(logn: usize, initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
         let mut hpub: [u8; 16] = [0; 16];
         shaker.finalize_xof_into(&mut hpub);
 
-        let priv_enc = enc_priv(&kgseed, &F, &G, &hpub);
-        // encode private key as encode_private(kgseed, F, G, hpub);
+        let priv_enc = enc_priv(&kgseed, &bigf, &bigg, &hpub);
+        // encode private key as encode_private(kgseed, bigf, bigg, hpub);
 
         return (priv_enc, pub_enc);
     }

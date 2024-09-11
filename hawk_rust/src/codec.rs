@@ -168,15 +168,15 @@ pub fn dec_pub(logn: usize, pub_enc: &Vec<u8>) -> (Vec<i16>, Vec<i16>) {
     return (q00, q01);
 }
 
-pub fn enc_priv(kgseed: &[u8], F: &Vec<i64>, G: &Vec<i64>, hpub: &[u8]) -> Vec<u8> {
-    let mut FGmod2 = Vec::with_capacity(F.len() + G.len());
+pub fn enc_priv(kgseed: &[u8], bigf: &Vec<i64>, bigg: &Vec<i64>, hpub: &[u8]) -> Vec<u8> {
+    let mut bigfbiggmod2 = Vec::with_capacity(bigf.len() + bigg.len());
 
-    // compute F mod 2 and G mod 2 and append them into a single vector
-    for i in 0..F.len() {
-        FGmod2.push(modulo(F[i], 2) as u8);
+    // compute bigf mod 2 and bigg mod 2 and append them into a single vector
+    for i in 0..bigf.len() {
+        bigfbiggmod2.push(modulo(bigf[i], 2) as u8);
     }
-    for i in 0..G.len() {
-        FGmod2.push(modulo(G[i], 2) as u8);
+    for i in 0..bigg.len() {
+        bigfbiggmod2.push(modulo(bigg[i], 2) as u8);
     }
 
     // initialize result vector
@@ -187,8 +187,8 @@ pub fn enc_priv(kgseed: &[u8], F: &Vec<i64>, G: &Vec<i64>, hpub: &[u8]) -> Vec<u
         res.push(*kb);
     }
 
-    // pack the bits in the joined Fmod2||Gmod2
-    let packedfg = packbits(&FGmod2);
+    // pack the bits in the joined bigfmod2||biggmod2
+    let packedfg = packbits(&bigfbiggmod2);
 
     // add the packed bits into result vector
     for pfg in packedfg.iter() {
@@ -212,9 +212,9 @@ pub fn dec_priv(logn: usize, priv_enc: &Vec<u8>) -> (Vec<u8>, Vec<i64>, Vec<i64>
     let lenkgseed = params_i(logn, "lenkgseed") as usize;
     let kgseed_arr = &priv_vec[0..lenkgseed];
 
-    // vectors for the polynomials F mod 2 and G mod 2
-    let Fmod2 = bytes_to_poly(&priv_vec[lenkgseed..lenkgseed + (n / 8)], 1 << logn);
-    let Gmod2 = bytes_to_poly(
+    // vectors for the polynomials bigf mod 2 and bigg mod 2
+    let bigfmod2 = bytes_to_poly(&priv_vec[lenkgseed..lenkgseed + (n / 8)], 1 << logn);
+    let biggmod2 = bytes_to_poly(
         &priv_vec[lenkgseed + (n / 8)..lenkgseed + (n / 4)],
         1 << logn,
     );
@@ -224,8 +224,8 @@ pub fn dec_priv(logn: usize, priv_enc: &Vec<u8>) -> (Vec<u8>, Vec<i64>, Vec<i64>
 
     return (
         kgseed_arr.to_vec(),
-        Fmod2.to_vec(),
-        Gmod2.to_vec(),
+        bigfmod2.to_vec(),
+        biggmod2.to_vec(),
         hpub.clone(),
     );
 }
