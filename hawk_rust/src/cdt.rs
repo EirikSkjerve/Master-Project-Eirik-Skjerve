@@ -1,5 +1,4 @@
-
-const HAWK256_T0: [u128;10] = [
+const HAWK256_T0: [u128; 10] = [
     0x26B871FBD58485D45050,
     0x07C054114F1DC2FA7AC9,
     0x00A242F74ADDA0B5AE61,
@@ -12,7 +11,7 @@ const HAWK256_T0: [u128;10] = [
     0x0000000000000000007B,
 ];
 
-const HAWK256_T1: [u128;10] = [
+const HAWK256_T1: [u128; 10] = [
     0x13459408A4B181C718B1,
     0x027D614569CC54722DC9,
     0x0020951C5CDCBAFF49A3,
@@ -25,6 +24,6 @@ const HAWK256_T1: [u128;10] = [
     0x00000000000000000000,
 ];
 
-pub fn get_table()-> ([u128;10], [u128;10]) {
+pub fn get_table() -> ([u128; 10], [u128; 10]) {
     return (HAWK256_T0, HAWK256_T1);
 }

@@ -133,6 +133,10 @@ pub fn mul_fft(f: &Vec<Complex<f64>>, g: &Vec<Complex<f64>>) -> Vec<Complex<f64>
     return res;
 }
 
+pub fn mul_fft_f64(f: &Vec<f64>, g: &Vec<f64>) -> Vec<f64> {
+    return ifft(&mul_fft(&fft(f), &fft(g)));
+}
+
 pub fn mul_fft_i64(f: &Vec<i64>, g: &Vec<i64>) -> Vec<i64> {
     let (f_fft, g_fft) = (fft_i64(f), fft_i64(g));
     return ifft_i64(&mul_fft(&f_fft, &g_fft));
@@ -147,6 +151,14 @@ pub fn div_fft(f: &Vec<Complex<f64>>, g: &Vec<Complex<f64>>) -> Vec<Complex<f64>
     }
 
     return res;
+}
+
+pub fn div_fft_f64(f: &Vec<i64>, g: &Vec<i64>) -> Vec<f64> {
+    let f_fft = fft_i64(f);
+    let g_fft = fft_i64(g);
+
+    let h_fft = div_fft(&f_fft, &g_fft);
+    return ifft(&h_fft);
 }
 
 pub fn add_fft(f: &Vec<Complex<f64>>, g: &Vec<Complex<f64>>) -> Vec<Complex<f64>> {

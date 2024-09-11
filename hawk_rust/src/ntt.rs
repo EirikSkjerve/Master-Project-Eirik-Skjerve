@@ -3,7 +3,7 @@
 // and section 4.1.1 of HAWK spec paper
 
 // use num::One;
-use crate::utils::{mod_pow, modulo};
+use crate::utils::{adjoint, mod_pow, modulo};
 use num::traits::{FromPrimitive, Num, PrimInt};
 use prime_factorization::Factorization;
 
@@ -67,6 +67,16 @@ pub fn intt(f: Vec<i64>, p: u32) -> Vec<i64> {
     }
 
     return intt_f;
+}
+
+pub fn nttadj(f: &Vec<i64>, p: u32) -> Vec<i64> {
+    let n = f.len();
+    let zetas_izetas = get_roots(p as u128, n as u128);
+    let zetas = zetas_izetas.0;
+    let izetas = zetas_izetas.1;
+
+    let ui = intt(f.to_vec(), p);
+    return ntt(adjoint(&ui), p);
 }
 
 // implementation of bit reversal of an integer

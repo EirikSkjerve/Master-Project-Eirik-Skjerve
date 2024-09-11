@@ -45,16 +45,15 @@ pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
     return res;
 }
 
-pub fn bytes_to_poly(h: &[u8], n: usize) -> Vec<i64>{
+pub fn bytes_to_poly(h: &[u8], n: usize) -> Vec<i64> {
     /*
      * converts a byte-array to a vector/polynomial
      */
     let mut res: Vec<i64> = vec![0; n];
-    for i in 0..n{
-        res[i] = ((h[i/8] >> (i%8)) & 1) as i64;
+    for i in 0..n {
+        res[i] = ((h[i / 8] >> (i % 8)) & 1) as i64;
     }
     return res;
-
 }
 
 // implements integer modulation
@@ -62,7 +61,7 @@ pub fn modulo<T: PrimInt>(a: T, b: T) -> T
 where
     T: Num + FromPrimitive,
 {
-    // convert the inputs to u64
+    // convert the inputs to u128
     let a_i128 = a.to_i128().unwrap();
     let b_i128 = b.to_i128().unwrap();
 
@@ -165,7 +164,7 @@ pub fn l2norm(f: &Vec<i64>) -> i64 {
     // returns the l2 norm of polynomial/vector f as f[0]^2 + f[1]^2 +..+ f[n]^2
     let mut sum: i64 = 0;
     for i in 0..f.len() {
-        sum += (f[i]).pow(2);
+        sum += f[i] * f[i];
     }
     return sum;
 }
