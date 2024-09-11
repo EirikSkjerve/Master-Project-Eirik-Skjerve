@@ -62,6 +62,7 @@ pub fn hawkverify(logn: usize, msg: &[u8;128], pub_key: &Vec<u8>, signature: &Ve
         &bytes_to_poly(&h[(256 / 8)..256 / 4], n),
     );
 
+    println!("ver: \nh0: {:?} \nh1: {:?}", h0, h1);
 
     let w1 = poly_sub(&h1, &poly_times_const(&i16vec_to_i32vec(&s1), 2));
     // println!("w1 <- h1 - 2*s1: \n {:?} <- \n{:?} -")

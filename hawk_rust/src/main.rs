@@ -60,7 +60,7 @@ fn test1() {
     let signature_r = hawksign(logn, &privkey, &message);
     println!("r sig: {:?}", signature_r);
 
-    let verif_r = hawkverify(logn, &message, &pubkey, &signature);
+    let verif_r = hawkverify(logn, &message, &pubkey, &signature_r);
     println!("verification: {}", verif_r);
 }
 

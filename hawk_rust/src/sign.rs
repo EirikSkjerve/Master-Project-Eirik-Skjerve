@@ -106,6 +106,9 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8; 128]) -> Vec<u8> {
         // resets the hasher instance
         shaker.finalize_xof_reset_into(&mut salt);
 
+        // test
+        let salt: Vec<u8> = vec![244, 21, 34, 231, 19, 24, 236, 140, 243, 104, 72, 228, 242, 179]; 
+
         // compute new hash h
 
         shaker.update(&m);
@@ -119,6 +122,8 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8; 128]) -> Vec<u8> {
             &bytes_to_poly(&h[0..256 / 8], n),
             &bytes_to_poly(&h[(256 / 8)..256 / 4], n),
         );
+
+        println!("sign: \nh0: {:?} \nh1: {:?}", h0, h1);
 
         // compute target vectors t0, t1
 
@@ -138,11 +143,12 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8; 128]) -> Vec<u8> {
     
         // get random seed = M || kgseed || a+1 || rnd(320)
         let seed = rng.rnd(40);
-        let kgseed_b = to_bytes_sized(kgseed, 64);
+        // let kgseed_b = to_bytes_sized(kgseed, 64);
+        let kgseed_b = kgseed.to_ne_bytes();
 
         let arr = vec![
             m.to_vec(),
-            kgseed_b,
+            kgseed_b.to_vec(),
             (a + 1).to_ne_bytes().to_vec(),
             seed.to_ne_bytes().to_vec(),
         ];
