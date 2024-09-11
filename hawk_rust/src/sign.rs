@@ -8,7 +8,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::cdt::get_table;
 use crate::keygen::generate_f_g;
-use crate::rngcontext::{shake256x4, RngContext};
+use crate::rngcontext::{get_random_bytes, shake256x4, RngContext};
 use crate::utils::{bytes_to_poly, modulo, poly_add, poly_mult_ntt, poly_sub};
 
 use crate::codec::{dec_priv, enc_sig};
@@ -70,20 +70,17 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
     return x;
 }
 
-pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8; 128]) -> Vec<u8> {
-
+pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
     let (kgseed, Fmod2, Gmod2, hpub) = dec_priv(logn, sk);
+
     // convert the Vec<u8> kgseed to a &[u8]
     let kgseed = &kgseed;
-    println!("kgseed after decompression: {:?}", kgseed);
 
     // this should be from logn
     // initialize a new RngContext with some random seed
     // use random() instead of fixed seed
-    let mut seed_rng = rand::thread_rng();
     // let mut rng = RngContext::new(seed_rng.gen());
-    let fixed_seed: [u8; 5] = [1,3,3,7,8];
-    let mut rng = RngContext::new(&fixed_seed);
+    let mut rng = RngContext::new(&get_random_bytes(10));
 
     let n = 1 << logn;
     let (f, g) = generate_f_g(kgseed, logn);
@@ -112,7 +109,6 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8; 128]) -> Vec<u8> {
         shaker.finalize_xof_reset_into(&mut salt);
 
         // test
-        // let salt: Vec<u8> = vec![244, 21, 34, 231, 19, 24, 236, 140, 243, 104, 72, 228, 242, 179]; 
 
         // compute new hash h
 
@@ -128,15 +124,11 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8; 128]) -> Vec<u8> {
             &bytes_to_poly(&h[(256 / 8)..256 / 4], n),
         );
 
-        // println!("sign: \nh0: {:?} \nh1: {:?}", h0, h1);
-
         // compute target vectors t0, t1
 
         let mut t0: Vec<u8> = Vec::with_capacity(n);
         let mut t1: Vec<u8> = Vec::with_capacity(n);
 
-        // println!("f: {:?} \ng: {:?} \nFmod2: {:?} \nGmod2: {:?}", f, g, Fmod2, Gmod2);
-        // println!("kgseed: {:?}", kgseed);
         let temp_t0 = poly_add(&poly_mult_ntt(&h0, &f, p), &poly_mult_ntt(&h1, &Fmod2, p));
         let temp_t1 = poly_add(&poly_mult_ntt(&h0, &g, p), &poly_mult_ntt(&h1, &Gmod2, p));
 
@@ -148,13 +140,8 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8; 128]) -> Vec<u8> {
 
         let t = concat_bytes(&vec![t0, t1]);
 
-        // since the t vector is different in python/rust implementations, try with some static
-        // value for debugging
-        // let t: Vec<u8>  = vec![0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1];
-     
         // get random seed = M || kgseed || a+1 || rnd(320)
         let seed = rng.random(40);
-        // let seed_vec: Vec<u8> = vec![169, 176, 15, 245, 138, 51, 233, 202, 91, 41, 87, 103, 63, 193, 156, 130, 4, 220, 27, 232, 73, 161, 245, 75, 37, 126, 162, 69, 109, 103, 233, 59, 23, 230, 241, 245, 37, 130, 204, 216];
 
         let arr = vec![
             m.to_vec(),
@@ -167,7 +154,7 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8; 128]) -> Vec<u8> {
         let s = vec_to_slice(&s_temp);
 
         // compute (x0, x1) from sample()
-    
+
         let x = sample(s, t.clone(), n);
 
         let x0 = &x[0..n];
@@ -194,29 +181,18 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8; 128]) -> Vec<u8> {
             &poly_mult_ntt(&f, &x1_i64, p),
             &poly_mult_ntt(&g, &x0_i64, p),
         );
-        
-        // stupid test
-        // w1.reverse();
 
         if !symbreak(&w1) {
             w1 = w1.iter().map(|&x| -x).collect();
         }
 
-
         let mut sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x >> 1).collect();
-
-        // println!("sig un-encoded from sig: {:?}", sig);
 
         let sig_enc = enc_sig(logn, &salt.to_vec(), &sig);
         if sig_enc[0] == 0 && sig_enc.len() == 1 {
             continue;
         }
 
-        // println!("s = {:?} \nt = {:?} \nf = {:?} \ng = {:?} \nh1 = {:?}  \nd = {:?}", s, t, f, g, h1, x);
-
-        // println!("sig = {:?} \nsalt = {:?} ", sig, salt);
-        // println!("sig encoded= {:?}", sig_enc);
-        // println!("counter sig: {}", counter);
         return sig_enc;
     }
 }

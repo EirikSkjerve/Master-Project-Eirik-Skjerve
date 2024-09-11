@@ -1,6 +1,10 @@
 extern crate sha3;
 
-use sha3::{Shake256, digest::{Update, ExtendableOutput, XofReader}};
+use rand::Rng;
+use sha3::{
+    digest::{ExtendableOutput, Update, XofReader},
+    Shake256,
+};
 
 // RngContext struct equivalent
 pub struct RngContext {
@@ -59,3 +63,13 @@ pub fn shake256x4(message: &[u8], num: usize) -> Vec<u64> {
     return y;
 }
 
+pub fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
+    let mut res = Vec::with_capacity(num_bytes);
+    let mut rng = rand::thread_rng();
+
+    for _ in 0..num_bytes {
+        res.push(rng.gen_range(0..255));
+    }
+
+    return res;
+}

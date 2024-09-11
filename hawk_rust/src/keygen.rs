@@ -22,7 +22,7 @@ pub fn hawkkeygen(logn: usize, initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
     loop {
         counter += 1;
         // for each new loop, kgseed will be a new random value
-        let kgseed = rng.random(128/8);
+        let kgseed = rng.random(128 / 8);
 
         // generate f and g from centered binomial distribution
         let f_g = generate_f_g(&kgseed, logn);
@@ -66,8 +66,14 @@ pub fn hawkkeygen(logn: usize, initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
             continue;
         }
 
-        // should have some test if ntrusolve fails
+        // calculate F and G
         let (F, G) = ntrusolve(bigint_vec(&f), bigint_vec(&g));
+
+        // if F and G are not found, retry
+        if (F.len() == 1 && F[0] == BigInt::ZERO) && (G.len() == 1 && G[0] == BigInt::ZERO) {
+            println!("Could not calculate F and G. Retrying");
+            continue;
+        }
 
         let (F, G) = (bigint_to_i64_vec(F), bigint_to_i64_vec(G));
 
@@ -114,13 +120,9 @@ pub fn hawkkeygen(logn: usize, initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
         let mut hpub: [u8; 16] = [0; 16];
         shaker.finalize_xof_into(&mut hpub);
 
-        println!("kgseed before compression: {:?}", kgseed);
         let priv_enc = enc_priv(&kgseed, &F, &G, &hpub);
         // encode private key as encode_private(kgseed, F, G, hpub);
 
-        // println!("f = {:?} \ng = {:?}", f, g);
-        // println!("F: {:?} \nG : {:?}", F, G);
-        // println!("q00: {:?} \nq01: {:?} \nq11: {:?}", q00, q01, q11);
         return (priv_enc, pub_enc);
     }
 }

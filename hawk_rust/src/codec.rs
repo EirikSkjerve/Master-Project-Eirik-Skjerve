@@ -222,7 +222,12 @@ pub fn dec_priv(logn: usize, priv_enc: &Vec<u8>) -> (Vec<u8>, Vec<i64>, Vec<i64>
     let lenhpub = params_i(logn, "lenhpub") as usize;
     let hpub = &priv_vec[(priv_vec.len() - lenhpub)..priv_vec.len()].to_vec();
 
-    return (kgseed_arr.to_vec(), Fmod2.to_vec(), Gmod2.to_vec(), hpub.clone());
+    return (
+        kgseed_arr.to_vec(),
+        Fmod2.to_vec(),
+        Gmod2.to_vec(),
+        hpub.clone(),
+    );
 }
 
 pub fn enc_sig(logn: usize, salt: &Vec<u8>, s1: &Vec<i64>) -> Vec<u8> {

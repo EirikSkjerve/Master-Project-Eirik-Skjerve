@@ -8,8 +8,7 @@ use crate::sign::symbreak;
 use crate::utils::{bytes_to_poly, modulo, poly_sub};
 use crate::verifyutils::*;
 
-
-pub fn hawkverify(logn: usize, msg: &[u8;128], pub_key: &Vec<u8>, signature: &Vec<u8>) -> bool {
+pub fn hawkverify(logn: usize, msg: &[u8], pub_key: &Vec<u8>, signature: &Vec<u8>) -> bool {
     let n = 1 << logn;
 
     // decode encoded signature
@@ -18,18 +17,10 @@ pub fn hawkverify(logn: usize, msg: &[u8;128], pub_key: &Vec<u8>, signature: &Ve
     let salt = r.0;
     let s1 = r.1;
 
-    // println!("sig from verify: {:?}", s1);
-
-    // println!("salt from verify: {:?}", salt);
-    // println!("s1 from verify: {:?}", s1);
-    // TODO check signature
-
     // decode public key
     let r = dec_pub(logn, &pub_key);
     let q00 = r.0;
     let q01 = r.1;
-    // println!("q00 = {:?}", q00);
-    // println!("q01 = {:?}", q01);
 
     // check if public key decoding failed
     if q00[0] == 0 && q00.len() == 1 && q01[0] == 0 && q01.len() == 1 {
@@ -62,10 +53,7 @@ pub fn hawkverify(logn: usize, msg: &[u8;128], pub_key: &Vec<u8>, signature: &Ve
         &bytes_to_poly(&h[(256 / 8)..256 / 4], n),
     );
 
-    println!("ver: \nh0: {:?} \nh1: {:?}", h0, h1);
-
     let w1 = poly_sub(&h1, &poly_times_const(&i16vec_to_i32vec(&s1), 2));
-    // println!("w1 <- h1 - 2*s1: \n {:?} <- \n{:?} -")
 
     if !symbreak(&w1) {
         println!("Symbreak failed");
@@ -80,27 +68,16 @@ pub fn hawkverify(logn: usize, msg: &[u8;128], pub_key: &Vec<u8>, signature: &Ve
     let h0_i32 = i64vec_to_i32vec(&h0);
 
     let w0 = rebuildw0(logn, &q00_i32, &q01_i32, &w1_i32, &h0_i32);
-    // println!("q00 = {:?}", q00_i32);
-    // println!("q01 = {:?}", q01_i32);
-    // println!("w1 = {:?}", w1_i32);
-    // println!("h0 = {:?}", h0_i32);
-    //
-    // println!("\n w0 = {:?}", w0);
+
     if w0[0] == 0 && w0.len() == 1 {
         println!("failed on rebuild");
         return false;
     }
-    // println!("rebuilt w0: {:?}", w0);
 
     let (p1, p2): (i64, i64) = (2147473409, 2147389441);
-    // println!("q00 = {:?} \nq01 = {:?} \nw0 = {:?} \nw1 = {:?}", q00, q01, w0, w1);
-    // println!("h0 = {:?}", h0);
 
     let r1 = polyQnorm(&q00_i64, &q01_i64, &i32vec_to_i64vec(&w0), &w1, p1);
     let r2 = polyQnorm(&q00_i64, &q01_i64, &i32vec_to_i64vec(&w0), &w1, p2);
-
-    // println!("q00: {:?} \nq01: {:?}", q00_i32, q01_i32);
-    // println!("r1: {} \nr2: {}", r1, r2);
 
     if r1 != r2 || modulo(r1, n as i64) != 0 {
         println!("failed here");
@@ -111,13 +88,7 @@ pub fn hawkverify(logn: usize, msg: &[u8;128], pub_key: &Vec<u8>, signature: &Ve
 
     let sigmaverify: f64 = 1.042;
 
-    println!(
-        "r1: {} \nlimit: {}",
-        r1,
-        ((8 * n) as f64 * sigmaverify.powi(2)).round()
-    );
     if (r1 as f64) > (8 * n) as f64 * sigmaverify.powi(2) {
-        println!("Too big");
         return false;
     }
 
