@@ -143,6 +143,7 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8; 128]) -> Vec<u8> {
     
         // get random seed = M || kgseed || a+1 || rnd(320)
         let seed = rng.rnd(40);
+        let seed_vec: Vec<u8> = vec![169, 176, 15, 245, 138, 51, 233, 202, 91, 41, 87, 103, 63, 193, 156, 130, 4, 220, 27, 232, 73, 161, 245, 75, 37, 126, 162, 69, 109, 103, 233, 59, 23, 230, 241, 245, 37, 130, 204, 216];
         // let kgseed_b = to_bytes_sized(kgseed, 64);
         let kgseed_b = kgseed.to_ne_bytes();
 
@@ -150,7 +151,7 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8; 128]) -> Vec<u8> {
             m.to_vec(),
             kgseed_b.to_vec(),
             (a + 1).to_ne_bytes().to_vec(),
-            seed.to_ne_bytes().to_vec(),
+            seed_vec,
         ];
 
         let s_temp = concat_bytes(&arr);
@@ -158,6 +159,7 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8; 128]) -> Vec<u8> {
 
         // compute (x0, x1) from sample()
 
+        println!("s: {:?} \nt: {:?}", s, t);
         let x = sample(s, t.clone(), n);
 
         let x0 = &x[0..n];
