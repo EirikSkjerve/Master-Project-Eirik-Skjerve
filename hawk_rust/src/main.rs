@@ -1,4 +1,4 @@
-use keygen::hawkkeygen;
+use keygen::{hawkkeygen_256, hawkkeygen_512, hawkkeygen_1024};
 use rngcontext::get_random_bytes;
 use sign::hawksign;
 use verify::hawkverify;
@@ -41,7 +41,21 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 */
 
 fn main() {
-    test1();
+    // test1();
+    test2();
+}
+
+use crate::ntru_solve::ntrusolve;
+use num_bigint::{BigInt, ToBigInt};
+use num_traits::{One, Signed, ToPrimitive};
+use utils::bigint_vec;
+fn test2(){
+    let f = bigint_vec(&vec![1, -1]);
+    let g = bigint_vec(&vec![2, 1]);
+
+    let (F, G) = ntrusolve(f, g);
+
+    println!("F: {:?} \nG: {:?}", F, G);
 }
 
 fn test1() {
@@ -50,7 +64,7 @@ fn test1() {
 
     let logn = 8;
     let init_seed = get_random_bytes(10);
-    let keypair = hawkkeygen(logn, &init_seed);
+    let keypair = hawkkeygen_256(&init_seed);
     let (privkey, pubkey) = &keypair;
 
     let mut failed = 0;

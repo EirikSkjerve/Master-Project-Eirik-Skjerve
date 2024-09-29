@@ -1,7 +1,7 @@
 use crate::codec::{enc_priv, enc_pub};
 use crate::fft::inverse_fft;
 use crate::ntru_solve::ntrusolve;
-use crate::params::params_i;
+use crate::params::{params_i, params_f};
 use crate::rngcontext::{shake256x4, RngContext};
 use crate::utils::{
     adjoint, bigint_to_i64_vec, bigint_vec, infnorm, is_invertible, l2norm, poly_add, poly_mult_ntt,
@@ -14,12 +14,27 @@ use sha3::{
 
 use num_bigint::BigInt;
 
-pub fn hawkkeygen(logn: usize, initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
+pub fn hawkkeygen_256(initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
+    let logn = 8;
+    return hawkkeygen(logn, initial_seed);
+}
+
+pub fn hawkkeygen_512(initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
+    let logn = 9;
+    return hawkkeygen(logn, initial_seed);
+}
+
+pub fn hawkkeygen_1024(initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
+    let logn = 10;
+    return hawkkeygen(logn, initial_seed);
+}
+
+fn hawkkeygen(logn: usize, initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
     // not doing recursion
     let mut rng = RngContext::new(initial_seed);
     loop {
         // for each new loop, kgseed will be a new random value
-        let kgseed = rng.random(128 / 8);
+        let kgseed = rng.random(params_i(logn, "lenkgseed"));
 
         // generate f and g from centered binomial distribution
         let f_g = generate_f_g(&kgseed, logn);
@@ -33,7 +48,9 @@ pub fn hawkkeygen(logn: usize, initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
 
         let n = 1 << logn;
 
-        if ((l2norm(&f) + l2norm(&g)) as f64) <= (2.0 * (n as f64) * (1.042 as f64).powi(2)) {
+        let temp = (n as f64) * (params_f(logn, "sigmakrsec")).powi(2);
+        println!("{}", temp);
+        if ((l2norm(&f) + l2norm(&g)) as f64) <= (2.0 * (n as f64) * (params_f(logn, "sigmakrsec")).powi(2)) {
             // println!("Restart 2");
             continue;
         }
@@ -58,7 +75,7 @@ pub fn hawkkeygen(logn: usize, initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
 
         let invq00 = inverse_fft(&q00);
 
-        if invq00[0] >= 1.0 / 250.0 {
+        if invq00[0] >= params_f(logn, "beta0") {
             // println!("Restart 4");
             continue;
         }
