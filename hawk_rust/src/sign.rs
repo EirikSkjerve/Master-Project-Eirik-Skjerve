@@ -11,29 +11,43 @@ use crate::utils::{bytes_to_poly, modulo, poly_add, poly_mult_ntt, poly_sub};
 use crate::codec::{dec_priv, enc_sig};
 
 pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
+
+    // get the CDT for this degree
     let (t0, t1) = get_table();
+
+    // vector y of high numbers
+    // note that the entries in y are uniformly distributed
     let y = shake256x4(seed, 5 * n / 2);
 
-    // following HAWK's implementation
-
+    // the value that is used as a part of the sample
     let mut v = 0;
+    // initialize empty vector for the sample
     let mut x: Vec<i8> = vec![0; 2 * n];
 
+
+    // since y is the result of 4 interleaved shake256 instances
+    // the following indexing will access them in an appropriate manner
     for j in 0..4 {
         for i in 0..(n / 8) {
             for k in 0..4 {
+
+                // this is the current index for our point x
                 let r = 16 * i + 4 * j + k;
 
                 let a = y[(j + 4 * ((5 * i) + k)) as usize];
 
                 let b = modulo(y[j + 4 * (5 * i + 4)] >> (16 * k), 1 << 15);
 
+                // the final scaled number we are using
                 let c = modulo(a as u128, 1 << 63) + (1 << 63) * b as u128;
 
+                // initialize v0, v1, and z to zero
                 let mut v0: i8 = 0;
                 let mut v1: i8 = 0;
                 let mut z = 0;
 
+                // here the actual sampling is done by checking how many of the elements in the
+                // CD-Tables are strictly larger than the uniformly sampled c
                 loop {
                     if t0[z] == 0 || t1[z] == 0 {
                         break;
@@ -47,16 +61,21 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
                     z += 1;
                 }
 
+                // check the target vector at the current index
+                // and add v0 or v1 based on this
                 if t[r as usize] == 0 {
                     v = 2 * v0;
                 } else {
                     v = 2 * v1 + 1;
                 }
 
+                // flip the sign if the original value from y is too high
+                // (higher than half???)
                 if a >= 1 << 63 {
                     v = -v;
                 }
 
+                // add the sample to vector x
                 x[r as usize] = v;
             }
         }
@@ -79,8 +98,6 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
     let n = 1 << logn;
     let (f, g) = generate_f_g(kgseed, logn);
 
-    // println!("f = {:?} \ng = {:?}", f, g);
-
     // compute hash M
     let mut shaker = Shake256::default();
     shaker.update(msg);
@@ -101,8 +118,6 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
         let mut salt: [u8; 14] = [0; 14];
         // resets the hasher instance
         shaker.finalize_xof_reset_into(&mut salt);
-
-        // test
 
         // compute new hash h
 
@@ -151,6 +166,7 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
 
         let x = sample(s, t.clone(), n);
 
+
         let x0 = &x[0..n];
         let x1 = &x[n..];
 
@@ -166,11 +182,14 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
             continue;
         }
 
+        
         // convert x0 and x1 to Vec<i64>
 
         let x0_i64: Vec<i64> = x0.iter().map(|&x| x as i64).collect();
         let x1_i64: Vec<i64> = x1.iter().map(|&x| x as i64).collect();
 
+        // compute one part of the signature
+        // the remaining part is computed in signature verification
         let mut w1 = poly_sub(
             &poly_mult_ntt(&f, &x1_i64, p),
             &poly_mult_ntt(&g, &x0_i64, p),

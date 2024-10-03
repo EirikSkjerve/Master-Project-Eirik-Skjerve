@@ -48,9 +48,8 @@ fn hawkkeygen(logn: usize, initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
 
         let n = 1 << logn;
 
-        let temp = (n as f64) * (params_f(logn, "sigmakrsec")).powi(2);
-        println!("{}", temp);
-        if ((l2norm(&f) + l2norm(&g)) as f64) <= (2.0 * (n as f64) * (params_f(logn, "sigmakrsec")).powi(2)) {
+        let temp = 2.0 * (n as f64) * (params_f(logn, "sigmakrsec")).powi(2);
+        if ((l2norm(&f) + l2norm(&g)) as f64) <= temp {
             // println!("Restart 2");
             continue;
         }

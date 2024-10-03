@@ -1,8 +1,8 @@
 use keygen::{hawkkeygen_256, hawkkeygen_512, hawkkeygen_1024};
 use rngcontext::get_random_bytes;
-use sign::hawksign;
+use sign::{hawksign, sample};
 use verify::hawkverify;
-use codec::dec_sig;
+use utils::modulo;
 
 use std::time::{Duration, Instant};
 
@@ -42,40 +42,62 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 fn main() {
     // test1();
-    test2();
+    sample_test();
 }
 
-use crate::ntru_solve::ntrusolve;
-use num_bigint::{BigInt, ToBigInt};
-use num_traits::{One, Signed, ToPrimitive};
-use utils::bigint_vec;
-fn test2(){
-    let f = bigint_vec(&vec![1, -1]);
-    let g = bigint_vec(&vec![2, 1]);
+fn sample_test() {
+    let num_samples = 10;
+    let mut result: Vec<i8> = vec![];
 
-    let (F, G) = ntrusolve(f, g);
+    let n = 256;
+    for i in 0..num_samples{
+        let seed = get_random_bytes(10);
+        let t = get_random_bytes(2*n).iter().map(|&x| modulo(x, 2)).collect();
+        let x = sample(&seed, t, n); 
+        x.iter().for_each(|&el| {
+            result.push(el);
+        });
+    }
 
-    println!("F: {:?} \nG: {:?}", F, G);
+    println!("{} samples: {:?}",num_samples, result);
 }
 
 fn test1() {
-    let start = Instant::now();
-    let samples = 1000;
 
+    // number of samples
+    let samples = 1;
+
+    // set HAWK-degree
     let logn = 8;
+    // some initial seed for the key generation process
     let init_seed = get_random_bytes(10);
+    // the computed keypair
     let keypair = hawkkeygen_256(&init_seed);
+    // unpack the keys
     let (privkey, pubkey) = &keypair;
 
+    // keepng track of failed signatures
     let mut failed = 0;
+
+    // measure time
+    let start = Instant::now();
     for _ in 0..samples {
 
+        // generate some random message
         let message = get_random_bytes(100);
 
+        // produce a signature for message
+        
+        let sig_time = Instant::now();
         let signature = hawksign(logn, &privkey, &message);
-        let (_salt, _s1) = dec_sig(logn, &signature);
+        println!("{:?}", sig_time.elapsed());
+        
+        // let (_salt, _s1) = dec_sig(logn, &signature);
 
+        // verify or reject a message
         let verify = hawkverify(logn, &message, &pubkey, &signature);
+
+        // count failures
         if !verify{
             failed += 1;
         }
