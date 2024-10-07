@@ -13,16 +13,16 @@ use sha3::{
     Shake256,
 };
 
-// parameters for hawk 256
-use crate::parameters::hawk256_params::*;
+// parameters for hawk 512
+use crate::parameters::hawk512_params::*;
 use num_bigint::BigInt;
 
 
-/// Generates a HAWK 256 public/private key pair
+/// Generates a HAWK 512 public/private key pair
 /// Will return encoded/compressed keys
-pub fn hawkkeygen_256(initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
+pub fn hawkkeygen_512(initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
 
-    let logn = 8;
+    let logn = 9;
     // initialize a new RngContext instance, used for generating random bits
     let mut rng = RngContext::new(initial_seed);
 

@@ -19,8 +19,7 @@ mod hawk256;
 mod hawk512;
 
 use hawk256::{hawkkeygen_256::hawkkeygen_256, hawksign_256::hawksign_256, hawkverify_256::hawkverify_256};
-
-// mod hawk1024;
+use hawk512::{hawkkeygen_512::hawkkeygen_512, hawksign_512::hawksign_512, hawkverify_512::hawkverify_512};
 
 mod compression;
 
@@ -43,10 +42,11 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 */
 
 fn main() {
-    test1();
+    // test256();
+    test512();
 }
 
-fn test1() {
+fn test256() {
 
     // number of samples
     let samples = 1;
@@ -76,6 +76,48 @@ fn test1() {
         // verify or reject a message
         let ver_time = Instant::now();
         let verify = hawkverify_256(&message, &pubkey, &signature);
+        println!("Ver time {:?}",ver_time.elapsed());
+
+        // count failures
+        if !verify{
+            failed += 1;
+        }
+    }
+
+}
+
+
+fn test512() {
+
+    // number of samples
+    let samples = 1;
+
+    // set HAWK-degree
+    // some initial seed for the key generation process
+    let init_seed = get_random_bytes(10);
+    // the computed keypair
+    let keypair = hawkkeygen_512(&init_seed);
+    println!("Keypair generated");
+    // unpack the keys
+    let (privkey, pubkey) = &keypair;
+
+    // keepng track of failed signatures
+    let mut failed = 0;
+
+    for _ in 0..samples {
+
+        // generate some random message
+        let message = get_random_bytes(100);
+
+        // produce a signature for message
+        let sig_time = Instant::now();
+        println!("Signing...");
+        let signature = hawksign_512(&privkey, &message);
+        println!("Sig time {:?}", sig_time.elapsed());
+        
+        // verify or reject a message
+        let ver_time = Instant::now();
+        let verify = hawkverify_512(&message, &pubkey, &signature);
         println!("Ver time {:?}",ver_time.elapsed());
 
         // count failures
