@@ -76,8 +76,8 @@ pub fn hawkverify(logn: usize, msg: &[u8], pub_key: &Vec<u8>, signature: &Vec<u8
 
     let (p1, p2): (i64, i64) = (2147473409, 2147389441);
 
-    let r1 = polyQnorm(&q00_i64, &q01_i64, &i32vec_to_i64vec(&w0), &w1, p1);
-    let r2 = polyQnorm(&q00_i64, &q01_i64, &i32vec_to_i64vec(&w0), &w1, p2);
+    let r1 = poly_qnorm(&q00_i64, &q01_i64, &i32vec_to_i64vec(&w0), &w1, p1);
+    let r2 = poly_qnorm(&q00_i64, &q01_i64, &i32vec_to_i64vec(&w0), &w1, p2);
 
     if r1 != r2 || modulo(r1, n as i64) != 0 {
         println!("failed here");
@@ -109,8 +109,4 @@ fn i16vec_to_i32vec(f: &Vec<i16>) -> Vec<i32> {
 fn i32vec_to_i64vec(f: &Vec<i32>) -> Vec<i64> {
     let res: Vec<i64> = f.iter().map(|&x| x as i64).collect();
     return res;
-}
-
-pub fn vec_to_slice(vec: &Vec<u8>) -> &[u8] {
-    vec
 }

@@ -1,49 +1,8 @@
 use crate::ntt::{intt, ntt};
 use num::traits::{FromPrimitive, Num, PrimInt};
 
-use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
-use num_traits::{One, Signed, ToPrimitive, Zero};
-
-pub fn bin(a: u128, x: usize) -> Vec<u8> {
-    /*
-    Converts an integer to binary representation in a vector of arbitrary size
-    Call bin(a, x=0) for default binary size
-    */
-    let mut res: Vec<u8> = vec![];
-    let mut b = a;
-
-    if x == 0 {
-        // returns a as binary with *default* size
-        return bin(a, (a as f64).log2().ceil() as usize + 1);
-    }
-    for i in 0..x {
-        if b % 2 == 1 {
-            res.push(1);
-        }
-        if b % 2 == 0 {
-            res.push(0);
-        }
-        b /= 2;
-    }
-
-    res.reverse();
-    return res;
-}
-
-pub fn int<T: AsRef<[u8]>>(input: T) -> u128 {
-    let a = input.as_ref();
-    /*
-    Converts an array representing a binary string to its decimal representation
-    and returns an 128 bit integer
-    */
-    let mut res: u128 = 0;
-    for i in 0..a.len() {
-        if a[i] == 1 {
-            res += (2_u128).pow((a.len() - (i + 1)) as u32);
-        }
-    }
-    return res;
-}
+use num_bigint::{BigInt, ToBigInt};
+use num_traits::{Signed, ToPrimitive};
 
 pub fn bytes_to_poly(h: &[u8], n: usize) -> Vec<i64> {
     /*
@@ -197,19 +156,6 @@ pub fn poly_sub(f: &Vec<i64>, g: &Vec<i64>) -> Vec<i64> {
     let mut q = vec![0; f.len()];
     for i in 0..q.len() {
         q[i] = f[i] - g[i];
-    }
-    return q;
-}
-
-pub fn poly_mult(f: &Vec<i64>, g: &Vec<i64>, p: i64) -> Vec<i64> {
-    // performs standard polynomial multiplication of two polynomials with mod p
-    let mut q = vec![0; f.len() + g.len() - 1];
-
-    for i in 0..f.len() {
-        for j in 0..g.len() {
-            q[i + j] += f[i] * g[j];
-            q[i + j] %= p;
-        }
     }
     return q;
 }

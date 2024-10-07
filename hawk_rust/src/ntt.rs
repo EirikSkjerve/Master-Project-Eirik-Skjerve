@@ -2,9 +2,7 @@
 // see https://eprint.iacr.org/2024/585.pdf
 // and section 4.1.1 of HAWK spec paper
 
-// use num::One;
 use crate::utils::{adjoint, mod_pow, modulo};
-use num::traits::{FromPrimitive, Num, PrimInt};
 use prime_factorization::Factorization;
 
 // ntt of a polynomial
@@ -70,20 +68,12 @@ pub fn intt(f: Vec<i64>, p: u32) -> Vec<i64> {
 }
 
 pub fn nttadj(f: &Vec<i64>, p: u32) -> Vec<i64> {
-    let n = f.len();
-    let zetas_izetas = get_roots(p as u128, n as u128);
-    let zetas = zetas_izetas.0;
-    let izetas = zetas_izetas.1;
-
     let ui = intt(f.to_vec(), p);
     return ntt(adjoint(&ui), p);
 }
 
 // implementation of bit reversal of an integer
 pub fn brv(x: u128, log_n: u128) -> u128 {
-    // following is HAWK-teams implementation. Might go about it a different way
-    // no idea how it works though
-
     let mut r = 0;
     for i in 0..log_n {
         r |= ((x >> i) & 1) << (log_n - 1 - i);
@@ -114,9 +104,6 @@ fn compute_zetas(root: u128, p: u128, n: u128) -> Vec<u128> {
 
     for u in 0..n {
         let brv = brv(u, log_n);
-        //println!("brv: {}", brv);
-        let res = mod_pow(root, brv, p);
-        //println!("res: {}", res);
         zetas.push(mod_pow(root, brv, p));
     }
     return zetas;
@@ -138,9 +125,8 @@ pub fn primitive_root(p: u128) -> u128 {
     s_factors.dedup();
 
     // check if g is a generator
-    let mut flag = false;
     for g in 2..p {
-        flag = false;
+        let mut flag = false;
         for p_i in s_factors.iter() {
             if mod_pow(g, s / p_i, p) == 1 {
                 flag = true;

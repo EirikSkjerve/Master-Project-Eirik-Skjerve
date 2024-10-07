@@ -1,5 +1,4 @@
 use crate::fft_constants;
-use num::Zero;
 use num_complex::{Complex, ComplexFloat};
 
 pub fn fft(f: &Vec<f64>) -> Vec<Complex<f64>> {
@@ -38,11 +37,9 @@ pub fn fft(f: &Vec<f64>) -> Vec<Complex<f64>> {
 
     let m = n / 2;
 
-    let mut temp = Complex::zero();
-
     // join polynomials
     for i in 0..m {
-        temp = w[2 * i] * y_o[i];
+        let temp: Complex<f64> = w[2 * i] * y_o[i];
         y[2 * i] = y_e[i] + temp;
         y[2 * i + 1] = y_e[i] - temp;
     }
@@ -93,12 +90,6 @@ pub fn ifft(f_fft: &Vec<Complex<f64>>) -> Vec<f64> {
     return f;
 }
 
-pub fn ifft_i64(f_f_fft: &Vec<Complex<f64>>) -> Vec<i64> {
-    let f_f = ifft(f_f_fft);
-    let f: Vec<i64> = f_f.iter().map(|&x| x.round() as i64).collect();
-    return f;
-}
-
 pub fn inverse_fft(p: &Vec<i64>) -> Vec<f64> {
     // convert to vector of floats/rationals
     let mut p_f: Vec<f64> = vec![0.0; p.len()];
@@ -133,15 +124,6 @@ pub fn mul_fft(f: &Vec<Complex<f64>>, g: &Vec<Complex<f64>>) -> Vec<Complex<f64>
     return res;
 }
 
-pub fn mul_fft_f64(f: &Vec<f64>, g: &Vec<f64>) -> Vec<f64> {
-    return ifft(&mul_fft(&fft(f), &fft(g)));
-}
-
-pub fn mul_fft_i64(f: &Vec<i64>, g: &Vec<i64>) -> Vec<i64> {
-    let (f_fft, g_fft) = (fft_i64(f), fft_i64(g));
-    return ifft_i64(&mul_fft(&f_fft, &g_fft));
-}
-
 pub fn div_fft(f: &Vec<Complex<f64>>, g: &Vec<Complex<f64>>) -> Vec<Complex<f64>> {
     let n = f.len();
     let mut res: Vec<Complex<f64>> = Vec::with_capacity(n);
@@ -153,31 +135,12 @@ pub fn div_fft(f: &Vec<Complex<f64>>, g: &Vec<Complex<f64>>) -> Vec<Complex<f64>
     return res;
 }
 
-pub fn div_fft_f64(f: &Vec<i64>, g: &Vec<i64>) -> Vec<f64> {
-    let f_fft = fft_i64(f);
-    let g_fft = fft_i64(g);
-
-    let h_fft = div_fft(&f_fft, &g_fft);
-    return ifft(&h_fft);
-}
-
 pub fn add_fft(f: &Vec<Complex<f64>>, g: &Vec<Complex<f64>>) -> Vec<Complex<f64>> {
     let n = f.len();
     let mut res: Vec<Complex<f64>> = Vec::with_capacity(n);
 
     for i in 0..n {
         res.push(f[i] + g[i]);
-    }
-
-    return res;
-}
-
-pub fn sub_fft(f: &Vec<Complex<f64>>, g: &Vec<Complex<f64>>) -> Vec<Complex<f64>> {
-    let n = f.len();
-    let mut res: Vec<Complex<f64>> = Vec::with_capacity(n);
-
-    for i in 0..n {
-        res.push(f[i] - g[i]);
     }
 
     return res;

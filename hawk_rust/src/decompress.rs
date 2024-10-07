@@ -25,7 +25,6 @@ pub fn decompressgr(y: &Vec<u8>, k: usize, low: usize, high: usize) -> (Vec<i64>
             z += 1;
 
             if j >= y.len() && z >= (1 << (high - low)) {
-                // return some failure value here
                 println!("failure from decompress 2");
                 return (vec![0], 0);
             }

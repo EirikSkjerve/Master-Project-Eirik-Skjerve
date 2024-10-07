@@ -7,7 +7,7 @@
   by checking if result.is_nan().
 */
 
-pub fn params_i(logn: usize, param: &str) -> i64 {
+pub fn params_i(logn: usize, param: &str) -> usize {
     match logn {
         8 => return hawk_256_params_i(param),
         // 9=> return hawk_512_params_i(param),
@@ -27,7 +27,7 @@ pub fn params_f(logn: usize, param: &str) -> f64 {
     }
 }
 
-fn hawk_256_params_i(param: &str) -> i64 {
+fn hawk_256_params_i(param: &str) -> usize {
     return match param {
         "lenpriv" => 96,
         "lenpub" => 450,
@@ -59,10 +59,10 @@ fn hawk_256_params_f(param: &str) -> f64 {
     };
 }
 
-fn hawk_512_params(param: &str) -> f64 {
+fn hawk_512_params_f(param: &str) -> f64 {
     return 0.0;
 }
 
-fn hawk_1024_params(param: &str) -> f64 {
+fn hawk_1024_params_f(param: &str) -> f64 {
     return 0.0;
 }

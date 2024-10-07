@@ -25,9 +25,6 @@ pub fn delta(k: usize) -> (i32, i32) {
 
 // implementation of bit reversal of an integer
 fn brv(x: u32, log_n: usize) -> u32 {
-    // following is HAWK-teams implementation. Might go about it a different way
-    // no idea how it works though
-
     let mut r = 0;
     for i in 0..log_n {
         r |= ((x >> i) & 1) << (log_n - 1 - i);
@@ -145,10 +142,8 @@ pub fn fft(f: &Vec<i32>) -> Vec<i32> {
     let mut t = n / 2;
     let mut m = 2;
 
-    let mut v0 = 0;
-
     while m < n {
-        v0 = 0;
+        let mut v0 = 0;
         for u in 0..(m / 2) {
             let e = delta(u + m);
             let e_re: i64 = e.0 as i64;
@@ -189,10 +184,8 @@ pub fn ifft(f_fft: &Vec<i32>) -> Vec<i32> {
     let mut t = 2;
     let mut m = n / 2;
 
-    let mut v0 = 0;
-
     while m > 1 {
-        v0 = 0;
+        let mut v0 = 0;
         for u in 0..(m / 2) {
             let e = delta(u + m);
             let e_re = e.0 as i64;
@@ -229,7 +222,7 @@ pub fn ifft(f_fft: &Vec<i32>) -> Vec<i32> {
     return f;
 }
 
-pub fn polyQnorm(q00: &Vec<i64>, q01: &Vec<i64>, w0: &Vec<i64>, w1: &Vec<i64>, p: i64) -> i64 {
+pub fn poly_qnorm(q00: &Vec<i64>, q01: &Vec<i64>, w0: &Vec<i64>, w1: &Vec<i64>, p: i64) -> i64 {
     let n = q00.len();
     let p_u32 = p as u32;
 
@@ -239,16 +232,15 @@ pub fn polyQnorm(q00: &Vec<i64>, q01: &Vec<i64>, w0: &Vec<i64>, w1: &Vec<i64>, p
     let w1ntt = ntt(w1.to_vec(), p_u32);
 
     let mut d: Vec<i64> = Vec::with_capacity(n);
-    let mut val = 0;
     for i in 0..n {
-        val = modulo(w1ntt[i] * mod_pow(q00ntt[i], p - 2, p), p);
+        let val = modulo(w1ntt[i] * mod_pow(q00ntt[i], p - 2, p), p);
         d.push(val);
     }
 
     let w1_adj_ntt = ntt(adjoint(&w1), p_u32);
     let mut c: Vec<i64> = Vec::with_capacity(n);
     for i in 0..n {
-        val = modulo(d[i] * w1_adj_ntt[i], p);
+        let val = modulo(d[i] * w1_adj_ntt[i], p);
         c.push(val);
     }
 
@@ -256,7 +248,7 @@ pub fn polyQnorm(q00: &Vec<i64>, q01: &Vec<i64>, w0: &Vec<i64>, w1: &Vec<i64>, p
 
     let mut e: Vec<i64> = Vec::with_capacity(n);
     for i in 0..n {
-        val = modulo(w0ntt[i] + (d[i] * q01ntt[i]), p);
+        let val = modulo(w0ntt[i] + (d[i] * q01ntt[i]), p);
         e.push(val);
     }
 
@@ -266,7 +258,7 @@ pub fn polyQnorm(q00: &Vec<i64>, q01: &Vec<i64>, w0: &Vec<i64>, w1: &Vec<i64>, p
         let temp1 = modulo(q00ntt[i], p) as i64;
         let temp2 = modulo(e[i], p) as i64;
         let temp3 = modulo(e_adj_ntt[i], p) as i64;
-        val = modulo(temp1 as i128 * temp2 as i128 * temp3 as i128, p as i128) as i64;
+        let val = modulo(temp1 as i128 * temp2 as i128 * temp3 as i128, p as i128) as i64;
 
         acc = modulo(acc, p);
         acc += val;
@@ -275,30 +267,7 @@ pub fn polyQnorm(q00: &Vec<i64>, q01: &Vec<i64>, w0: &Vec<i64>, w1: &Vec<i64>, p
     return modulo(acc, p);
 }
 
-pub fn poly_div_const_i64(f: &Vec<i64>, c: i64) -> Vec<i64> {
-    return f.iter().map(|&x| x / c).collect();
-}
 pub fn poly_times_const(f: &Vec<i32>, c: i32) -> Vec<i64> {
     let res = f.iter().map(|&x| (x * c) as i64).collect();
     return res;
-}
-
-pub fn poly_div_const_f64(f: &Vec<i64>, c: i64) -> Vec<f64> {
-    return f.iter().map(|&x| x as f64 / c as f64).collect();
-}
-
-fn poly_sub_f64(f: &Vec<f64>, g: &Vec<f64>) -> Vec<f64> {
-    let mut h: Vec<f64> = vec![0.0; f.len()];
-    for i in 0..h.len() {
-        h[i] = f[i] - g[i];
-    }
-    return h;
-}
-
-fn poly_add_f64(f: &Vec<f64>, g: &Vec<f64>) -> Vec<f64> {
-    let mut h: Vec<f64> = vec![0.0; f.len()];
-    for i in 0..h.len() {
-        h[i] = f[i] + g[i];
-    }
-    return h;
 }

@@ -33,7 +33,6 @@ impl RngContext {
 
 // SHAKE256x4 equivalent in Rust
 pub fn shake256x4(message: &[u8], num: usize) -> Vec<u64> {
-    let mut shake256x4: Vec<Shake256> = Vec::new();
     let mut digest = Vec::new();
 
     // Initialize 4 SHAKE256 instances

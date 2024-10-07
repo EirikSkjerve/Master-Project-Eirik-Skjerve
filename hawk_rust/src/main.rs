@@ -1,7 +1,8 @@
-use keygen::hawkkeygen;
+use keygen::{hawkkeygen_256, hawkkeygen_512, hawkkeygen_1024};
 use rngcontext::get_random_bytes;
-use sign::hawksign;
+use sign::{hawksign, sample};
 use verify::hawkverify;
+use utils::modulo;
 
 use std::time::{Duration, Instant};
 
@@ -40,31 +41,69 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 */
 
 fn main() {
-    test1();
+    // test1();
+    sample_test();
+}
+
+fn sample_test() {
+    let num_samples = 10;
+    let mut result: Vec<i8> = vec![];
+
+    let n = 256;
+    for i in 0..num_samples{
+        let seed = get_random_bytes(10);
+        let t = get_random_bytes(2*n).iter().map(|&x| modulo(x, 2)).collect();
+        let x = sample(&seed, t, n); 
+        x.iter().for_each(|&el| {
+            result.push(el);
+        });
+    }
+
+    println!("{} samples: {:?}",num_samples, result);
 }
 
 fn test1() {
-    let start = Instant::now();
-    let attempts = 100;
-    for i in 0..attempts {
-        let logn = 8;
 
-        // let init_seed: [u8;10] = [1,2,3,4,5,6,7,8,9,10];
-        let init_seed = get_random_bytes(10);
+    // number of samples
+    let samples = 1;
+
+    // set HAWK-degree
+    let logn = 8;
+    // some initial seed for the key generation process
+    let init_seed = get_random_bytes(10);
+    // the computed keypair
+    let keypair = hawkkeygen_256(&init_seed);
+    // unpack the keys
+    let (privkey, pubkey) = &keypair;
+
+    // keepng track of failed signatures
+    let mut failed = 0;
+
+    // measure time
+    let start = Instant::now();
+    for _ in 0..samples {
+
+        // generate some random message
         let message = get_random_bytes(100);
 
-        let keypair = hawkkeygen(logn, &init_seed);
-        let (privkey, pubkey) = keypair;
-
+        // produce a signature for message
+        
+        let sig_time = Instant::now();
         let signature = hawksign(logn, &privkey, &message);
+        println!("{:?}", sig_time.elapsed());
+        
+        // let (_salt, _s1) = dec_sig(logn, &signature);
 
+        // verify or reject a message
         let verify = hawkverify(logn, &message, &pubkey, &signature);
+
+        // count failures
+        if !verify{
+            failed += 1;
+        }
     }
 
     let duration = start.elapsed();
-    println!("time used for 100 keygen, sign and verify: {:?}", duration);
-}
-
-fn print_type_of<T>(_: &T) {
-    println!("{}", std::any::type_name::<T>())
+    println!("time used for {} sign and verify on random messages: {:?}", samples, duration);
+    println!("{} failed.", failed);
 }

@@ -30,7 +30,7 @@ pub fn bin(a: i32, x: usize) -> Vec<u8> {
 
     let mut res: Vec<u8> = vec![];
     let mut b = a;
-    for i in 0..x {
+    for _ in 0..x {
         if b % 2 == 1 {
             res.push(1);
         }

@@ -1,11 +1,11 @@
 extern crate num_bigint;
 extern crate num_traits;
 
-use num_bigint::{BigInt, BigUint, ToBigInt, ToBigUint};
-use num_traits::{One, Signed, ToPrimitive, Zero};
+use num_bigint::{BigInt, ToBigInt};
+use num_traits::{One, Signed, ToPrimitive};
 
 use crate::fft::{add_fft, adj_fft, div_fft, fft, ifft, mul_fft};
-use crate::utils::{bigint_to_f64_vec, bigint_to_i64_vec, bigint_vec};
+use crate::utils::{bigint_to_f64_vec, bigint_vec};
 use num_complex::Complex;
 
 // this file contains code for the NTRU-solve algorithm, and its helper-functions
@@ -29,16 +29,14 @@ pub fn xgcd(a_inp: BigInt, b_inp: BigInt) -> (BigInt, BigInt, BigInt) {
     let mut cof: [BigInt; 4] = [BigInt::one(), BigInt::ZERO, BigInt::ZERO, BigInt::one()];
     let mut a = a_inp;
     let mut b = b_inp;
-    let mut q = BigInt::ZERO;
-    let mut temp = BigInt::ZERO;
 
     // perform the algorithm
     while b != BigInt::ZERO {
         // rounded division
-        q = &a / &b;
+        let q = &a / &b;
 
         // calculates the gcd
-        temp = b.clone();
+        let mut temp = b.clone();
         b = a % &b;
         a = temp;
 
@@ -184,14 +182,15 @@ pub fn ntrusolve(f: Vec<BigInt>, g: Vec<BigInt>) -> (Vec<BigInt>, Vec<BigInt>) {
     let fp = field_norm(f.clone());
     let gp = field_norm(g.clone());
 
-    let (Fp, Gp) = ntrusolve(fp, gp);
 
-    let mut F = karamul(lift(Fp), galois_conjugate(g.clone()));
-    let mut G = karamul(lift(Gp), galois_conjugate(f.clone()));
+    let (bigfp, biggp) = ntrusolve(fp, gp);
 
-    let (F, G) = reduce(f, g, F, G);
+    let bigf = karamul(lift(bigfp), galois_conjugate(g.clone()));
+    let bigg = karamul(lift(biggp), galois_conjugate(f.clone()));
 
-    return (F, G);
+    let (bigf, bigg) = reduce(f, g, bigf, bigg);
+
+    return (bigf, bigg);
 }
 
 pub fn bitsize(a: BigInt) -> u32 {
@@ -259,30 +258,30 @@ pub fn calculate_size(f: Vec<BigInt>, g: Vec<BigInt>) -> u32 {
 pub fn reduce(
     f: Vec<BigInt>,
     g: Vec<BigInt>,
-    F: Vec<BigInt>,
-    G: Vec<BigInt>,
+    bigf: Vec<BigInt>,
+    bigg: Vec<BigInt>,
 ) -> (Vec<BigInt>, Vec<BigInt>) {
     // Pornin, Prest 2019's method, also used in HAWK's implementation, is the following:
     // since input is vectors of BigInt type, they are not floats. To perform fft-calculations on
-    // them, we need to extract the high bits of f, g, F, and G, convert the vectors of the
+    // them, we need to extract the high bits of f, g, bigf, and bigg, convert the vectors of the
     // high bits to Vec<f32> or Vec<f64>, compute a scaling factor k that
     // fits in in i32 type (accounts for sign) using fft.
-    // After this, we compute F -= kf, G -= kg, both as Vec<BigInt>, and return the result.
-    // return (f, g, F, G);
+    // After this, we compute bigf -= kf, bigg -= kg, both as Vec<BigInt>, and return the result.
+    // return (f, g, bigf, bigg);
 
-    let mut F_mut = F.clone();
-    let mut G_mut = G.clone();
+    let mut bigf_mut = bigf.clone();
+    let mut bigg_mut = bigg.clone();
 
     let size = calculate_size(f.clone(), g.clone());
     let (fa_fft, ga_fft) = adjust_fft(f.clone(), g.clone(), size);
 
     loop {
-        let size_inner = calculate_size(F_mut.clone(), G_mut.clone());
+        let size_inner = calculate_size(bigf_mut.clone(), bigg_mut.clone());
         if size_inner < size {
             break;
         }
 
-        let (Fa_fft, Ga_fft) = adjust_fft(F_mut.clone(), G_mut.clone(), size_inner);
+        let (bigfa_fft, bigga_fft) = adjust_fft(bigf_mut.clone(), bigg_mut.clone(), size_inner);
 
         // calculate ff* + gg*
         let den_fft = add_fft(
@@ -290,10 +289,10 @@ pub fn reduce(
             &mul_fft(&ga_fft, &adj_fft(&ga_fft)),
         );
 
-        // calculate Ff* + Gg*
+        // calculate bigff* + biggg*
         let num_fft = add_fft(
-            &mul_fft(&Fa_fft, &adj_fft(&fa_fft)),
-            &mul_fft(&Ga_fft, &adj_fft(&ga_fft)),
+            &mul_fft(&bigfa_fft, &adj_fft(&fa_fft)),
+            &mul_fft(&bigga_fft, &adj_fft(&ga_fft)),
         );
 
         // calculate factor k, first through fft
@@ -314,15 +313,15 @@ pub fn reduce(
             break;
         }
 
-        // calculate factors that should be reduced from F and G
+        // calculate factors that should be reduced from bigf and bigg
         let fk = karamul(f.clone(), k.clone());
         let gk = karamul(g.clone(), k.clone());
 
-        // reduce F and G
+        // reduce bigf and bigg
         for i in 0..f.len() {
-            F_mut[i] -= fk[i].clone() << (size_inner - size);
-            G_mut[i] -= gk[i].clone() << (size_inner - size);
+            bigf_mut[i] -= fk[i].clone() << (size_inner - size);
+            bigg_mut[i] -= gk[i].clone() << (size_inner - size);
         }
     }
-    return (F_mut, G_mut);
+    return (bigf_mut, bigg_mut);
 }
