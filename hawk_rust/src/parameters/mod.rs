@@ -1,3 +1,3 @@
-pub mod hawk256_parameters;
-pub mod hawk512_parameters;
-pub mod hawk1024_parameters;
+pub mod hawk256_params;
+pub mod hawk512_params;
+pub mod hawk1024_params;
