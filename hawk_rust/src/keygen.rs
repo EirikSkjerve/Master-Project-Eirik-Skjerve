@@ -14,6 +14,8 @@ use sha3::{
 
 use num_bigint::BigInt;
 
+use crate::parameters::hawk256_params::*;
+
 pub fn hawkkeygen_256(initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
     let logn = 8;
     return hawkkeygen(logn, initial_seed);
@@ -35,6 +37,7 @@ fn hawkkeygen(logn: usize, initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
     loop {
         // for each new loop, kgseed will be a new random value
         let kgseed = rng.random(params_i(logn, "lenkgseed"));
+        let kgseed = rng.random(LENKGSEED);
 
         // generate f and g from centered binomial distribution
         let f_g = generate_f_g(&kgseed, logn);
@@ -130,7 +133,7 @@ fn hawkkeygen(logn: usize, initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
         let pk: &[u8] = &pub_enc;
         shaker.update(pk);
         // this should be retrieved from params later
-        let mut hpub: [u8; 16] = [0; 16];
+        let mut hpub: [u8; LENHPUB] = [0; LENHPUB];
         shaker.finalize_xof_into(&mut hpub);
 
         let priv_enc = enc_priv(&kgseed, &bigf, &bigg, &hpub);
