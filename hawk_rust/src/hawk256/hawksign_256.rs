@@ -1,19 +1,21 @@
 use sha3::{
-    digest::{ExtendableOutput, ExtendableOutputReset, Update},
+    digest::{ExtendableOutputReset, Update},
     Shake256,
 };
 
-use crate::cdt::get_table;
-use crate::keygen::generate_f_g;
+use crate::hawk256::hawkkeygen_256::generate_f_g;
 use crate::rngcontext::{get_random_bytes, shake256x4, RngContext};
 use crate::utils::{bytes_to_poly, modulo, poly_add, poly_mult_ntt, poly_sub};
 
-use crate::codec::{dec_priv, enc_sig};
+use crate::hawk256::codec_256::{dec_priv, enc_sig};
+
+use crate::parameters::hawk256_params::*;
 
 pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
 
     // get the CDT for this degree
-    let (t0, t1) = get_table();
+    // let (t0, t1) = get_table();
+    let (t0, t1) = (T0, T1);
 
     // vector y of high numbers
     // note that the entries in y are uniformly distributed
@@ -83,13 +85,13 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
     return x;
 }
 
-pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
+pub fn hawksign_256(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
+    let logn = 8;
     let (kgseed, bigfmod2, biggmod2, hpub) = dec_priv(logn, sk);
 
     // convert the Vec<u8> kgseed to a &[u8]
     let kgseed = &kgseed;
 
-    // this should be from logn
     // initialize a new RngContext with some random seed
     // use random() instead of fixed seed
     // let mut rng = RngContext::new(seed_rng.gen());
@@ -115,12 +117,11 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
         shaker.update(&a.to_ne_bytes());
         shaker.update(&rng.random(14));
         // saltlen should be from parameters
-        let mut salt: [u8; 14] = [0; 14];
+        let mut salt: [u8; LENSALT] = [0; LENSALT];
         // resets the hasher instance
         shaker.finalize_xof_reset_into(&mut salt);
 
         // compute new hash h
-
         shaker.update(&m);
         shaker.update(&salt);
         // the 256 is the degree. Should depend on input logn
@@ -134,7 +135,7 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
         );
 
         // compute target vectors t0, t1
-
+        // t = Bh
         let mut t0: Vec<u8> = Vec::with_capacity(n);
         let mut t1: Vec<u8> = Vec::with_capacity(n);
 
@@ -173,16 +174,14 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
         // increment for new salt if failure
         a += 2;
 
-        let sigmaverify: f64 = 1.024;
         let factor: f64 = (8 * n) as f64;
         let l2normsum = l2norm_sign(x0) + l2norm_sign(x1);
 
         // continue loop if some requirements are not fulfilled
-        if (l2normsum as f64) > factor * sigmaverify.powi(2) {
+        if (l2normsum as f64) > factor * SIGMAVERIFY.powi(2) {
             continue;
         }
 
-        
         // convert x0 and x1 to Vec<i64>
 
         let x0_i64: Vec<i64> = x0.iter().map(|&x| x as i64).collect();
@@ -199,17 +198,23 @@ pub fn hawksign(logn: usize, sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
             w1 = w1.iter().map(|&x| -x).collect();
         }
 
+        // this is the signature
         let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x >> 1).collect();
 
+        // encode the signature
         let sig_enc = enc_sig(logn, &salt.to_vec(), &sig);
+        
+        // restart if encoding fails
         if sig_enc[0] == 0 && sig_enc.len() == 1 {
             continue;
         }
 
+        // return encoded signature
         return sig_enc;
     }
 }
 
+// symbreak 
 pub fn symbreak(v: &Vec<i64>) -> bool {
     for x in v.iter() {
         if *x != 0 {

@@ -1,8 +1,11 @@
-use crate::compress::compressgr;
-use crate::decompress::decompressgr;
+// CODEC for hawk 512
+
+use crate::compression::compress::compressgr;
+use crate::compression::decompress::decompressgr;
 use crate::grutils::*;
-use crate::params::{params_f, params_i};
 use crate::utils::bytes_to_poly;
+
+use crate::parameters::hawk512_params::*;
 
 pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
     /*
@@ -17,15 +20,15 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
         return vec![0];
     }
 
-    let v: usize = 16 - params_i(logn, "high00") as usize;
+    let v: usize = 16 - HIGH00 as usize;
 
     let mut q00_c = q00.clone();
     q00_c[0] = (q00[0]) >> v;
 
     let mut y00 = compressgr(
         &q00_c[0..(n / 2)].to_vec(),
-        params_i(logn, "low00") as usize,
-        params_i(logn, "high00") as usize,
+        LOW00,
+        HIGH00,
     );
 
     if y00[0] == 0 && y00.len() == 1 {
@@ -44,8 +47,8 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
 
     let y01 = compressgr(
         q01,
-        params_i(logn, "low01") as usize,
-        params_i(logn, "high01") as usize,
+        LOW01,
+        HIGH01,
     );
 
     if y01[0] == 0 && y01.len() == 1 {
@@ -62,14 +65,14 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
         y.push(y01[i]);
     }
 
-    if y.len() > (params_i(logn, "lenpub") * 8) as usize {
+    if y.len() > (LENPUB * 8) as usize {
         // failure return value
         println!("failure from encpub 4");
         return vec![0];
     }
 
     // padding of the y vector
-    while y.len() < (params_i(logn, "lenpub") * 8) as usize {
+    while y.len() < (LENPUB * 8) as usize {
         y.push(0);
     }
     let packed = packbits(&y);
@@ -86,20 +89,20 @@ pub fn dec_pub(logn: usize, pub_enc: &Vec<u8>) -> (Vec<i16>, Vec<i16>) {
 
     let n = 1 << logn;
 
-    if pub_enc.len() != params_i(logn, "lenpub") as usize {
+    if pub_enc.len() != LENPUB {
         // failure return value
         println!("failure from decpub 1");
         return (vec![0], vec![0]);
     }
 
-    let v = 16 - params_i(logn, "high00") as usize;
+    let v = 16 - HIGH00;
     let y = unpackbits(&pub_enc);
 
     let r00 = decompressgr(
         &y,
         n / 2,
-        params_i(logn, "low00") as usize,
-        params_i(logn, "high00") as usize,
+        LOW00,
+        HIGH00,
     );
     if r00.0[0] == 0 && (r00.0).len() == 1 {
         println!("failure from decpub 2");
@@ -140,8 +143,8 @@ pub fn dec_pub(logn: usize, pub_enc: &Vec<u8>) -> (Vec<i16>, Vec<i16>) {
     let r01 = decompressgr(
         &y[j..y.len()].to_vec(),
         n,
-        params_i(logn, "low01") as usize,
-        params_i(logn, "high01") as usize,
+        LOW01,
+        HIGH01,
     );
 
     if r01.0[0] == 0 && r01.0.len() == 1 {
@@ -209,7 +212,7 @@ pub fn dec_priv(logn: usize, priv_enc: &Vec<u8>) -> (Vec<u8>, Vec<i64>, Vec<i64>
     // make input encoded private key to a vector
     let priv_vec = priv_enc.to_vec();
     // get the length of kgseed
-    let lenkgseed = params_i(logn, "lenkgseed") as usize;
+    let lenkgseed = LENKGSEED;
     let kgseed_arr = &priv_vec[0..lenkgseed];
 
     // vectors for the polynomials bigf mod 2 and bigg mod 2
@@ -219,7 +222,7 @@ pub fn dec_priv(logn: usize, priv_enc: &Vec<u8>) -> (Vec<u8>, Vec<i64>, Vec<i64>
         1 << logn,
     );
 
-    let lenhpub = params_i(logn, "lenhpub") as usize;
+    let lenhpub = LENHPUB;
     let hpub = &priv_vec[(priv_vec.len() - lenhpub)..priv_vec.len()].to_vec();
 
     return (
@@ -234,8 +237,8 @@ pub fn enc_sig(logn: usize, salt: &Vec<u8>, s1: &Vec<i64>) -> Vec<u8> {
     // compress s1
     let mut y = compressgr(
         &s1,
-        params_i(logn, "lows1") as usize,
-        params_i(logn, "highs1") as usize,
+        LOWS1,
+        HIGHS1,
     );
 
     // check if compression has failed
@@ -245,7 +248,7 @@ pub fn enc_sig(logn: usize, salt: &Vec<u8>, s1: &Vec<i64>) -> Vec<u8> {
     }
 
     // get the prescribed length of y
-    let leny = ((params_i(logn, "lensig") - params_i(logn, "lensalt")) * 8) as usize;
+    let leny = ((LENSIG - LENSALT) * 8) as usize;
 
     // return failure if y is longer than prescribed
     if y.len() > leny {
@@ -272,20 +275,20 @@ pub fn dec_sig(logn: usize, sig_enc: &Vec<u8>) -> (Vec<u8>, Vec<i16>) {
     let n = 1 << logn;
 
     // check length of encoded signature
-    if sig_enc.len() != params_i(logn, "lensig") as usize {
+    if sig_enc.len() != LENSIG {
         return (vec![0], vec![0]);
     }
 
-    let salt = &sig_enc[0..(params_i(logn, "lensalt") as usize)];
+    let salt = &sig_enc[0..LENSALT];
 
     // unpack encoded sig to bits
     let y = unpackbits(&sig_enc);
 
     let s1 = decompressgr(
-        &y[((params_i(logn, "lensalt") * 8) as usize)..y.len()].to_vec(),
+        &y[((LENSALT * 8) as usize)..y.len()].to_vec(),
         n,
-        params_i(logn, "lows1") as usize,
-        params_i(logn, "highs1") as usize,
+        LOWS1,
+        HIGHS1,
     );
 
     // unpack the values in the tuple
@@ -299,7 +302,7 @@ pub fn dec_sig(logn: usize, sig_enc: &Vec<u8>) -> (Vec<u8>, Vec<i16>) {
 
     let s1: Vec<i16> = s1.iter().map(|&x| x as i16).collect();
 
-    j += (params_i(logn, "lensalt") * 8) as usize;
+    j += (LENSALT * 8) as usize;
 
     while j < y.len() {
         if y[j] != 0 {

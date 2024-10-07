@@ -3,12 +3,12 @@ use sha3::{
     Shake256,
 };
 
-use crate::codec::{dec_pub, dec_sig};
-use crate::sign::symbreak;
+use crate::hawk256::codec_256::{dec_pub, dec_sig};
 use crate::utils::{bytes_to_poly, modulo, poly_sub};
 use crate::verifyutils::*;
 
-pub fn hawkverify(logn: usize, msg: &[u8], pub_key: &Vec<u8>, signature: &Vec<u8>) -> bool {
+pub fn hawkverify_256(msg: &[u8], pub_key: &Vec<u8>, signature: &Vec<u8>) -> bool {
+    let logn = 8;
     let n = 1 << logn;
 
     // decode encoded signature
@@ -109,4 +109,18 @@ fn i16vec_to_i32vec(f: &Vec<i16>) -> Vec<i32> {
 fn i32vec_to_i64vec(f: &Vec<i32>) -> Vec<i64> {
     let res: Vec<i64> = f.iter().map(|&x| x as i64).collect();
     return res;
+}
+
+// symbreak 
+pub fn symbreak(v: &Vec<i64>) -> bool {
+    for x in v.iter() {
+        if *x != 0 {
+            if *x > 0 {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+    return false;
 }

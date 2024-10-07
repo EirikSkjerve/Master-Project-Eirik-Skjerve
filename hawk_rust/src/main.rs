@@ -1,29 +1,28 @@
-use keygen::{hawkkeygen_256, hawkkeygen_512, hawkkeygen_1024};
 use rngcontext::get_random_bytes;
-use sign::{hawksign};
-use verify::hawkverify;
 
 use std::time::{Duration, Instant};
 
-mod cdt;
-mod codec;
-mod compress;
-mod decompress;
 mod fft;
 mod fft_constants;
 mod grutils;
-mod keygen;
 mod ntru_solve;
 mod ntt;
 mod params;
 mod rngcontext;
-mod sign;
 mod utils;
-mod verify;
 mod verifyutils;
 mod tests;
+
 mod parameters;
 
+mod hawk256;
+mod hawk512;
+
+use hawk256::{hawkkeygen_256::hawkkeygen_256, hawksign_256::hawksign_256, hawkverify_256::hawkverify_256};
+
+// mod hawk1024;
+
+mod compression;
 
 // memory measurement
 use peak_alloc::PeakAlloc;
@@ -44,6 +43,7 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 */
 
 fn main() {
+    test1();
 }
 
 fn test1() {
@@ -63,23 +63,20 @@ fn test1() {
     // keepng track of failed signatures
     let mut failed = 0;
 
-    // measure time
-    let start = Instant::now();
     for _ in 0..samples {
 
         // generate some random message
         let message = get_random_bytes(100);
 
         // produce a signature for message
-        
         let sig_time = Instant::now();
-        let signature = hawksign(logn, &privkey, &message);
-        println!("{:?}", sig_time.elapsed());
+        let signature = hawksign_256(&privkey, &message);
+        println!("Sig time {:?}", sig_time.elapsed());
         
-        // let (_salt, _s1) = dec_sig(logn, &signature);
-
         // verify or reject a message
-        let verify = hawkverify(logn, &message, &pubkey, &signature);
+        let ver_time = Instant::now();
+        let verify = hawkverify_256(&message, &pubkey, &signature);
+        println!("Ver time {:?}",ver_time.elapsed());
 
         // count failures
         if !verify{
@@ -87,7 +84,4 @@ fn test1() {
         }
     }
 
-    let duration = start.elapsed();
-    println!("time used for {} sign and verify on random messages: {:?}", samples, duration);
-    println!("{} failed.", failed);
 }

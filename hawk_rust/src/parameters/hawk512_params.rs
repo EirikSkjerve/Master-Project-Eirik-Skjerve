@@ -42,7 +42,7 @@ pub const T0: [u128; 13] = [
     0x00000000000000000006,
 ];
 
-pub const T1: [u8; 13] = [
+pub const T1: [u128; 13] = [
     0x1AFCBC689D9213449DC9,
     0x06EBFB908C81FCE3524F,
     0x01064EBEFD8FF4F07378,
