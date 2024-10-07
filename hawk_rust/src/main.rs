@@ -1,8 +1,7 @@
 use keygen::{hawkkeygen_256, hawkkeygen_512, hawkkeygen_1024};
 use rngcontext::get_random_bytes;
-use sign::{hawksign, sample};
+use sign::{hawksign};
 use verify::hawkverify;
-use utils::modulo;
 
 use std::time::{Duration, Instant};
 
@@ -22,12 +21,16 @@ mod sign;
 mod utils;
 mod verify;
 mod verifyutils;
+mod tests;
+mod parameters;
+
 
 // memory measurement
 use peak_alloc::PeakAlloc;
 
 #[global_allocator]
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
+
 /*
    Driver code for HAWK implementation.
 
@@ -41,25 +44,6 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 */
 
 fn main() {
-    // test1();
-    sample_test();
-}
-
-fn sample_test() {
-    let num_samples = 10;
-    let mut result: Vec<i8> = vec![];
-
-    let n = 256;
-    for i in 0..num_samples{
-        let seed = get_random_bytes(10);
-        let t = get_random_bytes(2*n).iter().map(|&x| modulo(x, 2)).collect();
-        let x = sample(&seed, t, n); 
-        x.iter().for_each(|&el| {
-            result.push(el);
-        });
-    }
-
-    println!("{} samples: {:?}",num_samples, result);
 }
 
 fn test1() {
