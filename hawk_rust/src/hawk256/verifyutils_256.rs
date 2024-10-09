@@ -1,8 +1,8 @@
 use crate::ntt::*;
+use crate::parameters::hawk512_params::*;
 use crate::utils::{adjoint, mod_pow, modulo};
 use num_complex::Complex;
 use std::f64::consts::PI;
-use crate::parameters::hawk512_params::*;
 
 pub fn delta(k: usize) -> (i32, i32) {
     let i = Complex::new(0.0, 1.0);

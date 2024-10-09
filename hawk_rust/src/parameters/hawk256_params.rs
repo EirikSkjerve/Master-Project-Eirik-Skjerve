@@ -5,7 +5,7 @@ pub const LENPUB: usize = 450;
 pub const LENSIG: usize = 249;
 
 pub const N: usize = 256;
-pub const QS: usize = 1<<32;
+pub const QS: usize = 1 << 32;
 
 pub const SIGMASIGN: f64 = 1.010;
 pub const SIGMAVERIFY: f64 = 1.042;
@@ -51,4 +51,3 @@ pub const T1: [u128; 10] = [
     0x00000000000000003953,
     0x00000000000000000000,
 ];
-

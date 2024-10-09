@@ -5,7 +5,7 @@ pub const LENPUB: usize = 1024;
 pub const LENSIG: usize = 555;
 
 pub const N: usize = 512;
-pub const QS: u128 = 1<<64;
+pub const QS: u128 = 1 << 64;
 
 pub const SIGMASIGN: f64 = 1.278;
 pub const SIGMAVERIFY: f64 = 1.425;

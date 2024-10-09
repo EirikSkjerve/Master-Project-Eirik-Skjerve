@@ -25,11 +25,7 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
     let mut q00_c = q00.clone();
     q00_c[0] = (q00[0]) >> v;
 
-    let mut y00 = compressgr(
-        &q00_c[0..(n / 2)].to_vec(),
-        LOW00,
-        HIGH00,
-    );
+    let mut y00 = compressgr(&q00_c[0..(n / 2)].to_vec(), LOW00, HIGH00);
 
     if y00[0] == 0 && y00.len() == 1 {
         println!("failure from encpub 2");
@@ -45,11 +41,7 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
         y00.push(0);
     }
 
-    let y01 = compressgr(
-        q01,
-        LOW01,
-        HIGH01,
-    );
+    let y01 = compressgr(q01, LOW01, HIGH01);
 
     if y01[0] == 0 && y01.len() == 1 {
         // failure return value
@@ -98,12 +90,7 @@ pub fn dec_pub(logn: usize, pub_enc: &Vec<u8>) -> (Vec<i16>, Vec<i16>) {
     let v = 16 - HIGH00;
     let y = unpackbits(&pub_enc);
 
-    let r00 = decompressgr(
-        &y,
-        n / 2,
-        LOW00,
-        HIGH00,
-    );
+    let r00 = decompressgr(&y, n / 2, LOW00, HIGH00);
     if r00.0[0] == 0 && (r00.0).len() == 1 {
         println!("failure from decpub 2");
         return (vec![0], vec![0]);
@@ -140,12 +127,7 @@ pub fn dec_pub(logn: usize, pub_enc: &Vec<u8>) -> (Vec<i16>, Vec<i16>) {
         q00[i] = -q00[n - i];
     }
 
-    let r01 = decompressgr(
-        &y[j..y.len()].to_vec(),
-        n,
-        LOW01,
-        HIGH01,
-    );
+    let r01 = decompressgr(&y[j..y.len()].to_vec(), n, LOW01, HIGH01);
 
     if r01.0[0] == 0 && r01.0.len() == 1 {
         println!("failure from decpub 5");
@@ -235,11 +217,7 @@ pub fn dec_priv(logn: usize, priv_enc: &Vec<u8>) -> (Vec<u8>, Vec<i64>, Vec<i64>
 
 pub fn enc_sig(logn: usize, salt: &Vec<u8>, s1: &Vec<i64>) -> Vec<u8> {
     // compress s1
-    let mut y = compressgr(
-        &s1,
-        LOWS1,
-        HIGHS1,
-    );
+    let mut y = compressgr(&s1, LOWS1, HIGHS1);
 
     // check if compression has failed
     if y[0] == 0 && y.len() == 1 {

@@ -4,8 +4,8 @@ pub const LENPRIV: usize = 360;
 pub const LENPUB: usize = 2440;
 pub const LENSIG: usize = 1221;
 
-pub const N: usize =1024;
-pub const QS: u128 = 1<<64;
+pub const N: usize = 1024;
+pub const QS: u128 = 1 << 64;
 
 pub const SIGMASIGN: f64 = 1.299;
 pub const SIGMAVERIFY: f64 = 1.571;

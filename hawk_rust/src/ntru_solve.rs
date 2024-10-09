@@ -182,7 +182,6 @@ pub fn ntrusolve(f: Vec<BigInt>, g: Vec<BigInt>) -> (Vec<BigInt>, Vec<BigInt>) {
     let fp = field_norm(f.clone());
     let gp = field_norm(g.clone());
 
-
     let (bigfp, biggp) = ntrusolve(fp, gp);
 
     let bigf = karamul(lift(bigfp), galois_conjugate(g.clone()));

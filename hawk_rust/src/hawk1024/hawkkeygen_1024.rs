@@ -1,13 +1,13 @@
 // all utils files
-use crate::hawk1024::codec_1024::{enc_priv, enc_pub};
 use crate::fft::inverse_fft;
+use crate::hawk1024::codec_1024::{enc_priv, enc_pub};
 use crate::ntru_solve::ntrusolve;
 use crate::rngcontext::{shake256x4, RngContext};
 use crate::utils::{
     adjoint, bigint_to_i64_vec, bigint_vec, infnorm, is_invertible, l2norm, poly_add, poly_mult_ntt,
 };
 
-// shake256 
+// shake256
 use sha3::{
     digest::{ExtendableOutput, Update},
     Shake256,
@@ -17,16 +17,14 @@ use sha3::{
 use crate::parameters::hawk1024_params::*;
 use num_bigint::BigInt;
 
-
 /// Generates a HAWK 512 public/private key pair
 /// Will return encoded/compressed keys
 pub fn hawkkeygen_1024(initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
-
     let logn = 10;
     // initialize a new RngContext instance, used for generating random bits
     let mut rng = RngContext::new(initial_seed);
 
-    // start main loop 
+    // start main loop
     // loop might need to run several times
     loop {
         // for each new loop, kgseed will be a new random value
@@ -45,7 +43,7 @@ pub fn hawkkeygen_1024(initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
         let n = 1 << logn;
 
         // check that norm of f and g is not too low
-        if ((l2norm(&f) + l2norm(&g)) as f64) <= 2.0*(n as f64) * SIGMAKRSEC.powi(2) {
+        if ((l2norm(&f) + l2norm(&g)) as f64) <= 2.0 * (n as f64) * SIGMAKRSEC.powi(2) {
             continue;
         }
 
@@ -84,7 +82,9 @@ pub fn hawkkeygen_1024(initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
         let (bigf, bigg) = ntrusolve(bigint_vec(&f), bigint_vec(&g));
 
         // if bigf and bigg are not found, retry
-        if (bigf.len() == 1 && bigf[0] == BigInt::ZERO) && (bigg.len() == 1 && bigg[0] == BigInt::ZERO) {
+        if (bigf.len() == 1 && bigf[0] == BigInt::ZERO)
+            && (bigg.len() == 1 && bigg[0] == BigInt::ZERO)
+        {
             continue;
         }
 

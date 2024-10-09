@@ -1,4 +1,3 @@
-
 use sha3::{
     digest::{ExtendableOutputReset, Update},
     Shake256,
@@ -6,8 +5,8 @@ use sha3::{
 
 use crate::hawk512::codec_512::{dec_pub, dec_sig};
 use crate::hawk512::verifyutils_512::*;
-use crate::utils::{bytes_to_poly, modulo, poly_sub};
 use crate::parameters::hawk512_params::*;
+use crate::utils::{bytes_to_poly, modulo, poly_sub};
 
 pub fn hawkverify_512(msg: &[u8], pub_key: &Vec<u8>, signature: &Vec<u8>) -> bool {
     let logn = 9;
@@ -113,7 +112,7 @@ fn i32vec_to_i64vec(f: &Vec<i32>) -> Vec<i64> {
     return res;
 }
 
-// symbreak 
+// symbreak
 pub fn symbreak(v: &Vec<i64>) -> bool {
     for x in v.iter() {
         if *x != 0 {

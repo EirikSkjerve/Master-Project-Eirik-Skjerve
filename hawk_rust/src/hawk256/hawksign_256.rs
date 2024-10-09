@@ -12,7 +12,6 @@ use crate::hawk256::codec_256::{dec_priv, enc_sig};
 use crate::parameters::hawk256_params::*;
 
 pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
-
     // get the CDT for this degree
     // let (t0, t1) = get_table();
     let (t0, t1) = (T0, T1);
@@ -26,13 +25,11 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
     // initialize empty vector for the sample
     let mut x: Vec<i8> = vec![0; 2 * n];
 
-
     // since y is the result of 4 interleaved shake256 instances
     // the following indexing will access them in an appropriate manner
     for j in 0..4 {
         for i in 0..(n / 8) {
             for k in 0..4 {
-
                 // this is the current index for our point x
                 let r = 16 * i + 4 * j + k;
 
@@ -139,8 +136,14 @@ pub fn hawksign_256(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
         let mut t0: Vec<u8> = Vec::with_capacity(n);
         let mut t1: Vec<u8> = Vec::with_capacity(n);
 
-        let temp_t0 = poly_add(&poly_mult_ntt(&h0, &f, p), &poly_mult_ntt(&h1, &bigfmod2, p));
-        let temp_t1 = poly_add(&poly_mult_ntt(&h0, &g, p), &poly_mult_ntt(&h1, &biggmod2, p));
+        let temp_t0 = poly_add(
+            &poly_mult_ntt(&h0, &f, p),
+            &poly_mult_ntt(&h1, &bigfmod2, p),
+        );
+        let temp_t1 = poly_add(
+            &poly_mult_ntt(&h0, &g, p),
+            &poly_mult_ntt(&h1, &biggmod2, p),
+        );
 
         for i in 0..n {
             // we can be sure these values fit inside an u8 since values are 0 and 1
@@ -166,7 +169,6 @@ pub fn hawksign_256(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
         // compute (x0, x1) from sample()
 
         let x = sample(s, t.clone(), n);
-
 
         let x0 = &x[0..n];
         let x1 = &x[n..];
@@ -203,7 +205,7 @@ pub fn hawksign_256(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
 
         // encode the signature
         let sig_enc = enc_sig(logn, &salt.to_vec(), &sig);
-        
+
         // restart if encoding fails
         if sig_enc[0] == 0 && sig_enc.len() == 1 {
             continue;
@@ -214,7 +216,7 @@ pub fn hawksign_256(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
     }
 }
 
-// symbreak 
+// symbreak
 pub fn symbreak(v: &Vec<i64>) -> bool {
     for x in v.iter() {
         if *x != 0 {
@@ -259,4 +261,3 @@ fn concat_bytes(arr: &Vec<Vec<u8>>) -> Vec<u8> {
 fn vec_to_slice(v: &Vec<u8>) -> &[u8] {
     return v;
 }
-

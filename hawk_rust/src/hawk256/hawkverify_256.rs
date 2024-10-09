@@ -4,8 +4,8 @@ use sha3::{
 };
 
 use crate::hawk256::codec_256::{dec_pub, dec_sig};
-use crate::utils::{bytes_to_poly, modulo, poly_sub};
 use crate::hawk256::verifyutils_256::*;
+use crate::utils::{bytes_to_poly, modulo, poly_sub};
 
 pub fn hawkverify_256(msg: &[u8], pub_key: &Vec<u8>, signature: &Vec<u8>) -> bool {
     let logn = 8;
@@ -111,7 +111,7 @@ fn i32vec_to_i64vec(f: &Vec<i32>) -> Vec<i64> {
     return res;
 }
 
-// symbreak 
+// symbreak
 pub fn symbreak(v: &Vec<i64>) -> bool {
     for x in v.iter() {
         if *x != 0 {
