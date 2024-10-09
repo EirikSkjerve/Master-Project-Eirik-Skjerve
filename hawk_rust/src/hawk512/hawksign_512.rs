@@ -10,12 +10,11 @@ use crate::utils::{bytes_to_poly, modulo, poly_add, poly_mult_ntt, poly_sub};
 
 use crate::hawk512::codec_512::{dec_priv, enc_sig};
 
-use crate::parameters::hawk256_params::*;
+use crate::parameters::hawk512_params::*;
 
 pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
 
     // get the CDT for this degree
-    // let (t0, t1) = get_table();
     let (t0, t1) = (T0, T1);
 
     // vector y of high numbers
@@ -88,6 +87,7 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
 
 pub fn hawksign_512(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
     let logn = 9;
+    const n: usize = 512;
     let (kgseed, bigfmod2, biggmod2, hpub) = dec_priv(logn, sk);
 
     // convert the Vec<u8> kgseed to a &[u8]
@@ -98,7 +98,6 @@ pub fn hawksign_512(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
     // let mut rng = RngContext::new(seed_rng.gen());
     let mut rng = RngContext::new(&get_random_bytes(10));
 
-    let n = 1 << logn;
     let (f, g) = generate_f_g(kgseed, logn);
 
     // compute hash M
@@ -116,7 +115,7 @@ pub fn hawksign_512(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
         shaker.update(&m);
         shaker.update(&kgseed);
         shaker.update(&a.to_ne_bytes());
-        shaker.update(&rng.random(14));
+        shaker.update(&rng.random(LENSALT));
         // saltlen should be from parameters
         let mut salt: [u8; LENSALT] = [0; LENSALT];
         // resets the hasher instance
@@ -125,15 +124,16 @@ pub fn hawksign_512(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
         // compute new hash h
         shaker.update(&m);
         shaker.update(&salt);
-        // the 256 is the degree. Should depend on input logn
-        let mut h: [u8; 256 / 4] = [0; 256 / 4];
+
+        let mut h: [u8; n / 4] = [0; n / 4];
         shaker.finalize_xof_reset_into(&mut h);
 
         // convert h to two polynomials
         let (h0, h1) = (
-            &bytes_to_poly(&h[0..256 / 8], n),
-            &bytes_to_poly(&h[(256 / 8)..256 / 4], n),
+            &bytes_to_poly(&h[0..n / 8], n),
+            &bytes_to_poly(&h[(n / 8)..n / 4], n),
         );
+
 
         // compute target vectors t0, t1
         // t = Bh

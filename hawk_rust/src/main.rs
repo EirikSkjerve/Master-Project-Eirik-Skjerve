@@ -10,7 +10,6 @@ mod ntt;
 mod params;
 mod rngcontext;
 mod utils;
-mod verifyutils;
 mod tests;
 
 mod parameters;

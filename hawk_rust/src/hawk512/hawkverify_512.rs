@@ -5,12 +5,13 @@ use sha3::{
 };
 
 use crate::hawk512::codec_512::{dec_pub, dec_sig};
+use crate::hawk512::verifyutils_512::*;
 use crate::utils::{bytes_to_poly, modulo, poly_sub};
-use crate::verifyutils::*;
+use crate::parameters::hawk512_params::*;
 
 pub fn hawkverify_512(msg: &[u8], pub_key: &Vec<u8>, signature: &Vec<u8>) -> bool {
     let logn = 9;
-    let n = 1 << logn;
+    const n: usize = 512;
 
     // decode encoded signature
     let r = dec_sig(logn, &signature);
@@ -32,7 +33,7 @@ pub fn hawkverify_512(msg: &[u8], pub_key: &Vec<u8>, signature: &Vec<u8>) -> boo
     // compute hash of public key
     let mut hpubshaker = Shake256::default();
     hpubshaker.update(&pub_key[..]);
-    let mut hpub: [u8; 16] = [0; 16];
+    let mut hpub: [u8; LENHPUB] = [0; LENHPUB];
     hpubshaker.finalize_xof_reset_into(&mut hpub);
 
     // compute hash M
@@ -44,14 +45,14 @@ pub fn hawkverify_512(msg: &[u8], pub_key: &Vec<u8>, signature: &Vec<u8>) -> boo
 
     shaker.update(&m);
     shaker.update(&salt);
-    // the 256 is the degree. Should depend on input logn
-    let mut h: [u8; 256 / 4] = [0; 256 / 4];
+
+    let mut h: [u8; n / 4] = [0; n / 4];
     shaker.finalize_xof_reset_into(&mut h);
 
     // convert h to two polynomials
     let (h0, h1) = (
-        &bytes_to_poly(&h[0..256 / 8], n),
-        &bytes_to_poly(&h[(256 / 8)..256 / 4], n),
+        &bytes_to_poly(&h[0..n / 8], n),
+        &bytes_to_poly(&h[(n / 8)..n / 4], n),
     );
 
     let w1 = poly_sub(&h1, &poly_times_const(&i16vec_to_i32vec(&s1), 2));

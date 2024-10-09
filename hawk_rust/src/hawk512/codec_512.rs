@@ -20,7 +20,7 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
         return vec![0];
     }
 
-    let v: usize = 16 - HIGH00 as usize;
+    let v: usize = 16 - HIGH00 ;
 
     let mut q00_c = q00.clone();
     q00_c[0] = (q00[0]) >> v;
@@ -276,6 +276,7 @@ pub fn dec_sig(logn: usize, sig_enc: &Vec<u8>) -> (Vec<u8>, Vec<i16>) {
 
     // check length of encoded signature
     if sig_enc.len() != LENSIG {
+        println!("HEI??");
         return (vec![0], vec![0]);
     }
 

@@ -2,6 +2,7 @@ use crate::ntt::*;
 use crate::utils::{adjoint, mod_pow, modulo};
 use num_complex::Complex;
 use std::f64::consts::PI;
+use crate::parameters::hawk512_params::*;
 
 pub fn delta(k: usize) -> (i32, i32) {
     let i = Complex::new(0.0, 1.0);
@@ -55,16 +56,16 @@ pub fn rebuildw0(
     h0: &Vec<i32>,
 ) -> Vec<i32> {
     let n = 1 << logn;
-    let highs0 = 12;
-    let highs1 = 9;
-    let high00 = 9;
-    let high01 = 11;
+    // let highs0 = 12;
+    // let highs1 = 9;
+    // let high00 = 9;
+    // let high01 = 11;
 
     let base_i64: i64 = 2;
 
-    let cw1 = 1 << (29 - (1 + highs1));
-    let cq00 = 1 << (29 - high00);
-    let cq01 = 1 << (29 - high01);
+    let cw1 = 1 << (29 - (1 + HIGHS1));
+    let cq00 = 1 << (29 - HIGH00);
+    let cq01 = 1 << (29 - HIGH01);
 
     let cs0 = ((2 * (cw1 as i64) * (cq01 as i64)) / ((n * cq00) as i64)) as i32;
     let w1_fft = fft(&scale_vec(&w1, cw1));
@@ -122,7 +123,7 @@ pub fn rebuildw0(
         let v = (cs0 * h0[u]) + t[u];
         let z = (v + cs0).div_floor(&(2 * cs0));
 
-        if z < -((2 as i32).pow(highs0)) || z >= (2 as i32).pow(highs0) {
+        if z < -((2 as i32).pow(HIGHS0 as u32)) || z >= (2 as i32).pow(HIGHS0 as u32) {
             println!("rebuild failure 3");
             return vec![0];
         }

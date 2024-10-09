@@ -5,7 +5,7 @@ use sha3::{
 
 use crate::hawk256::codec_256::{dec_pub, dec_sig};
 use crate::utils::{bytes_to_poly, modulo, poly_sub};
-use crate::verifyutils::*;
+use crate::hawk256::verifyutils_256::*;
 
 pub fn hawkverify_256(msg: &[u8], pub_key: &Vec<u8>, signature: &Vec<u8>) -> bool {
     let logn = 8;
