@@ -234,7 +234,7 @@ pub fn l2norm_sign(a: &[i8]) -> i64 {
     // converts to i64 for usage in signing procedure
     let mut sum: i64 = 0;
     for i in 0..a.len() {
-        sum += (a[i] * a[i]) as i64;
+        sum += (a[i] as i64) * (a[i] as i64);
     }
     return sum;
 }
