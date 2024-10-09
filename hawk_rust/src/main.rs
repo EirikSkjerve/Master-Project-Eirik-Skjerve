@@ -2,8 +2,11 @@ mod fft;
 mod fft_constants;
 mod ntt;
 mod ntt_constants;
+
 mod grutils;
+
 mod hawk_tests;
+
 mod ntru_solve;
 mod params;
 mod rngcontext;

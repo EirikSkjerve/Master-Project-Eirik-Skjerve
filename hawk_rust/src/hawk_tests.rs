@@ -11,6 +11,9 @@ use crate::hawk512::{
 
 use crate::rngcontext::get_random_bytes;
 
+// need this to reset the table when computing ntt's for different values of n
+use crate::ntt_constants::res_z;
+
 use std::time::{Duration, Instant};
 
 use colored::*;
@@ -29,14 +32,16 @@ pub fn test_all() {
         Cell::new(&"vf (µs)"),
     ]));
     hawk_256(&mut table);
-    // hawk_512(&mut table);
-    // hawk_1024(&mut table);
+    hawk_512(&mut table);
+    hawk_1024(&mut table);
 
     println!("Average of {} signature generation and verifications", NUM_SAMPLES);
     table.printstd();
 }
 
 pub fn hawk_256(table: &mut Table) {
+
+    res_z();
     let init_seed = get_random_bytes(15);
     // generate keypair
     // println!("Generating keypair for Hawk {}...", "256".bright_blue());
@@ -102,6 +107,7 @@ pub fn hawk_256(table: &mut Table) {
 }
 
 pub fn hawk_512(table: &mut Table) {
+    res_z();
     let init_seed = get_random_bytes(15);
     // generate keypair
     // println!("Generating keypair for Hawk {}...", "512".bright_blue());
@@ -167,6 +173,9 @@ pub fn hawk_512(table: &mut Table) {
 }
 
 pub fn hawk_1024(table: &mut Table) {
+
+    res_z();
+
     let init_seed = get_random_bytes(15);
     // generate keypair
     // println!("Generating keypair for Hawk {}...", "1024".bright_blue());
