@@ -81,15 +81,14 @@ pub fn hawkverify_512(msg: &[u8], pub_key: &Vec<u8>, signature: &Vec<u8>) -> boo
     let r2 = poly_qnorm(&q00_i64, &q01_i64, &i32vec_to_i64vec(&w0), &w1, p2);
 
     if r1 != r2 || modulo(r1, n as i64) != 0 {
-        println!("failed here");
+        println!("failed on r1, r2");
         return false;
     }
 
     let r1 = r1 / (n as i64);
 
-    let sigmaverify: f64 = 1.042;
-
-    if (r1 as f64) > (8 * n) as f64 * sigmaverify.powi(2) {
+    if (r1 as f64) > (8 * n) as f64 * SIGMAVERIFY.powi(2) {
+        println!("Too long!");
         return false;
     }
 

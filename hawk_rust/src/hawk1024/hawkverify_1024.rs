@@ -87,9 +87,7 @@ pub fn hawkverify_1024(msg: &[u8], pub_key: &Vec<u8>, signature: &Vec<u8>) -> bo
 
     let r1 = r1 / (n as i64);
 
-    let sigmaverify: f64 = 1.042;
-
-    if (r1 as f64) > (8 * n) as f64 * sigmaverify.powi(2) {
+    if (r1 as f64) > (8 * n) as f64 * SIGMAVERIFY.powi(2) {
         return false;
     }
 
