@@ -16,12 +16,10 @@ use crate::ntt_constants::res_z;
 
 use std::time::{Duration, Instant};
 
-use colored::*;
-use humantime::format_duration;
 use prettytable::{Cell, Row, Table};
 
 
-pub const NUM_SAMPLES: usize = 100;
+pub const NUM_SAMPLES: usize = 500;
 
 pub fn test_all() {
     let mut table = Table::new();
@@ -31,8 +29,8 @@ pub fn test_all() {
         Cell::new(&"sg (µs)"),
         Cell::new(&"vf (µs)"),
     ]));
-    hawk_256(&mut table);
-    hawk_512(&mut table);
+    // hawk_256(&mut table);
+    // hawk_512(&mut table);
     hawk_1024(&mut table);
 
     println!("Average of {} signature generation and verifications", NUM_SAMPLES);

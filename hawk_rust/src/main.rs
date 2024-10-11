@@ -8,7 +8,6 @@ mod grutils;
 mod hawk_tests;
 
 mod ntru_solve;
-mod params;
 mod rngcontext;
 mod utils;
 

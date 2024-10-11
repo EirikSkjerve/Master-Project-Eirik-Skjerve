@@ -11,23 +11,26 @@ use crate::hawk1024::codec_1024::{dec_priv, enc_sig};
 
 use crate::parameters::hawk1024_params::*;
 
-pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
+const N: usize = 1024;
+
+pub fn sample(seed: &[u8], t: Vec<u8>) -> [i8; 2*N] {
     // get the CDT for this degree
     let (t0, t1) = (T0, T1);
 
     // vector y of high numbers
     // note that the entries in y are uniformly distributed
-    let y = shake256x4(seed, 5 * n / 2);
+    let y = shake256x4(seed, 5 * N / 2);
 
     // the value that is used as a part of the sample
     let mut v = 0;
     // initialize empty vector for the sample
-    let mut x: Vec<i8> = vec![0; 2 * n];
+    // let mut x: Vec<i8> = vec![0; 2 * n];
+    let mut x: [i8; 2*N] = [0; 2*N];
 
     // since y is the result of 4 interleaved shake256 instances
     // the following indexing will access them in an appropriate manner
     for j in 0..4 {
-        for i in 0..(n / 8) {
+        for i in 0..(N / 8) {
             for k in 0..4 {
                 // this is the current index for our point x
                 let r = 16 * i + 4 * j + k;
@@ -73,7 +76,7 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
                     v = -v;
                 }
 
-                // add the sample to vector x
+                // add the sample to array x
                 x[r as usize] = v;
             }
         }
@@ -83,7 +86,6 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
 
 pub fn hawksign_1024(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
     let logn = 10;
-    const n: usize = 1024;
     let (kgseed, bigfmod2, biggmod2, hpub) = dec_priv(logn, sk);
 
     // convert the Vec<u8> kgseed to a &[u8]
@@ -121,19 +123,19 @@ pub fn hawksign_1024(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
         shaker.update(&m);
         shaker.update(&salt);
 
-        let mut h: [u8; n / 4] = [0; n / 4];
+        let mut h: [u8; N / 4] = [0; N / 4];
         shaker.finalize_xof_reset_into(&mut h);
 
         // convert h to two polynomials
         let (h0, h1) = (
-            &bytes_to_poly(&h[0..n / 8], n),
-            &bytes_to_poly(&h[(n / 8)..n / 4], n),
+            &bytes_to_poly(&h[0..N / 8], N),
+            &bytes_to_poly(&h[(N / 8)..N / 4], N),
         );
 
         // compute target vectors t0, t1
         // t = Bh
-        let mut t0: Vec<u8> = Vec::with_capacity(n);
-        let mut t1: Vec<u8> = Vec::with_capacity(n);
+        let mut t0: Vec<u8> = Vec::with_capacity(N);
+        let mut t1: Vec<u8> = Vec::with_capacity(N);
 
         let temp_t0 = poly_add(
             &poly_mult_ntt(&h0, &f, p),
@@ -144,7 +146,7 @@ pub fn hawksign_1024(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
             &poly_mult_ntt(&h1, &biggmod2, p),
         );
 
-        for i in 0..n {
+        for i in 0..N {
             // we can be sure these values fit inside an u8 since values are 0 and 1
             t0.push(modulo(temp_t0[i], 2) as u8);
             t1.push(modulo(temp_t1[i], 2) as u8);
@@ -167,15 +169,15 @@ pub fn hawksign_1024(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
 
         // compute (x0, x1) from sample()
 
-        let x = sample(s, t.clone(), n);
+        let x = sample(s, t.clone());
 
-        let x0 = &x[0..n];
-        let x1 = &x[n..];
+        let x0 = &x[0..N];
+        let x1 = &x[N..];
 
         // increment for new salt if failure
         a += 2;
 
-        let factor: f64 = (8 * n) as f64;
+        let factor: f64 = (8 * N) as f64;
         let l2normsum = l2norm_sign(x0) + l2norm_sign(x1);
 
         // continue loop if some requirements are not fulfilled

@@ -1,4 +1,4 @@
-// CODEC for hawk 512
+// CODEC for hawk 1024
 
 use crate::compression::compress::compressgr;
 use crate::compression::decompress::decompressgr;
