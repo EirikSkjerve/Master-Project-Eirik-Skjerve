@@ -17,6 +17,8 @@ mod hawk512;
 
 mod compression;
 
+mod poly;
+
 use hawk_tests::test_all;
 
 // memory measurement
