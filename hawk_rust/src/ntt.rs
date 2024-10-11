@@ -2,8 +2,8 @@
 // see https://eprint.iacr.org/2024/585.pdf
 // and section 4.1.1 of HAWK spec paper
 
-use crate::utils::{adjoint, mod_pow, modulo};
 use crate::ntt_constants::get_roots;
+use crate::utils::{adjoint, mod_pow, modulo};
 use std::time::Instant;
 
 // ntt of a polynomial
@@ -13,7 +13,6 @@ pub fn ntt(f: Vec<i64>, p: u32) -> Vec<i64> {
     let n = f.len();
     let mut l = n / 2;
     let mut k = 1;
-
 
     let m = Instant::now();
     let zetas = get_roots(p as u128, n as u128).0;
@@ -74,6 +73,3 @@ pub fn nttadj(f: &Vec<i64>, p: u32) -> Vec<i64> {
     let ui = intt(f.to_vec(), p);
     return ntt(adjoint(&ui), p);
 }
-
-
-

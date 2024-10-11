@@ -1,4 +1,4 @@
-use crate::grutils;
+use crate::compression::grutils;
 
 // using Golomb-Rice compression algorithm
 pub fn compressgr(x: &Vec<i64>, low: usize, high: usize) -> Vec<u8> {

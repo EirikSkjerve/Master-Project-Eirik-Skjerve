@@ -1,45 +1,36 @@
-
-use prime_factorization::Factorization;
 use crate::utils::{adjoint, mod_pow, modulo};
+use prime_factorization::Factorization;
 
 use std::collections::HashMap;
 
 static mut ZETA_TABLE: Option<HashMap<u128, (Vec<u128>, Vec<u128>)>> = None;
 
 pub fn res_z() {
-    unsafe{
+    unsafe {
         ZETA_TABLE = None;
     }
 }
 
 fn z_map() -> &'static mut HashMap<u128, (Vec<u128>, Vec<u128>)> {
-
     unsafe {
-
         if ZETA_TABLE.is_none() {
             ZETA_TABLE = Some(HashMap::new());
         }
         return ZETA_TABLE.as_mut().unwrap();
     }
-
 }
 
 fn z_add(key: u128, value: (Vec<u128>, Vec<u128>)) {
-    z_map().insert(key,value);
+    z_map().insert(key, value);
 }
 
 fn z_get(key: u128) -> Option<(Vec<u128>, Vec<u128>)> {
-    unsafe {
-        ZETA_TABLE
-            .as_ref()
-            .and_then(|map| map.get(&key).cloned())
-    }
+    unsafe { ZETA_TABLE.as_ref().and_then(|map| map.get(&key).cloned()) }
 }
 
 // given prime p and order n, compute 2n-th root of unity mod p
 pub fn get_roots(p: u128, n: u128) -> (Vec<u128>, Vec<u128>) {
-
-    if let Some(tbl) = z_get(p) { 
+    if let Some(tbl) = z_get(p) {
         return tbl;
     } else {
         let mut g0 = primitive_root(p);
@@ -56,8 +47,6 @@ pub fn get_roots(p: u128, n: u128) -> (Vec<u128>, Vec<u128>) {
     }
 
     return get_roots(p, n);
-
-
 }
 
 // comptute zeta values in a specific order for usage in ntt/intt functions

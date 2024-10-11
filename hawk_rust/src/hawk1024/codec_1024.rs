@@ -2,7 +2,7 @@
 
 use crate::compression::compress::compressgr;
 use crate::compression::decompress::decompressgr;
-use crate::grutils::*;
+use crate::compression::grutils::*;
 use crate::utils::bytes_to_poly;
 
 use crate::parameters::hawk1024_params::*;

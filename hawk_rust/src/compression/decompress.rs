@@ -1,4 +1,4 @@
-use crate::grutils::*;
+use crate::compression::grutils::*;
 
 pub fn decompressgr(y: &Vec<u8>, k: usize, low: usize, high: usize) -> (Vec<i64>, usize) {
     assert!(k % 8 == 0);

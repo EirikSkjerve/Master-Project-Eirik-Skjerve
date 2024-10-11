@@ -17,6 +17,9 @@ use sha3::{
 use crate::parameters::hawk1024_params::*;
 use num_bigint::BigInt;
 
+const N: usize = 1024;
+const LOGN: usize = 10;
+
 /// Generates a HAWK 512 public/private key pair
 /// Will return encoded/compressed keys
 pub fn hawkkeygen_1024(initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {

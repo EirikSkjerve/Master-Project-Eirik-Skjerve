@@ -13,7 +13,7 @@ use crate::parameters::hawk1024_params::*;
 
 const N: usize = 1024;
 
-pub fn sample(seed: &[u8], t: Vec<u8>) -> [i8; 2*N] {
+pub fn sample(seed: &[u8], t: Vec<u8>) -> [i8; 2 * N] {
     // get the CDT for this degree
     let (t0, t1) = (T0, T1);
 
@@ -25,7 +25,7 @@ pub fn sample(seed: &[u8], t: Vec<u8>) -> [i8; 2*N] {
     let mut v = 0;
     // initialize empty vector for the sample
     // let mut x: Vec<i8> = vec![0; 2 * n];
-    let mut x: [i8; 2*N] = [0; 2*N];
+    let mut x: [i8; 2 * N] = [0; 2 * N];
 
     // since y is the result of 4 interleaved shake256 instances
     // the following indexing will access them in an appropriate manner

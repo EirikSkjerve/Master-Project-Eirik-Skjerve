@@ -18,7 +18,6 @@ use std::time::{Duration, Instant};
 
 use prettytable::{Cell, Row, Table};
 
-
 pub const NUM_SAMPLES: usize = 500;
 
 pub fn test_all() {
@@ -33,12 +32,14 @@ pub fn test_all() {
     // hawk_512(&mut table);
     hawk_1024(&mut table);
 
-    println!("Average of {} signature generation and verifications", NUM_SAMPLES);
+    println!(
+        "Average of {} signature generation and verifications",
+        NUM_SAMPLES
+    );
     table.printstd();
 }
 
 pub fn hawk_256(table: &mut Table) {
-
     res_z();
     let init_seed = get_random_bytes(15);
     // generate keypair
@@ -171,7 +172,6 @@ pub fn hawk_512(table: &mut Table) {
 }
 
 pub fn hawk_1024(table: &mut Table) {
-
     res_z();
 
     let init_seed = get_random_bytes(15);
@@ -236,5 +236,4 @@ pub fn hawk_1024(table: &mut Table) {
         Cell::new(&(sig_time_stop / NUM_SAMPLES as u32).as_micros().to_string()),
         Cell::new(&(ver_time_stop / NUM_SAMPLES as u32).as_micros().to_string()),
     ]));
-
 }
