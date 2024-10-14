@@ -28,8 +28,8 @@ pub fn test_all() {
         Cell::new(&"sg (µs)"),
         Cell::new(&"vf (µs)"),
     ]));
-    // hawk_256(&mut table);
-    // hawk_512(&mut table);
+    hawk_256(&mut table);
+    hawk_512(&mut table);
     hawk_1024(&mut table);
 
     println!(
