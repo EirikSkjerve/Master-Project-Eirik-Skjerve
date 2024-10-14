@@ -27,7 +27,35 @@ impl <T: Copy + Default> Poly<T>{
             poly_type,
         }
     }
+
+
+    // Helper function to perform both addition and subtraction
+    fn operate<F>(self, rhs: &Poly<T>, op: F) -> Poly<T>
+    where
+        F: Fn(T, T) -> T,
+    {
+
+        // assert that degree and type of polynomials are equal
+        // in theory, degree does not need to be equal, but for this implementation
+        // I want to assume that they are predefined to the correct size
+
+        assert_eq!(self.degree, rhs.degree);
+        assert_eq!(self.poly_type, rhs.poly_type);
+
+        // create empy coefficient vector to keep the result coefficients
+        let mut res: Vec<T> = Vec::with_capacity(self.degree);
+
+        // loop through i from 0 to n
+        for i in 0..self.degree {
+            // add result from operation 
+            res.push(op(self.coefficients[i], rhs.coefficients[i]));
+        }
+
+        // return a newly created polynomial instance with the resulting 
+        Poly::new(self.degree, &res, self.poly_type)
+    }
 }
+
 
 impl<T> ops::Add<Poly<T>> for Poly<T> 
 where
@@ -36,22 +64,18 @@ where
     type Output = Poly<T>;
 
     fn add(self, rhs: Poly<T>) -> Poly<T> {
+        self.operate(&rhs, |a, b| a + b)
+    }
+}
 
-        assert_eq!(self.degree, rhs.degree);
-        assert_eq!(self.poly_type, rhs.poly_type);
-    
-        // sum together coefficient for coefficient
-        let coefficient_sum: Vec<T> = (0..self.degree)
-            .into_iter()
-            .map(|i| self.coefficients[i] + rhs.coefficients[i])
-            .collect();
+impl<T> ops::Sub<Poly<T>> for Poly<T> 
+where
+    T: ops::Sub<Output = T> + Copy + Default,
+{
+    type Output = Poly<T>;
 
-        // return a new polynomial struct
-        Poly{
-            degree: self.degree,
-            coefficients: coefficient_sum,
-            poly_type: self.poly_type,
-        }
+    fn sub(self, rhs: Poly<T>) -> Poly<T> {
+        self.operate(&rhs, |a, b| a - b)
     }
 }
 
@@ -86,11 +110,18 @@ mod tests {
         assert_eq!(c.coefficients, vec![5,5,5,5]);
 
     }
-    //
-    // #[test]
-    // fn test_poly_sub() {
-    //
-    // }
+
+    #[test]
+    fn test_poly_sub() {
+
+        let a = Poly::new(4, &vec![1,2,3,4], PolyType::R);
+        let b = Poly::new(4, &vec![4,3,2,1], PolyType::R);
+
+        let c = a-b;
+
+        assert_eq!(c.coefficients, vec![-3,-1,1,3]);
+
+    }
     //
     // #[test]
     // fn test_poly_ring_mult() {
