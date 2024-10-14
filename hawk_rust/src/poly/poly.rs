@@ -11,14 +11,16 @@ enum PolyType {
     VEC, // only vector representation
 }
 
-struct Poly {
+#[derive(Debug)]
+struct Poly<T: Copy + Default> {
     degree: usize,
-    coefficients: Vec<i64>, // this can be different based on poly_type
+    coefficients: Vec<T>, // this can be different based on poly_type
     poly_type: PolyType,
 }
 
-impl Poly{
-    pub fn new(n: usize, coefficients: &Vec<i64>, poly_type: PolyType) -> Poly {
+impl <T: Copy + Default> Poly<T>{
+
+    pub fn new(n: usize, coefficients: &Vec<T>, poly_type: PolyType) -> Self {
         Poly{
             degree: n,
             coefficients: coefficients.to_vec(),
@@ -27,18 +29,19 @@ impl Poly{
     }
 }
 
-impl ops::Add<Poly> for Poly {
-    type Output = Poly;
+impl<T> ops::Add<Poly<T>> for Poly<T> 
+where
+    T: ops::Add<Output = T> + Copy + Default,
+{
+    type Output = Poly<T>;
 
-    /// implements addition for polynomials
-    /// no modulation yet
-    fn add(self, rhs: Poly) -> Poly {
-        // check that these are compatible
+    fn add(self, rhs: Poly<T>) -> Poly<T> {
+
         assert_eq!(self.degree, rhs.degree);
         assert_eq!(self.poly_type, rhs.poly_type);
-
+    
         // sum together coefficient for coefficient
-        let coefficient_sum: Vec<i64> = (0..self.degree)
+        let coefficient_sum: Vec<T> = (0..self.degree)
             .into_iter()
             .map(|i| self.coefficients[i] + rhs.coefficients[i])
             .collect();
@@ -61,8 +64,16 @@ mod tests {
 
     #[test]
     fn test_poly_make() {
-        let new_poly = Poly::new(4, &vec![1,2,3,4], PolyType::R);
-        assert_eq!(vec![1,2,3,4], new_poly.coefficients);
+        let a: Vec<u8> = vec![1,2,3,4];
+        let b: Vec<i64> = vec![8,16,32,64];
+        let new_poly_a = Poly::new(4, &a, PolyType::R);
+        let new_poly_b = Poly::new(4, &b, PolyType::NTT);
+
+        assert_eq!(new_poly_a.coefficients, vec![1,2,3,4]);
+        assert_eq!(new_poly_a.degree, new_poly_a.coefficients.len());
+
+        assert_eq!(new_poly_b.coefficients, vec![8,16,32,64]);
+        assert_eq!(new_poly_b.degree, new_poly_b.coefficients.len());
     }
 
     #[test]
