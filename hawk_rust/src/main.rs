@@ -18,6 +18,9 @@ mod hawk512;
 mod compression;
 
 mod poly;
+mod linalg;
+
+mod cryptanalysis;
 
 use hawk_tests::test_all;
 
