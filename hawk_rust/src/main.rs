@@ -21,6 +21,7 @@ mod poly;
 mod linalg;
 
 mod cryptanalysis;
+mod write_to_file;
 
 use hawk_tests::test_all;
 
