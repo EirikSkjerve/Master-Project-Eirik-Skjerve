@@ -24,6 +24,7 @@ mod cryptanalysis;
 mod write_to_file;
 
 use hawk_tests::test_all;
+use cryptanalysis::HPP::hpp::run_hpp_attack;
 
 // memory measurement
 use peak_alloc::PeakAlloc;
@@ -44,5 +45,6 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 */
 
 fn main() {
-    test_all();
+    // test_all();
+    run_hpp_attack();
 }
