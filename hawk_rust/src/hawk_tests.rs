@@ -21,7 +21,7 @@ use humantime::format_duration;
 use prettytable::{Cell, Row, Table};
 
 
-pub const NUM_SAMPLES: usize = 100;
+pub const NUM_SAMPLES: usize = 10000;
 
 pub fn test_all() {
     let mut table = Table::new();
@@ -98,6 +98,7 @@ pub fn hawk_256(table: &mut Table) {
     //     "Time used verifying {} signatures: {:?}",
     //     NUM_SAMPLES, ver_time_stop
     // );
+    println!("Failed signatures: {}", num_failed);
     table.add_row(Row::new(vec![
         Cell::new("256"),
         Cell::new(&kgen_time_end.as_millis().to_string()),
@@ -164,6 +165,7 @@ pub fn hawk_512(table: &mut Table) {
     //     "Time used verifying {} signatures: {:?}",
     //     NUM_SAMPLES, ver_time_stop
     // );
+    println!("Failed signatures: {}", num_failed);
     table.add_row(Row::new(vec![
         Cell::new("512"),
         Cell::new(&kgen_time_end.as_millis().to_string()),
@@ -232,6 +234,7 @@ pub fn hawk_1024(table: &mut Table) {
     //     "Time used verifying {} signatures: {:?}",
     //     NUM_SAMPLES, ver_time_stop
     // );
+    println!("Failed signatures: {}", num_failed);
     table.add_row(Row::new(vec![
         Cell::new("1024"),
         Cell::new(&kgen_time_end.as_millis().to_string()),

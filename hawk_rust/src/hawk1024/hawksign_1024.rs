@@ -81,9 +81,13 @@ pub fn sample(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {
     return x;
 }
 
+use std::time::Instant;
+
 pub fn hawksign_1024(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
     let logn = 10;
     const n: usize = 1024;
+
+    // unpack the private key
     let (kgseed, bigfmod2, biggmod2, hpub) = dec_priv(logn, sk);
 
     // convert the Vec<u8> kgseed to a &[u8]
@@ -124,6 +128,7 @@ pub fn hawksign_1024(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
         let mut h: [u8; n / 4] = [0; n / 4];
         shaker.finalize_xof_reset_into(&mut h);
 
+        
         // convert h to two polynomials
         let (h0, h1) = (
             &bytes_to_poly(&h[0..n / 8], n),
@@ -167,6 +172,7 @@ pub fn hawksign_1024(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
 
         // compute (x0, x1) from sample()
 
+
         let x = sample(s, t.clone(), n);
 
         let x0 = &x[0..n];
@@ -184,7 +190,6 @@ pub fn hawksign_1024(sk: &Vec<u8>, msg: &[u8]) -> Vec<u8> {
         }
 
         // convert x0 and x1 to Vec<i64>
-
         let x0_i64: Vec<i64> = x0.iter().map(|&x| x as i64).collect();
         let x1_i64: Vec<i64> = x1.iter().map(|&x| x as i64).collect();
 
