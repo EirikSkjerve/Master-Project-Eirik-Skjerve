@@ -1,6 +1,7 @@
 use nalgebra as na;
 use na::*;
 use crate::rngcontext::{RngContext, get_random_bytes};
+use std::time::{Instant};
 
 use rand::distributions::{Distribution, Uniform};
 use rand::SeedableRng;
@@ -10,47 +11,55 @@ use rand::rngs::StdRng;
 const NUM_SAMPLES: usize = 5000;
 const N: usize = 16;
 
+/// returns n i8 integers uniformly distributed on -entry_bound..entry_bound
 fn get_uni_slice_int(n: usize, entry_bound: usize, seed: usize) -> Vec<i8> {
-
+    // inputs:
+    //  - n: number of samples to produce
+    //  - entry_bound: the range to sample in
+    //  - seed: a seed for the StdRng instance
+    
+    // define upper and lower bound for the sampling
     let bound = Uniform::from(-(entry_bound as i8)..(entry_bound as i8));
+    // seed an rng
     let mut rng = StdRng::seed_from_u64(seed as u64);
+    // initialize empty vector to store the samples
     let mut rnd_bytes: Vec<i8> = Vec::with_capacity(n);
 
+    // sample n times and return the vector
     for _ in 0..n {
         rnd_bytes.push(bound.sample(&mut rng));
     }
-
     rnd_bytes
 
 }
 
-fn get_uni_slice_float(n: usize, dist_bound: usize, rng: &mut RngContext) -> Vec<f64> {
+/// returns n f64 floats uniformly distributed on -dist_bound..dist_bound
+/// requires a pre-seeded StdRng instance
+fn get_uni_slice_float(n: usize, dist_bound: usize, rng: &mut StdRng) -> Vec<f64> {
+    // inputs:
+    //  - n: number of samples to produce
+    //  - dist_bound: the range to sample in
+    //  - rng: a pre-seeded StdRng instance
     
-    // get some random bytes, uniformly distributed
-    // using fixed seed
-    let rnd_bytes_u8 = rng.random(n);
+    // define upper and lower bound for the sampling
+    let bound = Uniform::from(-(dist_bound as f64)..(dist_bound as f64));
+    // initialize empty vector to store the samples
+    let mut rnd_bytes: Vec<f64> = Vec::with_capacity(n);
 
-    // make a copy with normalised entries
-    let mut rnd_bytes_f64: Vec<f64> = rnd_bytes_u8
-        .iter()
-        .map(|&x| (x as f64) / (255.0 / dist_bound as f64))
-        .collect();
-
-    for (i, rb) in rnd_bytes_u8.iter().enumerate(){
-        // negating 50% of the entries
-        if *rb >= 128 {
-            rnd_bytes_f64[i] = -rnd_bytes_f64[i];
-        }
+    // sample n times and return the vector
+    for _ in 0..n {
+        rnd_bytes.push(bound.sample(rng));
     }
-    rnd_bytes_f64
+    rnd_bytes
 }
 
-/// generate a secret matrix V than we will try and retrieve
+/// generate a secret matrix V with entries uniformly distributed on -entry_bound..entry_bound
 fn gen_sec_mat(degree: usize, entry_bound: usize) -> Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>>{
 
     loop {
         // generate slice of uniformly random integers between -entry_bound..entry_bound
         let uni_slice = get_uni_slice_int(degree*degree, entry_bound, 42);
+        // convert the integers to floats for later calculation
         let uni_slice_f: Vec<f64> = uni_slice.iter().map(|&x| x as f64).collect();
 
         // create a matrix from this slice
@@ -60,6 +69,7 @@ fn gen_sec_mat(degree: usize, entry_bound: usize) -> Matrix<f64, Dyn, Dyn, VecSt
         let svd_v = sec_v.clone().svd(true, true);
         let rank = svd_v.rank(1e-10);
         
+        // rerun the loop if the rank is not max
         if rank < degree {
             continue;
         }
@@ -73,30 +83,28 @@ fn gen_sec_mat(degree: usize, entry_bound: usize) -> Matrix<f64, Dyn, Dyn, VecSt
 
 pub fn run_hpp_attack() {
 
+    let mut start = Instant::now();
     let entry_bound = 1;
     let dist_bound = 1;
-
-
-    // create random secret vector v
-    // let sec_v = gen_sec_mat(N, entry_bound);
 
     // using a fixed matrix V
     // let v_data: [i16; 256] = [1, -1, -1, -1, -1,  0,  0,  1,  1,  1,  0, -1, -1,  0,  1,  0, 0,  0, -1,  0, -1,  1, -1,  1,  1,  0, -1, -1,  0,  0,  0,  1, 1,  0,  0,  0,  1,  0,  1, -1,  0,  0, -1,  0,  1, -1, -1,  1, 0,  1, -1, -1, -1,  1,  1, -1,  0,  1, -1,  0, -1, -1, -1, -1, 0,  1, -1,  1,  1,  1,  0,  0,  1,  1,  0,  1, -1, -1, -1, -1, 0, -1, -1, -1,  0, -1, -1, -1,  0,  1, -1, -1,  0,  0, -1,  0, 0, -1,  0,  1,  0,  1,  1,  0,  1, -1,  1,  0,  0,  1,  1,  1, -1, -1,  1, -1, -1,  1,  0,  1, -1,  0,  1,  1,  0,  0,  1, -1, -1,  1,  0,  1,  1,  1,  0,  0,  0,  1, -1,  1,  1,  1,  0, -1, 0,  1,  1, -1, -1, -1,  1,  1,  0,  1,  1,  0,  1, -1,  1,  1, -1, -1,  1, -1,  0,  0,  1,  1, -1,  1,  1,  0,  1,  0,  1,  1, 0, -1,  0,  1,  1,  1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0, 1,  1,  1,  0,  1, -1,  0, -1,  0,  0, -1,  1,  0,  0,  0, -1, 0,  1,  1,  1,  1,  1,  1,  1, -1,  0,  1,  0, -1,  1,  0,  0, 0,  1,  1,  0,  1,  0,  1, -1,  0, -1,  1,  0,  1,  1, -1, -1, 1,  1,  1,  0,  1, -1, -1,  1,  0,  1, -1,  0,  0,  1,  1,  1];
 
+    // generate some secret matrix V
     let sec_v_f = gen_sec_mat(N, entry_bound);
+    // initialize 
+    let mut rng = StdRng::seed_from_u64(42);
+    let mut ctr = 0;
 
     loop {
+        ctr += 1;
 
-        let init_seed = get_random_bytes(5);
-        let init_seed = [213, 66, 229, 146, 87];
-        let mut rng = RngContext::new(&init_seed);
 
         // just hardcoding this for now
         let ex2 = 0.333;
 
         // empty vector storing samples
         let mut uni_samples = vec![];
-
 
         // generate a bunch of samples (that are uniformly distributed)
         // and multiply them with secret matrix v
@@ -118,8 +126,6 @@ pub fn run_hpp_attack() {
 
 
         let g_approx = g_approx_f.map(|x| x.round());
-        // eprintln!("g_approx: {g_approx}");
-        // let g_approx = g_approx_f.clone();
 
         let mut g_approx_inverse = g_approx.clone();
         match g_approx_inverse.clone().try_inverse(){
@@ -128,8 +134,8 @@ pub fn run_hpp_attack() {
                 // use this for good formatting
                 // eprintln!("g_approx: {}",g_approx);
                 // eprintln!("g_approx_inv: {g_approx_inverse:.4}");
-                // let id_mat = g_approx * g_approx_inverse.clone(); //.map(|x| x.abs() as i8)
-                // eprintln!("this should be identity matrix {id_mat:.3}");
+                let id_mat = (g_approx * g_approx_inverse.clone()).map(|x| x.abs()); //.map(|x| x.abs() as i8)
+                eprintln!("this should be identity matrix {id_mat:.3}");
 
             }
             None => {
@@ -149,9 +155,9 @@ pub fn run_hpp_attack() {
         };
 
         let u = pub_y*l.l()/dist_bound as f64;
-        // eprintln!("{u:.5}");
-        eprintln!("init_seed: {:?}", init_seed);
 
+        println!("Iterations needed: {ctr}");
+        println!("Time elapsed: {:?}", start.elapsed());
         return;
         
     }
