@@ -2,24 +2,25 @@ use nalgebra as na;
 use na::*;
 use crate::rngcontext::{RngContext, get_random_bytes};
 
+use rand::distributions::{Distribution, Uniform};
+use rand::SeedableRng;
+use rand::rngs::StdRng;
+
+
 const NUM_SAMPLES: usize = 5000;
 const N: usize = 16;
 
-fn get_uni_slice_int(n: usize, entry_bound: usize, rng: &mut RngContext) -> Vec<i16> {
+fn get_uni_slice_int(n: usize, entry_bound: usize, seed: usize) -> Vec<i8> {
 
-    // get some random bytes (i.e. integers in [0..255], that are uniformly distributed
-    // using fixed seed
-    let rnd_bytes_u8 = rng.random(n);
+    let bound = Uniform::from(-(entry_bound as i8)..(entry_bound as i8));
+    let mut rng = StdRng::seed_from_u64(seed as u64);
+    let mut rnd_bytes: Vec<i8> = Vec::with_capacity(n);
 
-    // make copy with reduced entries mod n, and convert them to i16 for possible negation
-    let mut rnd_bytes_i16: Vec<i16> = rnd_bytes_u8.iter().map(|&x| (x % (entry_bound+1) as u8) as i16).collect();
-    for (i, rb) in rnd_bytes_u8.iter().enumerate(){
-        // negating 50% of the entries
-        if *rb >= 128 {
-            rnd_bytes_i16[i] = -rnd_bytes_i16[i];
-        }
+    for _ in 0..n {
+        rnd_bytes.push(bound.sample(&mut rng));
     }
-    rnd_bytes_i16
+
+    rnd_bytes
 
 }
 
@@ -47,10 +48,9 @@ fn get_uni_slice_float(n: usize, dist_bound: usize, rng: &mut RngContext) -> Vec
 /// generate a secret matrix V than we will try and retrieve
 fn gen_sec_mat(degree: usize, entry_bound: usize) -> Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>>{
 
-    let mut rng = RngContext::new(&[1]);
     loop {
         // generate slice of uniformly random integers between -entry_bound..entry_bound
-        let uni_slice = get_uni_slice_int(degree*degree, entry_bound, &mut rng);
+        let uni_slice = get_uni_slice_int(degree*degree, entry_bound, 42);
         let uni_slice_f: Vec<f64> = uni_slice.iter().map(|&x| x as f64).collect();
 
         // create a matrix from this slice
@@ -58,7 +58,7 @@ fn gen_sec_mat(degree: usize, entry_bound: usize) -> Matrix<f64, Dyn, Dyn, VecSt
 
         // perform singular value decomposition to calculate rank of matrix
         let svd_v = sec_v.clone().svd(true, true);
-        let rank = svd_v.rank(1e-8);
+        let rank = svd_v.rank(1e-10);
         
         if rank < degree {
             continue;
@@ -94,6 +94,7 @@ pub fn run_hpp_attack() {
         // just hardcoding this for now
         let ex2 = 0.333;
 
+        // empty vector storing samples
         let mut uni_samples = vec![];
 
 
@@ -147,7 +148,7 @@ pub fn run_hpp_attack() {
             continue
         };
 
-        let u = (pub_y*l.l())/dist_bound as f64;
+        let u = pub_y*l.l()/dist_bound as f64;
         // eprintln!("{u:.5}");
         eprintln!("init_seed: {:?}", init_seed);
 
