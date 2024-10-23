@@ -1,3 +1,9 @@
+'''
+
+Reference HPP attack by Martin Feussner
+
+'''
+
 import numpy as np
 import sympy as sp
 import time
