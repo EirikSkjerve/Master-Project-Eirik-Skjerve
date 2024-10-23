@@ -53,7 +53,8 @@ fn get_uni_slice_float(n: usize, dist_bound: usize, rng: &mut StdRng) -> Vec<f64
     rnd_bytes
 }
 
-/// generate a secret matrix V with entries uniformly distributed on -entry_bound..entry_bound
+/// generate a secret full rank, square [degree x degree] matrix V 
+/// with entries uniformly distributed on -entry_bound..entry_bound
 fn gen_sec_mat(degree: usize, entry_bound: usize) -> Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>>{
 
     loop {
@@ -75,15 +76,15 @@ fn gen_sec_mat(degree: usize, entry_bound: usize) -> Matrix<f64, Dyn, Dyn, VecSt
         }
 
         // return secret matrix v
-        eprintln!("Returning: {sec_v}");
         return sec_v;
     }
 }
 
 
+/// 
 pub fn run_hpp_attack() {
 
-    let mut start = Instant::now();
+    let start = Instant::now();
     let entry_bound = 1;
     let dist_bound = 1;
 
@@ -93,7 +94,7 @@ pub fn run_hpp_attack() {
     // generate some secret matrix V
     let sec_v_f = gen_sec_mat(N, entry_bound);
     // initialize 
-    let mut rng = StdRng::seed_from_u64(42);
+    let mut rng = StdRng::seed_from_u64(99999);
     let mut ctr = 0;
 
     loop {
@@ -108,14 +109,14 @@ pub fn run_hpp_attack() {
 
         // generate a bunch of samples (that are uniformly distributed)
         // and multiply them with secret matrix v
-        for i in 0..NUM_SAMPLES {
-            // this is slow as fuck, but oh well
+        for _ in 0..NUM_SAMPLES {
             let x = get_uni_slice_float(N, dist_bound, &mut rng);
             let x_vec = DVector::from_row_slice(&x);
             let y_vec = x_vec.transpose() * sec_v_f.clone();
             uni_samples.push(y_vec);
         }
 
+        // now we have matrix Y
         let pub_y = DMatrix::from_rows(&uni_samples);
         
         // approximation of Gram Matrix
@@ -131,15 +132,11 @@ pub fn run_hpp_attack() {
         match g_approx_inverse.clone().try_inverse(){
             Some(g_inv) => {
                 g_approx_inverse = g_inv;
-                // use this for good formatting
-                // eprintln!("g_approx: {}",g_approx);
-                // eprintln!("g_approx_inv: {g_approx_inverse:.4}");
-                let id_mat = (g_approx * g_approx_inverse.clone()).map(|x| x.abs()); //.map(|x| x.abs() as i8)
-                eprintln!("this should be identity matrix {id_mat:.3}");
 
             }
             None => {
                 println!("Not invertible");
+                continue
             }
         }
 
@@ -148,7 +145,6 @@ pub fn run_hpp_attack() {
             l = cholesky;
             let linv = l.clone().inverse();
 
-            eprintln!("L^(-1): {linv:.3}");
         } else {
             println!("Could not decompose matrix");
             continue
@@ -158,7 +154,7 @@ pub fn run_hpp_attack() {
 
         println!("Iterations needed: {ctr}");
         println!("Time elapsed: {:?}", start.elapsed());
-        return;
+        return u;
         
     }
 
