@@ -17,14 +17,14 @@ mod hawk512;
 
 mod compression;
 
-mod poly;
 mod linalg;
+mod poly;
 
 mod cryptanalysis;
 mod write_to_file;
 
-use hawk_tests::test_all;
 use cryptanalysis::HPP::hpp::run_hpp_attack;
+use hawk_tests::test_all;
 
 // memory measurement
 use peak_alloc::PeakAlloc;

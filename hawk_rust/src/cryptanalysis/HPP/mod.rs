@@ -1,2 +1,2 @@
-pub mod hpp;
 pub mod gradient_descent;
+pub mod hpp;

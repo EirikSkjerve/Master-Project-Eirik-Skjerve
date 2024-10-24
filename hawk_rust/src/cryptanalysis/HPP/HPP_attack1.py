@@ -30,10 +30,23 @@ def generate_random_unit_vector(n):
 
 
 def approx_nabla_mom4(U, w):
+    print(type(U))
+    print(type(w))
+    print(f"U: {U}")
+    print(U.shape)
+    print(f"w: {w}")
+    print(w.shape)
     uw = np.dot(U, w)
+    print(f"uw: {uw}")
+    print(f"{uw.shape} \n")
     uw3 = uw ** 3
+    print(f"uw3: {uw3}")
+    print(f"uw3[:, np.newaxis] :{uw3[:, np.newaxis]}")
     uw3u = uw3[:, np.newaxis] * U
+    print(f"uw3u: {uw3u}")
     g = 4 * np.sum(uw3u, axis=0) / U.shape[0]
+    print(f"g: {g}")
+
     return g
 
 
@@ -87,6 +100,12 @@ def map_matching_rows(V_approximation, V):
 
 
 if __name__ == '__main__':
+
+    test_u = np.array([[1, 2], [2, 3], [3, 4], [4, 5]])
+    test_w = np.array([1, 2])
+    approx_nabla_mom4(test_u, test_w)
+    quit()
+
     # Set a seed and some parameters
     np.random.seed(47)
     N = 16
