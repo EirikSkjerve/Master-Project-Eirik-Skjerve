@@ -9,8 +9,8 @@ use rand::SeedableRng;
 
 use crate::cryptanalysis::HPP::gradient_descent;
 
-const NUM_SAMPLES: usize = 5000;
-const N: usize = 16;
+const NUM_SAMPLES: usize = 1000;
+const N: usize = 5;
 
 /// returns n i8 integers uniformly distributed on -entry_bound..entry_bound
 pub fn get_uni_slice_int(n: usize, entry_bound: usize, seed: usize) -> Vec<i8> {
@@ -93,6 +93,7 @@ pub fn run_hpp_attack() {
 
     // generate some secret matrix V
     let sec_v_f = gen_sec_mat(N, entry_bound);
+    eprintln!("V: {}", sec_v_f);
     // initialize
     let mut rng = StdRng::seed_from_u64(99999);
     let mut ctr = 0;
