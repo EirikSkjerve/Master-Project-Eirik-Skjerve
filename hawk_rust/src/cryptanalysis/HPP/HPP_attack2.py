@@ -30,15 +30,15 @@ def generate_random_unit_vector(n):
 
 
 def approx_nabla_mom4(U, w):
-    print(f"U shape: {U.shape}")
-    print(f"w shape: {w.shape}")
+    # print(f"U shape: {U.shape}")
+    # print(f"w shape: {w.shape}")
     uw = np.dot(U, w)
-    print(f"uw shape: {uw.shape}")
+    # print(f"uw shape: {uw.shape}")
     uw3 = uw ** 3
     uw3u = uw3[:, np.newaxis] * U
     g = 4 * np.sum(uw3u, axis=0) / U.shape[0]
 
-    print(f"from nabla_mom4 returning g: {g.shape}")
+    # print(f"from nabla_mom4 returning g: {g.shape}")
     return g
 
 
@@ -46,7 +46,7 @@ def approx_mom4(U, w):
     uw = np.dot(U, w)
     uw4 = uw ** 4
     m = np.mean(uw4)
-    print(f"from mom4 returning m={m}")
+    # print(f"from mom4 returning m={m}")
     return m
 
 
@@ -54,13 +54,14 @@ def HPP_gradient_descent(U, L_inverse, lr):
     N = U.shape[1]
     solutions = set()
 
+    print(f"U: {U}")
+    print(f"l⁻¹: {L_inverse}")
+
     iterations = 0
 
     while len(solutions) < N:
         # Step 1
         w = generate_random_unit_vector(N)
-
-        print(f"Sample w: {w}")
 
         while True:
             iterations += 1
@@ -126,12 +127,16 @@ if __name__ == '__main__':
 
     # Compute approximation of Gram Matrix
     G_approximate = np.round((1/Ex2) * (Y.T@Y)/num_samples).astype(int)
-    print(f"G approx: {G_approximate}")
+    # print(f"G approx: {G_approximate}")
     G_approximate_inverse = np.linalg.inv(G_approximate)
     # print(f"G appinv: {G_approximate_inverse}")
     L = np.linalg.cholesky(G_approximate_inverse)
+    # print(f"l: {L}")
     L_inverse = np.linalg.inv(L)
-    print(f"L^-1: {L_inverse}")
+    # print(f"L⁻¹: {L_inverse}")
+    #
+    # print(f"G⁻¹: {G_approximate_inverse}")
+    # print(f"Should be G⁻¹: {L@L.T}")
 
     # Samples of P(C) where C=VL, which is x@C
     U = Y@L / dist_bound

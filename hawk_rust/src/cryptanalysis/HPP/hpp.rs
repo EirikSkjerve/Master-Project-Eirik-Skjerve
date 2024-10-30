@@ -82,74 +82,98 @@ fn gen_sec_mat(
     }
 }
 
-///
 pub fn run_hpp_attack() {
-    let start = Instant::now();
+    // let start = Instant::now();
     let entry_bound = 1;
     let dist_bound = 1;
 
     // using a fixed matrix V
-    // let v_data: [i16; 256] = [1, -1, -1, -1, -1,  0,  0,  1,  1,  1,  0, -1, -1,  0,  1,  0, 0,  0, -1,  0, -1,  1, -1,  1,  1,  0, -1, -1,  0,  0,  0,  1, 1,  0,  0,  0,  1,  0,  1, -1,  0,  0, -1,  0,  1, -1, -1,  1, 0,  1, -1, -1, -1,  1,  1, -1,  0,  1, -1,  0, -1, -1, -1, -1, 0,  1, -1,  1,  1,  1,  0,  0,  1,  1,  0,  1, -1, -1, -1, -1, 0, -1, -1, -1,  0, -1, -1, -1,  0,  1, -1, -1,  0,  0, -1,  0, 0, -1,  0,  1,  0,  1,  1,  0,  1, -1,  1,  0,  0,  1,  1,  1, -1, -1,  1, -1, -1,  1,  0,  1, -1,  0,  1,  1,  0,  0,  1, -1, -1,  1,  0,  1,  1,  1,  0,  0,  0,  1, -1,  1,  1,  1,  0, -1, 0,  1,  1, -1, -1, -1,  1,  1,  0,  1,  1,  0,  1, -1,  1,  1, -1, -1,  1, -1,  0,  0,  1,  1, -1,  1,  1,  0,  1,  0,  1,  1, 0, -1,  0,  1,  1,  1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0, 1,  1,  1,  0,  1, -1,  0, -1,  0,  0, -1,  1,  0,  0,  0, -1, 0,  1,  1,  1,  1,  1,  1,  1, -1,  0,  1,  0, -1,  1,  0,  0, 0,  1,  1,  0,  1,  0,  1, -1,  0, -1,  1,  0,  1,  1, -1, -1, 1,  1,  1,  0,  1, -1, -1,  1,  0,  1, -1,  0,  0,  1,  1,  1];
-
     // generate some secret matrix V
     let sec_v_f = gen_sec_mat(N, entry_bound);
-    eprintln!("V: {}", sec_v_f);
+    let v_data: [i32; 5*5] = [1,1,0,0,-1,
+                            -1,1,0,1,-1,
+                            0,1,0,-1,-1,
+                            1,-1,1,1,1,
+                            -1,-1,0,0,0
+                            ];
+
+    let v_data_f: Vec<f64> = v_data.iter().map(|&x| x as f64).collect();
+    let sec_v_f = DMatrix::from_row_slice(5, 5, &v_data_f);
+
     // initialize
     let mut rng = StdRng::seed_from_u64(99999);
     let mut ctr = 0;
 
-    loop {
-        ctr += 1;
+    ctr += 1;
 
-        // just hardcoding this for now
-        let ex2 = 0.333;
+    // just hardcoding this for now
+    let ex2 = 0.333;
 
-        // empty vector storing samples
-        let mut uni_samples = vec![];
+    // empty vector storing samples
+    let mut uni_samples = vec![];
 
-        // generate a bunch of samples (that are uniformly distributed)
-        // and multiply them with secret matrix v
-        for _ in 0..NUM_SAMPLES {
-            let x = get_uni_slice_float(N, dist_bound, &mut rng);
-            let x_vec = DVector::from_row_slice(&x);
-            let y_vec = x_vec.transpose() * sec_v_f.clone();
-            uni_samples.push(y_vec);
-        }
-
-        // now we have matrix Y
-        let pub_y = DMatrix::from_rows(&uni_samples);
-
-        // approximation of Gram Matrix
-        let g_approx_f =
-            (1.0 / ex2) * (pub_y.transpose() * pub_y.clone()) * (1.0 / NUM_SAMPLES as f64);
-
-        let g_approx = g_approx_f.map(|x| x.round());
-
-        let mut g_approx_inverse = g_approx.clone();
-        match g_approx_inverse.clone().try_inverse() {
-            Some(g_inv) => {
-                g_approx_inverse = g_inv;
-            }
-            None => {
-                println!("Not invertible");
-                continue;
-            }
-        }
-
-        let l: Cholesky<f64, Dyn>;
-        if let Some(cholesky) = g_approx_inverse.clone().cholesky() {
-            l = cholesky;
-            let linv = l.clone().inverse();
-        } else {
-            println!("Could not decompose matrix");
-            continue;
-        };
-
-        let u = pub_y * l.l() / dist_bound as f64;
-
-        println!("Iterations needed: {ctr}");
-        println!("Time elapsed: {:?}", start.elapsed());
-        gradient_descent::gradient_descent(u, l.clone().inverse(), 0.75);
-        return;
+    // generate a bunch of samples (that are uniformly distributed)
+    // and multiply them with secret matrix v
+    for _ in 0..NUM_SAMPLES {
+        let x = get_uni_slice_float(N, dist_bound, &mut rng);
+        let x_vec = DVector::from_row_slice(&x);
+        let y_vec = x_vec.transpose() * sec_v_f.clone();
+        uni_samples.push(y_vec);
     }
+
+    // now we have matrix Y
+    let pub_y = DMatrix::from_rows(&uni_samples);
+
+    // approximation of Gram Matrix
+    let g_approx_f =
+        (1.0 / ex2) * (pub_y.transpose() * pub_y.clone()) * (1.0 / NUM_SAMPLES as f64);
+
+    let g_approx = g_approx_f.map(|x| x.round());
+
+    eprintln!("g: {g_approx}");
+    // let g_approx = DMatrix::from_row_slice(5, 5, &[4,0,1,0,1,
+    //                                                 0,5,-1,-1,-4,
+    //                                                 1,-1,1,1,1,
+    //                                                 0,-1,1,3,1,
+    //                                                 1,-4,1,1,4]);
+    //
+    let mut g_approx_inverse = g_approx.clone();
+    match g_approx_inverse.clone().try_inverse() {
+        Some(g_inv) => {
+            g_approx_inverse = g_inv;
+        }
+        None => {
+            println!("Not invertible");
+        }
+    }
+
+    // computing Cholesky decomposition of g⁻¹
+    let l = Cholesky::new(g_approx_inverse).expect("TEST");
+    let l = l.l();
+
+    // get inverse of l
+    let linv = l.clone().try_inverse().expect("COULDN'T TAKE INVERSE");
+
+    let start = Instant::now();
+    let u = pub_y * l;  // this should technically be divided by dist-bound
+                        // pub_y * l / dist_bound as f64
+    let guess_sol = gradient_descent::gradient_descent(u, linv, 0.75);
+
+    println!("gradient descent used: {:?}", start.elapsed());
+
+    eprintln!("{}", sec_v_f);
+
+    // if let Some(cholesky) = g_approx_inverse.clone().cholesky() {
+    //     l = cholesky;
+    //     let test = l.l();
+    //     let test_t = l.clone().inverse();
+    //     let temp = test*test_t;
+    //     // eprintln!("g⁻¹: {g_approx_inverse:.2}");
+    //     // eprintln!("g⁻¹~: {temp:.2}");
+    //     let u = pub_y * l.l() / dist_bound as f64;
+    //
+    //     let start = Instant::now();
+    //     gradient_descent::gradient_descent(u, l.inverse(), 0.75);
+    //     return;
+    // }
 }

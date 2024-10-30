@@ -35,7 +35,7 @@ fn mom4(
     let uw4 = uw.map(|x| x.powi(4));
     // the mean value
     let m = uw4.map(|x| x).sum() / (u.nrows() as f64);
-    eprintln!("from mom4 returning m={}", m);
+    // eprintln!("from mom4 returning m={}", m);
     m
 }
 
@@ -45,14 +45,14 @@ fn nabla_mom4(
 ) -> Matrix<f64, Const<1>, Dyn, VecStorage<f64, Const<1>, Dyn>>{
 
     // eprintln!("input to nabla_mom4: U: {u} \nw: {w}");
-    println!("Doing nablamom4");
+    // println!("Doing nablamom4");
     // dot product
     let uw = u * w;
-    println!("uw shape({}, {})", uw.nrows(), uw.ncols());
+    // println!("uw shape({}, {})", uw.nrows(), uw.ncols());
     // power of 3 to each entry
     let uw3 = uw.map(|x| x.powi(3));
     let uw3u = 4.0*(uw3.clone().transpose()*u) / u.nrows() as f64;
-    eprintln!("from nabla_mom4 returning uw3u: {uw3u}");
+    // eprintln!("from nabla_mom4 returning uw3u: {uw3u}");
     uw3u
 
 }
@@ -62,6 +62,10 @@ pub fn gradient_descent(
     linv: Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>>,
     rate: f64,
 ) {
+
+    eprintln!("U: {u:.2}");
+    eprintln!("l⁻¹: {linv:.2}");
+
     let n = u.ncols();
 
     // create an empty hash-set that will keep unique solutions
@@ -73,7 +77,7 @@ pub fn gradient_descent(
     while solutions.len() < n {
         let mut w = gen_u_vec(n, seed_ctr);
 
-        eprintln!("Sample w: {}", w);
+        // eprintln!("Sample w: {}", w);
 
         seed_ctr += 1;
         loop{
@@ -110,7 +114,7 @@ pub fn gradient_descent(
     let mut retvec = vec![];
     for (i, sol) in solutions.iter().enumerate() {
         retvec.push(sol);
-        println!("{:?}", sol);
+        eprintln!("{:?}", sol);
     }
 
 }
