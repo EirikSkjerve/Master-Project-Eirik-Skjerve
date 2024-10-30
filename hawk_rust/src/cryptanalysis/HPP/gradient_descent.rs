@@ -62,8 +62,8 @@ pub fn gradient_descent(
     let n = u.ncols();
 
     // create an empty hash-set that will keep unique solutions
-    let mut solutions: HashSet<Matrix<i32, Const<1>, Dyn, VecStorage<i32, Const<1>, Dyn>>> =
-        HashSet::with_capacity(n);
+    let mut solutions: Vec<Matrix<i32, Const<1>, Dyn, VecStorage<i32, Const<1>, Dyn>>> =
+        Vec::with_capacity(n);
 
     let mut iterations = 0;
 
@@ -92,7 +92,7 @@ pub fn gradient_descent(
                 let neg_v = -v.clone();
 
                 if !solutions.contains(&v) && !solutions.contains(&neg_v) {
-                    solutions.insert(v.clone());
+                    solutions.push(v.clone());
                 }
                 break;
             } else {

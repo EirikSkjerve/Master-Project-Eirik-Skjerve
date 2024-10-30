@@ -83,11 +83,19 @@ fn gen_sec_mat(
 }
 
 fn map_rows(
-    vapprox: HashSet<Matrix<i32, Const<1>, Dyn, VecStorage<i32, Const<1>, Dyn>>>,
-    v: Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>>,
+    vapprox: Vec<Matrix<i32, Const<1>, Dyn, VecStorage<i32, Const<1>, Dyn>>>,
+    v: Matrix<i32, Dyn, Dyn, VecStorage<i32, Dyn, Dyn>>,
 ) {
+    let mut v_copy = v.clone();
+    let mut ctr = 0;
     for vp in vapprox.iter() {
-        for i in 0..v.nrows() {}
+        for i in 0..v_copy.nrows() {
+            if vp == &v_copy.row(i) {
+                ctr += 1;
+                v_copy = v_copy.clone().remove_rows_at(&[i]);
+                break;
+            }
+        }
     }
 }
 
