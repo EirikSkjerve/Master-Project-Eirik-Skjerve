@@ -55,7 +55,7 @@ pub fn gradient_descent(
     u: Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>>,
     linv: Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>>,
     rate: f64,
-) {
+) -> Vec<Matrix<i32, Const<1>, Dyn, VecStorage<i32, Const<1>, Dyn>>> {
     eprintln!("U: {u:.2}");
     eprintln!("l⁻¹: {linv:.2}");
 
@@ -70,8 +70,6 @@ pub fn gradient_descent(
     let mut seed_ctr = 1337;
     while solutions.len() < n {
         let mut w = gen_u_vec(n, seed_ctr);
-
-        // eprintln!("Sample w: {}", w);
 
         seed_ctr += 1;
         loop {
@@ -108,7 +106,8 @@ pub fn gradient_descent(
 
     let mut retvec = vec![];
     for (i, sol) in solutions.iter().enumerate() {
-        retvec.push(sol);
+        retvec.push(sol.clone());
         eprintln!("{:?}", sol);
     }
+    return retvec;
 }

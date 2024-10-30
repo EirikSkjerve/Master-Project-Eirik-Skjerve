@@ -88,14 +88,23 @@ fn map_rows(
 ) {
     let mut v_copy = v.clone();
     let mut ctr = 0;
+
+    // loop through all rows in approximation
     for vp in vapprox.iter() {
+        // go through each row in the actual v
         for i in 0..v_copy.nrows() {
-            if vp == &v_copy.row(i) {
+            // check for one equality
+            if vp == &v_copy.row(i) || -vp == v_copy.row(i) {
+                // increase counter on hit
                 ctr += 1;
+                // make a clone without the matching row
                 v_copy = v_copy.clone().remove_rows_at(&[i]);
                 break;
             }
         }
+    }
+    if ctr == v.nrows() {
+        println!("MATCH!");
     }
 }
 
@@ -169,4 +178,9 @@ pub fn run_hpp_attack() {
     println!("gradient descent used: {:?}", start.elapsed());
 
     eprintln!("{}", sec_v_f);
+    eprintln!("{:?}", guess_sol);
+
+    let sec_v = sec_v_f.map(|x| x.round() as i32);
+    
+    map_rows(guess_sol, sec_v);
 }
