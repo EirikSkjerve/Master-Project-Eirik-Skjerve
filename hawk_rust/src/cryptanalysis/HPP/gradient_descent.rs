@@ -1,9 +1,6 @@
-use crate::rngcontext::{get_random_bytes, RngContext};
 use na::*;
 use nalgebra as na;
-use std::time::Instant;
 
-use rand::distributions::{Distribution, Uniform};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
@@ -28,7 +25,6 @@ fn mom4(
     u: &Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>>,
     w: &Matrix<f64, Dyn, Const<1>, VecStorage<f64, Dyn, Const<1>>>,
 ) -> f64 {
-
     // dot product
     let uw = u * w;
     // power of 4 to each entry
@@ -42,8 +38,7 @@ fn mom4(
 fn nabla_mom4(
     u: &Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>>,
     w: &Matrix<f64, Dyn, Const<1>, VecStorage<f64, Dyn, Const<1>>>,
-) -> Matrix<f64, Const<1>, Dyn, VecStorage<f64, Const<1>, Dyn>>{
-
+) -> Matrix<f64, Const<1>, Dyn, VecStorage<f64, Const<1>, Dyn>> {
     // eprintln!("input to nabla_mom4: U: {u} \nw: {w}");
     // println!("Doing nablamom4");
     // dot product
@@ -51,10 +46,9 @@ fn nabla_mom4(
     // println!("uw shape({}, {})", uw.nrows(), uw.ncols());
     // power of 3 to each entry
     let uw3 = uw.map(|x| x.powi(3));
-    let uw3u = 4.0*(uw3.clone().transpose()*u) / u.nrows() as f64;
+    let uw3u = 4.0 * (uw3.clone().transpose() * u) / u.nrows() as f64;
     // eprintln!("from nabla_mom4 returning uw3u: {uw3u}");
     uw3u
-
 }
 
 pub fn gradient_descent(
@@ -62,14 +56,14 @@ pub fn gradient_descent(
     linv: Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>>,
     rate: f64,
 ) {
-
     eprintln!("U: {u:.2}");
     eprintln!("l⁻¹: {linv:.2}");
 
     let n = u.ncols();
 
     // create an empty hash-set that will keep unique solutions
-    let mut solutions: HashSet<Matrix<i32, Const<1>, Dyn, VecStorage<i32, Const<1>, Dyn>>> = HashSet::with_capacity(n);
+    let mut solutions: HashSet<Matrix<i32, Const<1>, Dyn, VecStorage<i32, Const<1>, Dyn>>> =
+        HashSet::with_capacity(n);
 
     let mut iterations = 0;
 
@@ -80,11 +74,11 @@ pub fn gradient_descent(
         // eprintln!("Sample w: {}", w);
 
         seed_ctr += 1;
-        loop{
+        loop {
             iterations += 1;
             let g = nabla_mom4(&u, &w).transpose();
 
-            let mut w_new = w.clone() - (rate*g);
+            let mut w_new = w.clone() - (rate * g);
             let temp: f64 = w_new.iter().map(|&x| x.powf(2.0)).sum();
             w_new /= temp.sqrt();
 
@@ -101,20 +95,20 @@ pub fn gradient_descent(
                     solutions.insert(v.clone());
                 }
                 break;
-            }
-            else {
+            } else {
                 w = w_new;
             }
-
         }
     }
 
-    println!("RUST HPP GRADIENT DESCENT COMPLETED IN {} ITERATIONS", iterations);
+    println!(
+        "RUST HPP GRADIENT DESCENT COMPLETED IN {} ITERATIONS",
+        iterations
+    );
 
     let mut retvec = vec![];
     for (i, sol) in solutions.iter().enumerate() {
         retvec.push(sol);
         eprintln!("{:?}", sol);
     }
-
 }

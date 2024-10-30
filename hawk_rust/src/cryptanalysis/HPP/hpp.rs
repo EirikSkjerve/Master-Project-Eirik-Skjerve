@@ -1,6 +1,6 @@
-use crate::rngcontext::{get_random_bytes, RngContext};
 use na::*;
 use nalgebra as na;
+use std::collections::HashSet;
 use std::time::Instant;
 
 use rand::distributions::{Distribution, Uniform};
@@ -82,6 +82,15 @@ fn gen_sec_mat(
     }
 }
 
+fn map_rows(
+    vapprox: HashSet<Matrix<i32, Const<1>, Dyn, VecStorage<i32, Const<1>, Dyn>>>,
+    v: Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>>,
+) {
+    for vp in vapprox.iter() {
+        for i in 0..v.nrows() {}
+    }
+}
+
 pub fn run_hpp_attack() {
     // let start = Instant::now();
     let entry_bound = 1;
@@ -90,12 +99,9 @@ pub fn run_hpp_attack() {
     // using a fixed matrix V
     // generate some secret matrix V
     let sec_v_f = gen_sec_mat(N, entry_bound);
-    let v_data: [i32; 5*5] = [1,1,0,0,-1,
-                            -1,1,0,1,-1,
-                            0,1,0,-1,-1,
-                            1,-1,1,1,1,
-                            -1,-1,0,0,0
-                            ];
+    let v_data: [i32; 5 * 5] = [
+        1, 1, 0, 0, -1, -1, 1, 0, 1, -1, 0, 1, 0, -1, -1, 1, -1, 1, 1, 1, -1, -1, 0, 0, 0,
+    ];
 
     let v_data_f: Vec<f64> = v_data.iter().map(|&x| x as f64).collect();
     let sec_v_f = DMatrix::from_row_slice(5, 5, &v_data_f);
@@ -125,18 +131,11 @@ pub fn run_hpp_attack() {
     let pub_y = DMatrix::from_rows(&uni_samples);
 
     // approximation of Gram Matrix
-    let g_approx_f =
-        (1.0 / ex2) * (pub_y.transpose() * pub_y.clone()) * (1.0 / NUM_SAMPLES as f64);
+    let g_approx_f = (1.0 / ex2) * (pub_y.transpose() * pub_y.clone()) * (1.0 / NUM_SAMPLES as f64);
 
     let g_approx = g_approx_f.map(|x| x.round());
 
     eprintln!("g: {g_approx}");
-    // let g_approx = DMatrix::from_row_slice(5, 5, &[4,0,1,0,1,
-    //                                                 0,5,-1,-1,-4,
-    //                                                 1,-1,1,1,1,
-    //                                                 0,-1,1,3,1,
-    //                                                 1,-4,1,1,4]);
-    //
     let mut g_approx_inverse = g_approx.clone();
     match g_approx_inverse.clone().try_inverse() {
         Some(g_inv) => {
@@ -155,25 +154,11 @@ pub fn run_hpp_attack() {
     let linv = l.clone().try_inverse().expect("COULDN'T TAKE INVERSE");
 
     let start = Instant::now();
-    let u = pub_y * l;  // this should technically be divided by dist-bound
-                        // pub_y * l / dist_bound as f64
+    let u = pub_y * l; // this should technically be divided by dist-bound
+                       // pub_y * l / dist_bound as f64
     let guess_sol = gradient_descent::gradient_descent(u, linv, 0.75);
 
     println!("gradient descent used: {:?}", start.elapsed());
 
     eprintln!("{}", sec_v_f);
-
-    // if let Some(cholesky) = g_approx_inverse.clone().cholesky() {
-    //     l = cholesky;
-    //     let test = l.l();
-    //     let test_t = l.clone().inverse();
-    //     let temp = test*test_t;
-    //     // eprintln!("g⁻¹: {g_approx_inverse:.2}");
-    //     // eprintln!("g⁻¹~: {temp:.2}");
-    //     let u = pub_y * l.l() / dist_bound as f64;
-    //
-    //     let start = Instant::now();
-    //     gradient_descent::gradient_descent(u, l.inverse(), 0.75);
-    //     return;
-    // }
 }
