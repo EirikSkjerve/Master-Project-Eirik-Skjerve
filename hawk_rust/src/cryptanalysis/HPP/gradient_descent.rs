@@ -3,8 +3,7 @@ use nalgebra as na;
 
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-
-use std::collections::HashSet;
+use rand::Rng;
 
 use crate::cryptanalysis::HPP::hpp::get_uni_slice_float;
 
@@ -31,7 +30,6 @@ fn mom4(
     let uw4 = uw.map(|x| x.powi(4));
     // the mean value
     let m = uw4.map(|x| x).sum() / (u.nrows() as f64);
-    // eprintln!("from mom4 returning m={}", m);
     m
 }
 
@@ -39,15 +37,11 @@ fn nabla_mom4(
     u: &Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>>,
     w: &Matrix<f64, Dyn, Const<1>, VecStorage<f64, Dyn, Const<1>>>,
 ) -> Matrix<f64, Const<1>, Dyn, VecStorage<f64, Const<1>, Dyn>> {
-    // eprintln!("input to nabla_mom4: U: {u} \nw: {w}");
-    // println!("Doing nablamom4");
     // dot product
     let uw = u * w;
-    // println!("uw shape({}, {})", uw.nrows(), uw.ncols());
     // power of 3 to each entry
     let uw3 = uw.map(|x| x.powi(3));
     let uw3u = 4.0 * (uw3.clone().transpose() * u) / u.nrows() as f64;
-    // eprintln!("from nabla_mom4 returning uw3u: {uw3u}");
     uw3u
 }
 
@@ -55,38 +49,33 @@ pub fn gradient_descent(
     u: Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>>,
     linv: Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>>,
     rate: f64,
-) -> Vec<Matrix<i32, Const<1>, Dyn, VecStorage<i32, Const<1>, Dyn>>> {
-    eprintln!("U: {u:.2}");
-    eprintln!("l⁻¹: {linv:.2}");
-
+) -> Matrix<i32, Dyn, Dyn, VecStorage<i32, Dyn, Dyn>> {
     let n = u.ncols();
 
-    // create an empty hash-set that will keep unique solutions
+    // create an empty vec that will keep unique solutions
     let mut solutions: Vec<Matrix<i32, Const<1>, Dyn, VecStorage<i32, Const<1>, Dyn>>> =
         Vec::with_capacity(n);
 
     let mut iterations = 0;
 
-    let mut seed_ctr = 1337;
+    let mut rng_seed = rand::thread_rng();
+    let mut seed: usize = rng_seed.gen();
     while solutions.len() < n {
-        let mut w = gen_u_vec(n, seed_ctr);
+        let mut w = gen_u_vec(n, seed);
 
-        seed_ctr += 1;
+        seed += 1;
         loop {
             iterations += 1;
             let g = nabla_mom4(&u, &w).transpose();
 
             let mut w_new = w.clone() - (rate * g);
-            let temp: f64 = w_new.iter().map(|&x| x.powf(2.0)).sum();
-            w_new /= temp.sqrt();
+            let norm_sq: f64 = w_new.iter().map(|&x| x.powi(2)).sum();
+            w_new /= norm_sq.sqrt();
 
             if mom4(&u, &w) <= mom4(&u, &w_new) {
-                // println!("Inside loop");
                 // round entries
-                // eprintln!("vtemp: {}, {}", linv.nrows(), linv.ncols());
                 let vtemp = w.clone().transpose() * linv.clone();
                 let v = vtemp.map(|x| x.round() as i32);
-                // eprintln!("v: {v}");
                 let neg_v = -v.clone();
 
                 if !solutions.contains(&v) && !solutions.contains(&neg_v) {
@@ -104,10 +93,9 @@ pub fn gradient_descent(
         iterations
     );
 
-    let mut retvec = vec![];
-    for (i, sol) in solutions.iter().enumerate() {
-        retvec.push(sol.clone());
-        eprintln!("{:?}", sol);
-    }
-    return retvec;
+    // convert vec of row vectors to matrix object
+    let v_mat = Matrix::from_rows(&solutions);
+
+    // return the guess
+    v_mat
 }

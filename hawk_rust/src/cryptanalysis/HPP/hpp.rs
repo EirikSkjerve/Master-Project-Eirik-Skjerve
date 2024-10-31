@@ -6,11 +6,13 @@ use std::time::Instant;
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
+use rand::Rng;
+
 
 use crate::cryptanalysis::HPP::gradient_descent;
 
-const NUM_SAMPLES: usize = 1000;
-const N: usize = 5;
+const NUM_SAMPLES: usize = 100000;
+const N: usize = 64;
 
 /// returns n i8 integers uniformly distributed on -entry_bound..entry_bound
 pub fn get_uni_slice_int(n: usize, entry_bound: usize, seed: usize) -> Vec<i8> {
@@ -82,52 +84,81 @@ fn gen_sec_mat(
     }
 }
 
-fn map_rows(
-    vapprox: Vec<Matrix<i32, Const<1>, Dyn, VecStorage<i32, Const<1>, Dyn>>>,
-    v: Matrix<i32, Dyn, Dyn, VecStorage<i32, Dyn, Dyn>>,
-) {
-    let mut v_copy = v.clone();
-    let mut ctr = 0;
+fn check_v_approximation(v: &DMatrix<i32>, vapprox: &DMatrix<i32>) -> bool {
+    // checks if one matrix is row permutation of rows of +/- rows of other matrix
+    // return true/false based on this, and prints the permutation
 
-    // loop through all rows in approximation
-    for vp in vapprox.iter() {
-        // go through each row in the actual v
-        for i in 0..v_copy.nrows() {
-            // check for one equality
-            if vp == &v_copy.row(i) || -vp == v_copy.row(i) {
-                // increase counter on hit
-                ctr += 1;
-                // make a clone without the matching row
-                v_copy = v_copy.clone().remove_rows_at(&[i]);
+    // displays the matrices (unsuitable for large parameters)
+    // eprintln!("Approximation of rows of +- V: {vapprox}");
+    // eprintln!("Actual V: {v}");
+
+    // initialize an empty mapping vector
+    let mut mapping: Vec<(usize, usize)> = Vec::with_capacity(N);
+
+    // go through all rows in v
+    for i in 0..N {
+        let ra = v.row(i);
+
+        // to through all rows in v~
+        for j in 0..N {
+            let rb = vapprox.row(j);
+
+            // check for row equality a=b
+            if ra==rb {
+                // add position to map
+                mapping.push((j,0));
+                break;
+            }
+
+            // check for row equality a=-b
+            if ra == -rb {
+                // add position to map
+                mapping.push((j, 1));
                 break;
             }
         }
     }
-    if ctr == v.nrows() {
+
+    println!("Matching rows: {}", mapping.len());
+
+    // if mapping is "full", the matrices should be equal, because
+    // rows in V are independent
+    if mapping.len() == N {
+
+        // print each mapping with correct sign
+        // for (i, m) in mapping.iter().enumerate() {
+        //     let (j, s) = m;
+        //     if *s == 0 {
+        //         println!("Row {} -> {}", i+1, j+1);
+        //     }
+        //     if *s == 1 {
+        //         println!("Row {} -> -{}",i+1, j+1);
+        //     }
+        //
+        // }
         println!("MATCH!");
+        return true;
     }
+    return false;
 }
 
 pub fn run_hpp_attack() {
-    // let start = Instant::now();
+    let start_pp = Instant::now();
     let entry_bound = 1;
     let dist_bound = 1;
 
-    // using a fixed matrix V
+    println!("Running HPP attack on dimension {} with {} samples", N, NUM_SAMPLES);
+
     // generate some secret matrix V
     let sec_v_f = gen_sec_mat(N, entry_bound);
-    let v_data: [i32; 5 * 5] = [
-        1, 1, 0, 0, -1, -1, 1, 0, 1, -1, 0, 1, 0, -1, -1, 1, -1, 1, 1, 1, -1, -1, 0, 0, 0,
-    ];
-
-    let v_data_f: Vec<f64> = v_data.iter().map(|&x| x as f64).collect();
-    let sec_v_f = DMatrix::from_row_slice(5, 5, &v_data_f);
 
     // initialize
-    let mut rng = StdRng::seed_from_u64(99999);
-    let mut ctr = 0;
+    // create random seed for rng
+    let mut rng_seed = rand::thread_rng();
+    let seed: u64 = rng_seed.gen();
+    println!("Seed: {}", seed);
 
-    ctr += 1;
+    let mut rng = StdRng::seed_from_u64(seed);
 
     // just hardcoding this for now
     let ex2 = 0.333;
@@ -150,37 +181,35 @@ pub fn run_hpp_attack() {
     // approximation of Gram Matrix
     let g_approx_f = (1.0 / ex2) * (pub_y.transpose() * pub_y.clone()) * (1.0 / NUM_SAMPLES as f64);
 
+    // round the entries
     let g_approx = g_approx_f.map(|x| x.round());
 
-    eprintln!("g: {g_approx}");
-    let mut g_approx_inverse = g_approx.clone();
-    match g_approx_inverse.clone().try_inverse() {
-        Some(g_inv) => {
-            g_approx_inverse = g_inv;
-        }
-        None => {
-            println!("Not invertible");
-        }
-    }
+    // compute inverse of g
+    let g_approx_inverse = g_approx.clone().try_inverse().expect("COULDN'T TAKE INVERSE OF G");
 
     // computing Cholesky decomposition of g⁻¹
-    let l = Cholesky::new(g_approx_inverse).expect("TEST");
-    let l = l.l();
+    let l = Cholesky::new(g_approx_inverse).expect("COULDN'T COMPUTE CHOLESKY DECOMPOSITION OF Ginv");
+    // extract lower triangular matrix l
 
     // get inverse of l
-    let linv = l.clone().try_inverse().expect("COULDN'T TAKE INVERSE");
+    // for some reason, taking l.inverse(), i.e. the nalgebra method for inverse directly on
+    // the decomposition l would not work. Instead we retrieve the lowe triangular matrix L by .l()
+    // and get the inverse from it like a normal square matrix
+    let linv = l.l().clone().try_inverse().expect("COULDN'T TAKE INVERSE OF L");
 
     let start = Instant::now();
-    let u = pub_y * l; // this should technically be divided by dist-bound
+    let u = pub_y * l.l(); // this should technically be divided by dist-bound
                        // pub_y * l / dist_bound as f64
-    let guess_sol = gradient_descent::gradient_descent(u, linv, 0.75);
+
+    println!("Preprocessing used {:?}", start_pp.elapsed());
+
+    let guess_sol = gradient_descent::gradient_descent(u, linv, 0.7);
 
     println!("gradient descent used: {:?}", start.elapsed());
 
-    eprintln!("{}", sec_v_f);
-    eprintln!("{:?}", guess_sol);
-
     let sec_v = sec_v_f.map(|x| x.round() as i32);
-    
-    map_rows(guess_sol, sec_v);
+
+    let rho_timer = Instant::now();
+    check_v_approximation(&sec_v, &guess_sol);
+    println!("Checking permutations took {:?}", rho_timer.elapsed());
 }

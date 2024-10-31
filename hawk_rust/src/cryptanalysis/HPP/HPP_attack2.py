@@ -93,20 +93,27 @@ def HPP_gradient_descent(U, L_inverse, lr):
 
 
 def map_matching_rows(V_approximation, V):
+    counter = 0
     for i in range(V.shape[0]):
         for j in range(V.shape[0]):
             if np.array_equal(V_approximation[i,:], V[j,:]) or np.array_equal(-V_approximation[i,:], V[j,:]):
+                counter += 1
                 print(f"{i+1} -> {j+1}")
+
+    if counter == V.shape[0]:
+        print("MATCH!")
 
 
 if __name__ == '__main__':
 
     # Set a seed and some parameters
-    np.random.seed(4)
-    N = 5
+    import random as rnd
+    # use some random seed
+    np.random.seed(rnd.randint(1, 10000))
+    N = 32
     entry_bound = 1
     dist_bound = 1
-    num_samples = 1000  # preprocessing experiments to find a suitable number
+    num_samples = 100000  # preprocessing experiments to find a suitable number
 
     # Generate invertible secret matrix V
     V = generate_secret_matrix(N, entry_bound)
