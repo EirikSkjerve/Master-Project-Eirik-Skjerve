@@ -10,14 +10,17 @@ Cryptographic schemes based on lattice problems are not an enirely new phenomeno
 The original scheme was broken due to Phong. Q. Nguyen \& Oded Regev in 2006 \cite{hpp}, who showed that by observing enough signatures generated with one secret key, one can retrieve the secret key.
 A newer digital signature scheme, Hawk (source), submitted to NIST's standardization process, is a scheme similar that of NTRU and GGH. 
 The goal of this thesis is to try and adapt the Hidden Parallelepiped Problem attack to Hawk \cite{hawk}. Hawk spec here \cite{hawkspec}
+
 \section{Objectives}
-The objective for this thesis is comprised of two main parts:
+The objective for this thesis consists of two main parts:
 \begin{itemize}
 \item \textbf{Implementation of Hawk in Rust}. As the first part of the thesis I implement the Hawk digital signature scheme in the Rust programming language. 
     Implementing a scheme on ones own is a good way to actually learn how it works. I chose to implement it in Rust for the sake of learning the programming language.
-    Moreover, having ones own version makes it easier to experiment, adjust and modify to ones need. It would also be just a big a challenge to understand and work with complicated source code someone else has written.
+    Moreover, having ones own version makes it easier to experiment, adjust and modify to ones need. It would also be a challenge to understand and work with complicated source code someone else has written.
 
-    \textbf{Cryptanalysis and experimentation}. As part two of the thesis I want to do cryptanalysis of Hawk. By using the "Learning a parallelepiped" attack \cite{hpp} and adjusting it to try and break Hawk. 
-    This requires both mathematical, theorethical work, as well as practical experimentation and implementation, which will also be done in Rust.
+\item \textbf{Cryptanalysis and experimentation}. As part two of the thesis I want to do cryptanalysis of Hawk. The goal is to use the "Learning a parallelepiped" attack \cite{hpp} and adjusting it to try and break Hawk. 
+    This requires both theoretical and practical work, and experiments will be implemented in Rust.
 \end{itemize}
 \section{Thesis outline}
+Chapter 2 will introduce important notions and mathematical background used in this thesis. Chapter 3 will introduce Hawk and the \textit{Learning a Parallelepiped} attack and implementations of these. 
+In Chapter 4, a version HPP attack aimed at Hawk will be presented. Chapter 5 will show results, and Chapter 6 will discuss future work.
