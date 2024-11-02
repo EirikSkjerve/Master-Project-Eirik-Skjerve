@@ -1,12 +1,11 @@
 use na::*;
 use nalgebra as na;
-use std::collections::HashSet;
+
 use std::time::Instant;
 
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::StdRng;
-use rand::SeedableRng;
-use rand::Rng;
+use rand::{SeedableRng, Rng};
 
 
 use crate::cryptanalysis::HPP::gradient_descent;

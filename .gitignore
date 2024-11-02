@@ -1,5 +1,4 @@
 
-master-latex-template/
 __pycache__/
 Text/
 
@@ -26,4 +25,3 @@ HPP_attack1.py
 script.py
 src/cryptanalysis/HPP/*.py
 .venv
-Thesis/
