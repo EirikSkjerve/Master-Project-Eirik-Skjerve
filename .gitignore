@@ -21,6 +21,9 @@ convert_tables.py
 script.py
 .venv
 
+# large output file
+src/output/samples.txt
+
 # tex stuff
 ## Core latex/pdflatex auxiliary files:
 *.aux
