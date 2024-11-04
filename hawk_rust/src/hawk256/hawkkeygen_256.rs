@@ -143,6 +143,8 @@ pub fn hawkkeygen_256(initial_seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
         // encode private key
         let priv_enc = enc_priv(&kgseed, &bigf, &bigg, &hpub);
 
+        println!("f: {:?} \ng: {:?} \nF: {:?} \nG: {:?}", f, g, bigf, bigg);
+
         // return the keys
         return (priv_enc, pub_enc);
     }

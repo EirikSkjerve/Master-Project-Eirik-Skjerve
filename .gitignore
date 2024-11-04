@@ -22,7 +22,7 @@ script.py
 .venv
 
 # large output file
-src/output/samples.txt
+hawk_rust/src/output/samples.txt
 
 # tex stuff
 ## Core latex/pdflatex auxiliary files:

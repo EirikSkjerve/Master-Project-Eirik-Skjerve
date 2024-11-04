@@ -25,6 +25,7 @@ mod write_to_file;
 
 use cryptanalysis::HPP::hpp::run_hpp_attack;
 use hawk_tests::test_all;
+use cryptanalysis::HPP::sample_signatures::write_samples_to_file;
 
 // memory measurement
 use peak_alloc::PeakAlloc;
@@ -37,6 +38,8 @@ fn main() {
 
     // run several instances of hawk 256, 512, and 1024
     // measures avg. time usage
-    test_all();
+    // test_all();
     // run_hpp_attack();
+    
+    write_samples_to_file(100000, "src/output/samples.txt");
 }

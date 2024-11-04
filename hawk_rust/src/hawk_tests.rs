@@ -31,8 +31,8 @@ pub fn test_all() {
         Cell::new(&"vf (µs)"),
     ]));
     hawk_256(&mut table);
-    hawk_512(&mut table);
-    hawk_1024(&mut table);
+    // hawk_512(&mut table);
+    // hawk_1024(&mut table);
 
     println!(
         "Average of {} signature generation and verifications",
@@ -79,7 +79,7 @@ pub fn hawk_256(table: &mut Table) {
     }
 
     // testing writing to file here
-    let _ = wvtf("output/testouot.txt", &signatures[0]);
+    // let _ = wvtf("output/testouot.txt", &signatures[0]);
 
     let ver_time_stop = ver_time_start.elapsed();
     table.add_row(Row::new(vec![
