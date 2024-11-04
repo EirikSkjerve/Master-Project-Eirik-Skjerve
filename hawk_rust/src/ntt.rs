@@ -83,10 +83,15 @@ pub fn intt(f: Vec<i64>, p: i64) -> Vec<i64> {
         intt_f[i] = modulo(intt_f[i] * ideg, p);
     }
 
-    return intt_f;
+    intt_f
 }
 
 pub fn nttadj(f: &Vec<i64>, p: i64) -> Vec<i64> {
+    //
+    // compute the NTT representation of hermitian adjoint of f
+    // used for computing public key Q in keygen
+    //
+
     let ui = intt(f.to_vec(), p);
-    return ntt(adjoint(&ui), p);
+    ntt(adjoint(&ui), p)
 }
