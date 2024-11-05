@@ -2,59 +2,100 @@ extern crate num_bigint;
 extern crate num_traits;
 
 use num_bigint::{BigInt, ToBigInt};
-use num_traits::{One, Signed, ToPrimitive};
+use num_traits::{One, Zero, Signed, ToPrimitive};
 
 use crate::fft::{add_fft, adj_fft, div_fft, fft, ifft, mul_fft};
-use crate::utils::{bigint_to_f64_vec, bigint_vec};
+use crate::utils::{bigint_to_f64_vec, bigint_to_i64_vec, bigint_vec};
 use num_complex::Complex;
 
 // this file contains code for the NTRU-solve algorithm, and its helper-functions
 // Because the size of intermediate values in NTRU-solve grows very big, I use the BigInt crate
 // for all calculations.
-
-pub fn xgcd(a_inp: BigInt, b_inp: BigInt) -> (BigInt, BigInt, BigInt) {
+pub fn xgcd(mut a: BigInt, mut b: BigInt) -> (BigInt, BigInt, BigInt) {
     /*
-     * Implements extended euclidean algorithm to find Bezout's coefficients
+     * Implements extended Euclidean algorithm to find Bezout's coefficients
      * Inputs: integers a and b
      * Outputs: gcd(a,b) and s, t such that a*s + b*t = gcd(a,b)
      */
 
-    // swap the order if a is less than b
-    if a_inp < b_inp {
-        let res = xgcd(b_inp, a_inp);
-        return (res.0, res.2, res.1);
+    // Swap the order if a is less than b
+    if a < b {
+        let (gcd, t, s) = xgcd(b, a);
+        return (gcd, s, t);
     }
 
-    // initialize variables
-    let mut cof: [BigInt; 4] = [BigInt::one(), BigInt::ZERO, BigInt::ZERO, BigInt::one()];
-    let mut a = a_inp;
-    let mut b = b_inp;
+    // Initialize coefficients
+    let mut s0 = BigInt::one();
+    let mut s1 = BigInt::zero();
+    let mut t0 = BigInt::zero();
+    let mut t1 = BigInt::one();
 
-    // perform the algorithm
-    while b != BigInt::ZERO {
-        // rounded division
+    // Perform the algorithm
+    while !b.is_zero() {
         let q = &a / &b;
+        let r = a % &b;
 
-        // calculates the gcd
-        let mut temp = b.clone();
-        b = a % &b;
-        a = temp;
+        a = b;
+        b = r;
 
-        // calculates the coefficients
-        temp = cof[1].clone();
-        cof[1] = cof[0].clone() - &q * cof[1].clone();
-        cof[0] = temp;
+        // Update s and t using in-place operations without clones
+        let new_s = &s0 - &q * &s1;
+        s0 = s1;
+        s1 = new_s;
 
-        temp = cof[3].clone();
-        cof[3] = cof[2].clone() - &q * cof[3].clone();
-        cof[2] = temp;
+        let new_t = &t0 - &q * &t1;
+        t0 = t1;
+        t1 = new_t;
     }
 
-    return (a, cof[0].clone(), cof[2].clone());
+    (a, s0, t0)
 }
+// pub fn xgcd(a_inp: BigInt, b_inp: BigInt) -> (BigInt, BigInt, BigInt) {
+//     /*
+//      * Implements extended euclidean algorithm to find Bezout's coefficients
+//      * Inputs: integers a and b
+//      * Outputs: gcd(a,b) and s, t such that a*s + b*t = gcd(a,b)
+//      */
+//
+//     // swap the order if a is less than b
+//     if a_inp < b_inp {
+//         let res = xgcd(b_inp, a_inp);
+//         return (res.0, res.2, res.1);
+//     }
+//
+//     // initialize variables
+//     let mut cof: [BigInt; 4] = [BigInt::one(), BigInt::ZERO, BigInt::ZERO, BigInt::one()];
+//     let mut a = a_inp;
+//     let mut b = b_inp;
+//
+//     // perform the algorithm
+//     while b != BigInt::ZERO {
+//         // rounded division
+//         let q = &a / &b;
+//
+//         // calculates the gcd
+//         let mut temp = b.clone();
+//         b = a % &b;
+//         a = temp;
+//
+//         // calculates the coefficients
+//         temp = cof[1].clone();
+//         cof[1] = cof[0].clone() - &q * cof[1].clone();
+//         cof[0] = temp;
+//
+//         temp = cof[3].clone();
+//         cof[3] = cof[2].clone() - &q * cof[3].clone();
+//         cof[2] = temp;
+//     }
+//
+//     (a, cof[0].clone(), cof[2].clone())
+// }
 
-// implementation of the karatsuba algorithm for fast integer/polynomial multiplication
 pub fn karatsuba(a: Vec<BigInt>, b: Vec<BigInt>, n: usize) -> Vec<BigInt> {
+    //
+    // implementation of the karatsuba algorithm for fast polynomial multiplication
+    //
+
     // base case
     if n == 1 {
         return vec![&a[0] * &b[0], BigInt::ZERO];
@@ -63,9 +104,9 @@ pub fn karatsuba(a: Vec<BigInt>, b: Vec<BigInt>, n: usize) -> Vec<BigInt> {
     // split polynomials
     let m = n / 2;
     let a0 = a[0..m].to_vec();
-    let a1 = a[m..n as usize].to_vec();
+    let a1 = a[m..n].to_vec();
     let b0 = b[0..m].to_vec();
-    let b1 = b[m..n as usize].to_vec();
+    let b1 = b[m..n].to_vec();
 
     // calculate new factors
     let mut ax = vec![BigInt::ZERO; m];
@@ -78,13 +119,13 @@ pub fn karatsuba(a: Vec<BigInt>, b: Vec<BigInt>, n: usize) -> Vec<BigInt> {
     // recursive steps
     let c0 = karatsuba(a0, b0, m);
     let c1 = karatsuba(a1, b1, m);
-
     let mut c2 = karatsuba(ax, bx, m);
 
     for i in 0..n {
         c2[i] -= &c0[i] + &c1[i];
     }
 
+    // empty vector for keeping the final result
     let mut c = vec![BigInt::ZERO; 2 * n];
 
     // join terms
@@ -94,35 +135,48 @@ pub fn karatsuba(a: Vec<BigInt>, b: Vec<BigInt>, n: usize) -> Vec<BigInt> {
         c[i + m] += &c2[i];
     }
 
-    return c;
+    c
 }
 
 pub fn karamul(a: Vec<BigInt>, b: Vec<BigInt>) -> Vec<BigInt> {
-    let n = a.len();
-    let c = karatsuba(a.to_vec(), b.to_vec(), n);
-    let mut c_reduced = vec![BigInt::ZERO; n];
+    //
+    // perform karatsuba polynomial multiplication with modulo X^n + 1
+    //
 
+    // get degree of polynomials
+    let n = a.len();
+
+    // perform the multiplication
+    let c = karatsuba(a.to_vec(), b.to_vec(), n);
+
+    // reduce result mod X^n + 1
+    let mut c_reduced = vec![BigInt::ZERO; n];
     for i in 0..n {
         c_reduced[i] = &c[i] - &c[i + n]
     }
-    return c_reduced;
+    c_reduced
 }
 
-// squares an element using karatsuba multiplication
 pub fn karamul_sq(a: Vec<BigInt>) -> Vec<BigInt> {
-    return karamul(a.clone(), a.clone());
+    // squares an element using karatsuba multiplication
+    karamul(a.clone(), a.clone())
 }
 
 pub fn field_norm(a: Vec<BigInt>) -> Vec<BigInt> {
-    /*
-     * Projects an element from Q[x]/x^n +1 to Q[x]/x^(n/2) + 1
-     */
+    //
+    // Projects an element from Z[x]/x^n +1 to Z[x]/x^(n/2) + 1
+    // by computing n(a) = (af_o)^2 - X(f_e)^2
+    // where f_o = f_1 + f_3X + ...
+    // and   f_e = f_0 + f_2X + ...
+    //
+
     let m = a.len() / 2;
 
-    // split a into even and odd coefficients
-    let mut a_even: Vec<BigInt> = Vec::new();
-    let mut a_odd: Vec<BigInt> = Vec::new();
+    // create vectors of size n/2 to keep even and odd coefficients
+    let mut a_even: Vec<BigInt> = Vec::with_capacity(m);
+    let mut a_odd: Vec<BigInt> = Vec::with_capacity(m);
 
+    // split a into even and odd coefficients
     for i in 0..a.len() {
         if i % 2 == 0 {
             a_even.push(a[i].clone());
@@ -132,10 +186,11 @@ pub fn field_norm(a: Vec<BigInt>) -> Vec<BigInt> {
         }
     }
 
-    // square polynomials
+    // square the polynomials by using karatsuba multiplication
     let a_even_squared = karamul_sq(a_even);
     let a_odd_squared = karamul_sq(a_odd);
 
+    // compute the final results according to the formula
     let mut res = a_even_squared.clone();
 
     for i in 0..m - 1 {
@@ -143,59 +198,116 @@ pub fn field_norm(a: Vec<BigInt>) -> Vec<BigInt> {
     }
 
     res[0] += &a_odd_squared[m - 1];
-    return res;
+
+    res
 }
 
 pub fn lift(a: Vec<BigInt>) -> Vec<BigInt> {
+    //
+    // compute a lifted version of polynomial a
+    // which is equal to a(x^2)
+    //
+
     let n = a.len();
 
     let mut res: Vec<BigInt> = vec![BigInt::ZERO; 2 * n];
     for i in 0..n {
         res[2 * i] = a[i].clone();
     }
-    return res;
+    res
 }
 
 pub fn galois_conjugate(a: Vec<BigInt>) -> Vec<BigInt> {
-    let n = a.len();
+    //
+    // calculate galois conjugate of polynomial a
+    // which is equal to a(-x)
+    //
+
     let neg_one = -1.to_bigint().unwrap();
-    let res: Vec<BigInt> = (0..n).map(|i| neg_one.pow(i as u32) * &a[i]).collect();
-    return res;
+    let res: Vec<BigInt> = (0..a.len()).map(|i| neg_one.pow(i as u32) * &a[i]).collect();
+    res
 }
 
-pub fn ntrusolve(f: Vec<BigInt>, g: Vec<BigInt>) -> (Vec<BigInt>, Vec<BigInt>) {
+pub fn ntrusolve(f: &Vec<i64>, g: &Vec<i64>) -> Option<(Vec<i64>, Vec<i64>)> {
+
+    // solve the NTRU-equation
+    // Given f and g, return F and G such that fG - gF = 1,
+    // or None if no solution could be found
+    //
+    // see Prest Pornin 2019 paper
+    // https://eprint.iacr.org/2019/015
+    //
+
+    // convert polynomials to have coefficients of bigint type
+    let f = bigint_vec(f);
+    let g = bigint_vec(g);
+
+    // get solution from recursive function
+    if let Some((bigf, bigg)) = ntrusolve_inner(&f, &g) {
+        // if solution is found, return solution with coefficients as i64
+        return Some((bigint_to_i64_vec(bigf), bigint_to_i64_vec(bigg)));
+    }
+    // return None if no solution were found
+    None
+}
+
+fn ntrusolve_inner(f: &Vec<BigInt>, g: &Vec<BigInt>) -> Option<(Vec<BigInt>, Vec<BigInt>)> {
+    //
+    // recursive ntrusolve algorithm
+    //
+
+    // get degree
     let n = f.len();
 
+    // innermost recursion is solving the ntru-equation over integers
+    // i.e. doing an extended euclidean algorithm
     if n == 1 {
         let (d, u, v) = xgcd(f[0].clone(), g[0].clone());
 
+        // if gcd of f and g at innermost level is not one, we can't find solution to 
+        // ntru-equation
         if d != BigInt::one() {
             println!("gcd({}, {}) = {}, aborting", f[0], g[0], d);
-            // this should throw an error or return false
-            return (vec![BigInt::ZERO], vec![BigInt::ZERO]);
+            return None;
         } else {
-            // in theory, this return -q*v, q*u, but in HAWK, q=1
-            return (vec![-v], vec![u]);
+            // otherwise, output from extended euclidean algorithm is solution to ntru-equation
+            return Some((vec![-v], vec![u]));
         }
     }
 
+    // project f and g on lower field
+    // degree is halved
     let fp = field_norm(f.clone());
     let gp = field_norm(g.clone());
 
-    let (bigfp, biggp) = ntrusolve(fp, gp);
+    // solve ntru-equation for halved degree by recursive call
+    if let Some((bigfp, biggp)) = ntrusolve_inner(&fp, &gp){
 
-    let bigf = karamul(lift(bigfp), galois_conjugate(g.clone()));
-    let bigg = karamul(lift(biggp), galois_conjugate(f.clone()));
+        // reconstruct solution to ntru-equation for this degree
+        // by multiplying F'(x^2) * g(-x)
+        // and            G'(x^2) * f(-x)
+        let bigf = karamul(lift(bigfp), galois_conjugate(g.clone()));
+        let bigg = karamul(lift(biggp), galois_conjugate(f.clone()));
 
-    let (bigf, bigg) = reduce(f, g, bigf, bigg);
+        // reduce the coefficients in the solution polynomials F and G
+        let (bigf, bigg) = reduce(f, g, bigf, bigg);
 
-    return (bigf, bigg);
+        // return the solution
+        return Some((bigf, bigg));
+    } else {
+        // return None if no solution was found
+        return None;
+    }
 }
 
 pub fn bitsize(a: BigInt) -> u32 {
+    //
+    // compute (approximate) bitsize of an integer a,
+    // up to precision of 8
+    //
+    
     // clone a mutable copy of the absolute value of input value
     let mut val = a.abs().clone();
-
     // create mutable temporary variable
     let mut res: u32 = 0;
     // count bits in intervals of 8
@@ -203,13 +315,7 @@ pub fn bitsize(a: BigInt) -> u32 {
         res += 8;
         val >>= 8;
     }
-    // try and convert the temporary value into an u32
-    if let Some(res_u32) = res.to_u32() {
-        return res_u32;
-    } else {
-        println!("res_u32 variable is too big");
-        return 0;
-    }
+    res
 }
 
 pub fn adjust_fft(
@@ -217,6 +323,10 @@ pub fn adjust_fft(
     g: Vec<BigInt>,
     size: u32,
 ) -> (Vec<Complex<f64>>, Vec<Complex<f64>>) {
+    //
+    //
+    //
+
     let n = f.len();
     // set the minimum threshold bitsize to
     let mut f_adjust: Vec<BigInt> = Vec::with_capacity(n);
@@ -255,8 +365,8 @@ pub fn calculate_size(f: Vec<BigInt>, g: Vec<BigInt>) -> u32 {
 }
 
 pub fn reduce(
-    f: Vec<BigInt>,
-    g: Vec<BigInt>,
+    f: &Vec<BigInt>,
+    g: &Vec<BigInt>,
     bigf: Vec<BigInt>,
     bigg: Vec<BigInt>,
 ) -> (Vec<BigInt>, Vec<BigInt>) {
