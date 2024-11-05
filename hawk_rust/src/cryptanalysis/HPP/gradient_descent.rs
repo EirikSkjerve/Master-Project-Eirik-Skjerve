@@ -2,8 +2,8 @@ use na::*;
 use nalgebra as na;
 
 use rand::rngs::StdRng;
-use rand::SeedableRng;
 use rand::Rng;
+use rand::SeedableRng;
 
 use crate::cryptanalysis::HPP::hpp::get_uni_slice_float;
 

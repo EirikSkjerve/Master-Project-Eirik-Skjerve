@@ -48,8 +48,7 @@ pub fn get_roots(p: u128, n: u128) -> (Vec<u128>, Vec<u128>) {
     //
     if let Some(tbl) = z_get(p) {
         return tbl;
-    } 
-    else {
+    } else {
         // compute primitive root of prime p
         // and root of unity
         let mut g0 = primitive_root(p);

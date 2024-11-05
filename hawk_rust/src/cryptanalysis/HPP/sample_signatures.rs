@@ -3,7 +3,6 @@ use crate::rngcontext::get_random_bytes;
 use crate::write_to_file::wvtf;
 
 fn sample_sigs(n: usize) -> (Vec<Vec<u8>>, Vec<Vec<u8>>, Vec<u8>) {
-
     let init_seed = get_random_bytes(15);
 
     // generate keypair

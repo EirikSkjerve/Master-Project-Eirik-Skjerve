@@ -5,8 +5,7 @@ use std::time::Instant;
 
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::StdRng;
-use rand::{SeedableRng, Rng};
-
+use rand::{Rng, SeedableRng};
 
 use crate::cryptanalysis::HPP::gradient_descent;
 
@@ -103,9 +102,9 @@ fn check_v_approximation(v: &DMatrix<i32>, vapprox: &DMatrix<i32>) -> bool {
             let rb = vapprox.row(j);
 
             // check for row equality a=b
-            if ra==rb {
+            if ra == rb {
                 // add position to map
-                mapping.push((j,0));
+                mapping.push((j, 0));
                 break;
             }
 
@@ -123,7 +122,6 @@ fn check_v_approximation(v: &DMatrix<i32>, vapprox: &DMatrix<i32>) -> bool {
     // if mapping is "full", the matrices should be equal, because
     // rows in V are independent
     if mapping.len() == N {
-
         // print each mapping with correct sign
         // for (i, m) in mapping.iter().enumerate() {
         //     let (j, s) = m;
@@ -146,7 +144,10 @@ pub fn run_hpp_attack() {
     let entry_bound = 1;
     let dist_bound = 1;
 
-    println!("Running HPP attack on dimension {} with {} samples", N, NUM_SAMPLES);
+    println!(
+        "Running HPP attack on dimension {} with {} samples",
+        N, NUM_SAMPLES
+    );
 
     // generate some secret matrix V
     let sec_v_f = gen_sec_mat(N, entry_bound);
@@ -184,21 +185,29 @@ pub fn run_hpp_attack() {
     let g_approx = g_approx_f.map(|x| x.round());
 
     // compute inverse of g
-    let g_approx_inverse = g_approx.clone().try_inverse().expect("COULDN'T TAKE INVERSE OF G");
+    let g_approx_inverse = g_approx
+        .clone()
+        .try_inverse()
+        .expect("COULDN'T TAKE INVERSE OF G");
 
     // computing Cholesky decomposition of g⁻¹
-    let l = Cholesky::new(g_approx_inverse).expect("COULDN'T COMPUTE CHOLESKY DECOMPOSITION OF Ginv");
+    let l =
+        Cholesky::new(g_approx_inverse).expect("COULDN'T COMPUTE CHOLESKY DECOMPOSITION OF Ginv");
     // extract lower triangular matrix l
 
     // get inverse of l
     // for some reason, taking l.inverse(), i.e. the nalgebra method for inverse directly on
     // the decomposition l would not work. Instead we retrieve the lowe triangular matrix L by .l()
     // and get the inverse from it like a normal square matrix
-    let linv = l.l().clone().try_inverse().expect("COULDN'T TAKE INVERSE OF L");
+    let linv = l
+        .l()
+        .clone()
+        .try_inverse()
+        .expect("COULDN'T TAKE INVERSE OF L");
 
     let start = Instant::now();
     let u = pub_y * l.l(); // this should technically be divided by dist-bound
-                       // pub_y * l / dist_bound as f64
+                           // pub_y * l / dist_bound as f64
 
     println!("Preprocessing used {:?}", start_pp.elapsed());
 

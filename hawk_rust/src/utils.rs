@@ -38,7 +38,6 @@ where
     T::from_i128(result).unwrap()
 }
 
-
 pub fn bigint_vec(v: &Vec<i64>) -> Vec<BigInt> {
     //
     // returns a copy of input vector with each entry converted to type BigInt.
@@ -118,7 +117,7 @@ where
     T::from_u128(result).unwrap()
 }
 
-pub fn is_invertible(f: &Vec<i64>, p: u32) -> bool {
+pub fn is_invertible(f: &Vec<i64>, p: i64) -> bool {
     //
     // asserts if the polynomial f is invertible mod X^n + 1
     // case for p=2 works because in integers mod 2, a polynomial is invertible <->

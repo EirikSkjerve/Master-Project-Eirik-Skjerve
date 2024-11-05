@@ -46,7 +46,7 @@ pub fn shake256x4(message: &[u8], num: usize) -> Vec<i64> {
         input.push(i as u8);
         shake.update(&input);
 
-        // output digest into the 
+        // output digest into the
         let mut reader = shake.finalize_xof();
         let mut out: Vec<u8> = vec![0; (num * 8) / 4];
         reader.read(&mut out);
