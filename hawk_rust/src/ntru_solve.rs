@@ -324,26 +324,33 @@ pub fn adjust_fft(
     size: u32,
 ) -> (Vec<Complex<f64>>, Vec<Complex<f64>>) {
     //
-    //
+    // adjusting function for reducing polynomials and converting them to fft representation
     //
 
     let n = f.len();
-    // set the minimum threshold bitsize to
+
+    // empty vectors for result
     let mut f_adjust: Vec<BigInt> = Vec::with_capacity(n);
     let mut g_adjust: Vec<BigInt> = Vec::with_capacity(n);
 
+    // each element of new f and g are reduced depending on input parameter "size"
     for i in 0..n {
         f_adjust.push(&f[i] >> (size - 53));
         g_adjust.push(&g[i] >> (size - 53));
     }
-    // at this point, f_adjust and g_adjust should be small enough to cast into floats
+    // at this point, f_adjust and g_adjust are small enough to cast into floats
+    // compute and return the fft-representation
     let fa_fft = fft(&bigint_to_f64_vec(f_adjust));
     let ga_fft = fft(&bigint_to_f64_vec(g_adjust));
 
-    return (fa_fft, ga_fft);
+    (fa_fft, ga_fft)
 }
 
 pub fn calculate_size(f: Vec<BigInt>, g: Vec<BigInt>) -> u32 {
+    // return max of 
+    //              53
+    //              bitsize(max(|f|))
+    //              bitsize(max(|g|))
     let f_min = f.iter().min().unwrap().clone();
     let f_max = f.iter().max().unwrap().clone();
     let g_min = g.iter().min().unwrap().clone();
@@ -361,7 +368,7 @@ pub fn calculate_size(f: Vec<BigInt>, g: Vec<BigInt>) -> u32 {
     .unwrap()
     .clone();
 
-    return size;
+    size
 }
 
 pub fn reduce(
@@ -370,26 +377,30 @@ pub fn reduce(
     bigf: Vec<BigInt>,
     bigg: Vec<BigInt>,
 ) -> (Vec<BigInt>, Vec<BigInt>) {
-    // Pornin, Prest 2019's method, also used in HAWK's implementation, is the following:
     // since input is vectors of BigInt type, they are not floats. To perform fft-calculations on
-    // them, we need to extract the high bits of f, g, bigf, and bigg, convert the vectors of the
-    // high bits to Vec<f32> or Vec<f64>, compute a scaling factor k that
+    // them, we need to extract the high bits of f, g, F, and G, convert the vectors of the
+    // high bits to Vec<f64>, compute a scaling factor k that
     // fits in in i32 type (accounts for sign) using fft.
     // After this, we compute bigf -= kf, bigg -= kg, both as Vec<BigInt>, and return the result.
-    // return (f, g, bigf, bigg);
+    // return (f, g, bigf, bigg), with bigf, bigg as reduced;
 
     let mut bigf_mut = bigf.clone();
     let mut bigg_mut = bigg.clone();
 
+    // find size that determines how much to reduce polynomials with
     let size = calculate_size(f.clone(), g.clone());
+
+    // fft of reduced f and g
     let (fa_fft, ga_fft) = adjust_fft(f.clone(), g.clone(), size);
 
     loop {
         let size_inner = calculate_size(bigf_mut.clone(), bigg_mut.clone());
+        // breaking condition
         if size_inner < size {
             break;
         }
 
+        // fft of reduced f and g
         let (bigfa_fft, bigga_fft) = adjust_fft(bigf_mut.clone(), bigg_mut.clone(), size_inner);
 
         // calculate ff* + gg*
@@ -407,7 +418,7 @@ pub fn reduce(
         // calculate factor k, first through fft
         let k_f = ifft(&div_fft(&num_fft, &den_fft));
 
-        // convert to integers
+        // convert to integers with rounding
         let k: Vec<BigInt> = bigint_vec(&(0..k_f.len()).map(|x| k_f[x].round() as i64).collect());
 
         // check if k is zero
@@ -432,5 +443,5 @@ pub fn reduce(
             bigg_mut[i] -= gk[i].clone() << (size_inner - size);
         }
     }
-    return (bigf_mut, bigg_mut);
+    (bigf_mut, bigg_mut)
 }
