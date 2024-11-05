@@ -1,5 +1,5 @@
 // all parameters
-use crate::parameters::{hawk1024_params, hawk256_params, hawk512_params};
+use crate::{fft::inverse_fft, ntru_solve::ntrusolve, parameters::{hawk1024_params, hawk256_params, hawk512_params}};
 
 // shake256
 use sha3::{
@@ -24,7 +24,7 @@ fn hawkkeygen_inner(
     beta0: f64,
     high11: usize,
     rng: &mut RngContext,
-) {
+) -> Option<_>{
     // create a seed that determines f and g for later regeneration
     let kgseed = rng.random(lenkgseed);
 
@@ -34,12 +34,12 @@ fn hawkkeygen_inner(
     // check that f and g have odd parity
     // I think this is mostly for encoding/decoding stuff, but just do it anyways
     if !(is_invertible(&f, 2) && is_invertible(&g, 2)) {
-        return;
+        return None;
     }
 
     // check l2norm of f and g
     if ((l2norm(&f) + l2norm(&g)) as f64) <= 2.0 * (n as f64) * sigmakrsec.powi(2) {
-        return;
+        return None;
     }
 
     // compute f* and g*
@@ -51,6 +51,64 @@ fn hawkkeygen_inner(
 
     // compute q00, first element of public key Q
     let q00 = poly_add(&poly_mult_ntt(&f, &fadj, p), &poly_mult_ntt(&g, &gadj, p));
+
+    // prime numbers used for ntt computations with Q later
+    let (p1, p2): (i64, i64) = (2147473409, 2147389441);
+
+    // check q00 invertibility mod p1 and p2
+    if !(is_invertible(&q00, p1) && is_invertible(&q00, p2)) {
+        return None;
+    }
+
+    // compute inverse of q00 using fft
+    let invq00 = inverse_fft(&q00);
+
+    // check the constant term of 1/q00 is not too high
+    if invq00[0] >= beta0 {
+        return None;
+    }
+
+    // calculate F and G as solutions to NTRU-equation
+    // if there is no solution, function should be called again
+
+    // let ntru_res: Option<(Vec<i64>, Vec<i64>)> = Some(ntrusolve(&f, &g));
+    let ntrusolve_res = ntrusolve(&f, &g);
+    match ntrusolve_res {
+        Some(test) => println!(""),
+        None => return None,
+    }
+
+    let (bigf, bigg) = ntrusolve_res.unwrap();
+
+    // bound largest element on F and G
+    if infnorm(&bigf) > 127 || infnorm(&bigg) > 127 {
+        return None;
+    }
+
+    // compute F* and G*
+    let bigfadj = adjoint(&bigf);
+    let biggadj = adjoint(&bigg);
+
+    // compute two more elements in Q
+    let q01 = poly_add(
+        &poly_mult_ntt(&bigf, &fadj, p),
+        &poly_mult_ntt(&bigg, &gadj, p),
+    );
+
+    let p = 8380417;
+    let q11 = poly_add(
+        &poly_mult_ntt(&bigf, &bigfadj, p),
+        &poly_mult_ntt(&bigg, &biggadj, p),
+    );
+
+    // set bound on coefficients of q11
+    let mut flag = false;
+    for i in 1..q11.len() {
+        if q11[i].abs() >= 1 << high11 {
+            return None;
+        }
+    }
+    None
 }
 
 pub fn hawkkeygen_256() {
