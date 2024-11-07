@@ -35,7 +35,7 @@ fn hawkverify_inner(
                  hawk512_params::HIGH01
             ),
 
-        1024 => ( hawk1024_params::HIGHS0,
+        _ => ( hawk1024_params::HIGHS0,
                  hawk1024_params::HIGHS1,
                  hawk1024_params::HIGH00,
                  hawk1024_params::HIGH01
