@@ -22,7 +22,7 @@ fn hawkkeygen_inner(
     beta0: f64,
     high11: usize,
     rng: &mut RngContext,
-) -> Option<(((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i64>)))> {
+) -> Option<((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i64>))> {
     // create a seed that determines f and g for later regeneration
     let kgseed = rng.random(lenkgseed);
 
@@ -118,8 +118,39 @@ fn hawkkeygen_inner(
     Some((private_key, public_key))
 }
 
-pub fn hawkkeygen_256() -> ((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i64>)) {
-    const N: usize = 256;
+pub fn hawkkeygen(n: usize) -> ((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i64>)){
+
+    // main function for generating hawk keypair
+    // input degree n
+    // outputs private key (kgseed, F, G)
+    //         public key  (q00, q01)
+
+    assert!(n == 256 || n == 512 || n == 1024);
+
+    let lenkgseed = match n {
+        8 => hawk256_params::LENKGSEED,
+        9 => hawk512_params::LENKGSEED,
+        _ => hawk1024_params::LENKGSEED
+    };
+
+
+    let sigmakrsec = match n {
+        8 => hawk256_params::SIGMAKRSEC,
+        9 => hawk512_params::SIGMAKRSEC,
+        _ => hawk1024_params::SIGMAKRSEC
+    };
+
+    let beta0 = match n {
+        8 => hawk256_params::BETA0,
+        9 => hawk512_params::BETA0,
+        _ => hawk1024_params::BETA0
+    };
+
+    let high11 = match n {
+        8 => hawk256_params::HIGH11,
+        9 => hawk512_params::HIGH11,
+        _ => hawk1024_params::HIGH11
+    };
 
     // initialize a new RngContext instance, used for generating random bits
     let mut rng = RngContext::new(&get_random_bytes(10));
@@ -128,7 +159,7 @@ pub fn hawkkeygen_256() -> ((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i64>))
     // if inner function fails, loop runs again
     loop {
         match hawkkeygen_inner(
-            N,
+            n,
             hawk256_params::LENKGSEED,
             hawk256_params::SIGMAKRSEC,
             hawk256_params::BETA0,
@@ -139,52 +170,7 @@ pub fn hawkkeygen_256() -> ((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i64>))
             None => println!(""),
         }
     }
-}
 
-pub fn hawkkeygen_512() -> ((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i64>)) {
-    const N: usize = 512;
-
-    // initialize a new RngContext instance, used for generating random bits
-    let mut rng = RngContext::new(&get_random_bytes(10));
-
-    // try to generate hawk keypair
-    // if inner function fails, loop runs again
-    loop {
-        match hawkkeygen_inner(
-            N,
-            hawk512_params::LENKGSEED,
-            hawk512_params::SIGMAKRSEC,
-            hawk512_params::BETA0,
-            hawk512_params::HIGH11,
-            &mut rng,
-        ) {
-            Some(keypair) => return keypair,
-            None => println!(""),
-        }
-    }
-}
-
-pub fn hawkkeygen_1024() -> ((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i64>)) {
-    const N: usize = 1024;
-
-    // initialize a new RngContext instance, used for generating random bits
-    let mut rng = RngContext::new(&get_random_bytes(10));
-
-    // try to generate hawk keypair
-    // if inner function fails, loop runs again
-    loop {
-        match hawkkeygen_inner(
-            N,
-            hawk1024_params::LENKGSEED,
-            hawk1024_params::SIGMAKRSEC,
-            hawk1024_params::BETA0,
-            hawk1024_params::HIGH11,
-            &mut rng,
-        ) {
-            Some(keypair) => return keypair,
-            None => println!(""),
-        }
-    }
 }
 
 // generates polynomials f and g
