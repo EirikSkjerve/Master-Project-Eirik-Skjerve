@@ -14,12 +14,6 @@ use sha3::{
     Shake256,
 };
 
-// might need some smart solution for sampling for different degrees because of tables T0 T1
-//
-// fn sample_inner(seed: &[u8], t: Vec<u8>, n: usize) -> Vec<i8> {}
-//
-//
-
 fn poly_mod2(a: &Vec<i64>) -> Vec<i64> {
     // returns a copy of a polynomial with each coefficient reduced mod 2
     a.clone().iter().map(|&x| modulo(x, 2)).collect()
@@ -40,7 +34,84 @@ fn concat_bytes(arr: &Vec<Vec<u8>>) -> Vec<u8> {
         }
     }
 
-    return res;
+    res
+}
+
+fn sample(s: &[u8], t: Vec<u8>, n: usize) -> Vec<i64>{
+    
+    // get the correct tables
+    let (t0, t1) = match n {
+        8 => (hawk256_params::T0, hawk256_params::T1),
+        9 => (hawk512_params::T0, hawk512_params::T1),
+        _ => (hawk1024_params::T0, hawk1024_params::T1)
+    };
+
+    // vector y of random high numbers
+    // note that the entries in y are uniformly distributed
+    let y = shake256x4(s, 5 * n / 2);
+
+    // the value that is used as a part of the sample
+    let mut v: i64;
+    // initialize empty vector for the sample vector
+    let mut x: Vec<i64> = vec![0; 2 * n];
+
+    // since y is the result of 4 interleaved shake256 instances
+    // the following indexing will access them in an appropriate manner
+    for j in 0..4 {
+        for i in 0..(n / 8) {
+            for k in 0..4 {
+                // this is the current index for our point x
+                let r = 16 * i + 4 * j + k;
+
+                let a = y[(j + 4 * ((5 * i) + k)) as usize];
+
+                let b = modulo(y[j + 4 * (5 * i + 4)] >> (16 * k), 1 << 15);
+
+                // the final scaled number we are using
+                let c = modulo(a as u128, 1 << 63) + (1 << 63) * b as u128;
+
+                // initialize v0, v1, and z to zero
+                let mut v0: i64 = 0;
+                let mut v1: i64 = 0;
+                let mut z = 0;
+
+                // here the actual sampling is done by checking how many of the elements in the
+                // CD-Tables are strictly larger than the uniformly sampled c
+                // and since the tables are CDTs of discrete gaussian, the outputted number is a 
+                // random variable from the discrete gaussian distribution
+                loop {
+                    if t0[z] == 0 || t1[z] == 0 {
+                        break;
+                    }
+                    if c < t0[z] {
+                        v0 += 1;
+                    }
+                    if c < t1[z] {
+                        v1 += 1;
+                    }
+                    z += 1;
+                }
+
+                // check the target vector at the current index
+                // and add v0 or v1 based on this
+                if t[r as usize] == 0 {
+                    v = 2 * v0;
+                } else {
+                    v = 2 * v1 + 1;
+                }
+
+                // flip the sign if the original value from y is too high
+                if a >= 1 << 63 {
+                    v = -v;
+                }
+
+                // add the sample to vector x
+                x[r as usize] = v;
+            }
+        }
+    }
+    // return x
+    x
 }
 
 fn hawksign_inner(
@@ -51,6 +122,9 @@ fn hawksign_inner(
     n: usize,
     lensalt: usize,
 ) -> Option<Vec<u8>> {
+    //
+    // given secret key components and message, compute a signature
+    //
     // create new rng
     let mut rng = RngContext::new(&get_random_bytes(10));
 
@@ -79,6 +153,8 @@ fn hawksign_inner(
     let bigg: Vec<i64> = poly_mod2(&bigg);
 
     loop {
+        a += 2;
+
         // compute salt
         shaker.update(&m);
         shaker.update(&kgseed);
@@ -127,6 +203,12 @@ fn hawksign_inner(
         ]);
 
         // sample vector x = (x0, x1)
+
+        let x = sample(&s, t, n);
+
+        // split x into two
+        let (x0, x1) = (&x[0..n], &x[n..]);
+
 
         break;
     }
