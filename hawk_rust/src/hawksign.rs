@@ -138,6 +138,10 @@ pub fn hawksign(
     // given secret key components and message, compute a signature
     //
 
+    assert_eq!(bigf.len(), n);
+    assert_eq!(bigg.len(), n);
+    assert!(n==256||n==512||n==1024);
+
     // get the correct parameters
     let lensalt = match n {
         8 => hawk256_params::LENSALT,
@@ -151,8 +155,6 @@ pub fn hawksign(
         _ => hawk1024_params::SIGMAVERIFY
     };
 
-    assert_eq!(bigf.len(), n);
-    assert_eq!(bigg.len(), n);
 
     // create new rng
     let mut rng = RngContext::new(&get_random_bytes(10));
