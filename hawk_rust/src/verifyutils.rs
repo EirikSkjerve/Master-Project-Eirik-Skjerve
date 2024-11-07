@@ -24,7 +24,7 @@ pub fn delta(k: usize) -> (i64, i64) {
     let re: i64 = d.re.round() as i64;
     let im: i64 = d.im.round() as i64;
 
-    return (re, im);
+    (re, im)
 }
 
 
@@ -34,7 +34,7 @@ fn sign(x: i64) -> i64 {
     if x < 0 {
         return 1;
     }
-    return 0;
+    0
 }
 
 pub fn rebuildw0(
@@ -93,6 +93,7 @@ pub fn rebuildw0(
             || (x_re ) >= v * base_i64.pow(32)
             || (x_im ) >= v * base_i64.pow(32)
         {
+            // return None here instead
             return vec![0];
         }
 
@@ -112,6 +113,7 @@ pub fn rebuildw0(
         let z = (v + cs0).div_floor(&(2 * cs0));
 
         if z < -base_i64.pow(highs0 as u32) || z >= base_i64.pow(highs0 as u32) {
+            // return None here instead
             println!("rebuild failure 3");
             return vec![0];
         }
@@ -119,7 +121,7 @@ pub fn rebuildw0(
         w0[u] = h0[u] - (2 * z);
     }
 
-    return w0;
+    w0
 }
 
 
@@ -253,5 +255,5 @@ pub fn poly_qnorm(
         acc += val;
     }
 
-    return modulo(acc, p);
+    modulo(acc, p)
 }
