@@ -20,16 +20,15 @@ mod compression;
 mod linalg;
 mod poly;
 
-mod cryptanalysis;
 mod write_to_file;
 
 mod hawkkeygen;
 mod hawksign;
 mod hawkverify;
+mod verifyutils;
 mod refactor;
 
-use cryptanalysis::HPP::hpp::run_hpp_attack;
-use cryptanalysis::HPP::sample_signatures::write_samples_to_file;
+
 use hawk_tests::test_all;
 use refactor::run_refactor;
 
