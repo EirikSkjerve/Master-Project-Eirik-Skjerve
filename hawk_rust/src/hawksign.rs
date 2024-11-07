@@ -1,8 +1,6 @@
 // all parameters
 use crate::{
-    fft::inverse_fft,
     hawkkeygen::gen_f_g,
-    ntru_solve::ntrusolve,
     parameters::{hawk1024_params, hawk256_params, hawk512_params},
     rngcontext::{get_random_bytes, shake256x4, RngContext},
 };
@@ -35,6 +33,21 @@ fn concat_bytes(arr: &Vec<Vec<u8>>) -> Vec<u8> {
     }
 
     res
+}
+
+
+// symbreak
+pub fn symbreak(v: &Vec<i64>) -> bool {
+    for x in v.iter() {
+        if *x != 0 {
+            if *x > 0 {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+    false
 }
 
 fn sample(s: &[u8], t: Vec<u8>, n: usize) -> Vec<i64>{
@@ -121,6 +134,7 @@ fn hawksign_inner(
     msg: &[u8],
     n: usize,
     lensalt: usize,
+    sigmaverify: f64
 ) -> Option<Vec<u8>> {
     //
     // given secret key components and message, compute a signature
@@ -152,6 +166,7 @@ fn hawksign_inner(
     let bigf: Vec<i64> = poly_mod2(&bigf);
     let bigg: Vec<i64> = poly_mod2(&bigg);
 
+    // start a loop that terminates when a valid signature is created
     loop {
         a += 2;
 
@@ -183,8 +198,12 @@ fn hawksign_inner(
         );
 
         // compute target vector t as B*h mod 2
-        let t0 = poly_add(&poly_mult_ntt(&h0, &f, p), &poly_mult_ntt(&h1, &bigf, p));
-        let t1 = poly_add(&poly_mult_ntt(&h0, &g, p), &poly_mult_ntt(&h1, &bigg, p));
+        let t0 = poly_add(
+            &poly_mult_ntt(&h0, &f, p), 
+            &poly_mult_ntt(&h1, &bigf, p));
+        let t1 = poly_add(
+            &poly_mult_ntt(&h0, &g, p), 
+            &poly_mult_ntt(&h1, &bigg, p));
 
         // join t0 and t1 together as Vec<u8>
         let t = concat_bytes(&vec![
@@ -206,14 +225,32 @@ fn hawksign_inner(
 
         let x = sample(&s, t, n);
 
-        // split x into two
-        let (x0, x1) = (&x[0..n], &x[n..]);
+        // split x into two vectors
+        let (x0, x1) = (&x[0..n].to_vec(), &x[n..].to_vec());
 
+        // check norm of vector x is not too high
+        // bounded by 8n*(sigma^2)
+        if (l2norm(&x) as f64) > (8*n) as f64 * sigmaverify.powi(2) {
+            continue;
+        }
 
-        break;
+        // compute one part of the signature
+        // w = B^-1 x, so w1 = g*x0 - f*x1
+        let mut w1 = poly_sub(
+            &poly_mult_ntt(&f, &x1, p),
+            &poly_mult_ntt(&g, &x0, p)
+            );
+
+        // check symbreak condition
+        if !symbreak(&w1) {
+            w1 = w1.iter().map(|&x| -x).collect();
+        }
+
+        // compute the actual signature sig = (h-w)/2
+        let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x>>1).collect();
+
+        return Some((sig, salt));
     }
-
-    None
 }
 
 pub fn hawksign_256(kgseed: Vec<u8>, bigf: Vec<i64>, bigg: Vec<i64>, msg: &[u8]) {
@@ -225,5 +262,5 @@ pub fn hawksign_256(kgseed: Vec<u8>, bigf: Vec<i64>, bigg: Vec<i64>, msg: &[u8])
     // here so that the compiler knows how much space to allocate
     // or maybe not??
 
-    hawksign_inner(kgseed, bigf, bigg, msg, N, hawk256_params::LENSALT);
+    hawksign_inner(kgseed, bigf, bigg, msg, N, hawk256_params::LENSALT, hawk256_params::SIGMAVERIFY);
 }
