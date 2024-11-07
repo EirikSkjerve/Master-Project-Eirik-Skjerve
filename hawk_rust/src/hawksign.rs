@@ -133,12 +133,22 @@ fn hawksign_inner(
     bigg: Vec<i64>,
     msg: &[u8],
     n: usize,
-    lensalt: usize,
-    sigmaverify: f64
 ) -> (Vec<u8>, Vec<u8>) {
     //
     // given secret key components and message, compute a signature
     //
+
+    let lensalt = match n {
+        8 => hawk256_params::LENSALT,
+        9 => hawk512_params::LENSALT,
+        _ => hawk1024_params::LENSALT
+    };
+
+    let sigmaverify = match n {
+        8 => hawk256_params::SIGMAVERIFY,
+        9 => hawk512_params::SIGMAVERIFY,
+        _ => hawk1024_params::SIGMAVERIFY
+    };
 
     assert_eq!(bigf.len(), n);
     assert_eq!(bigg.len(), n);
@@ -257,60 +267,81 @@ fn hawksign_inner(
     }
 }
 
-pub fn hawksign_256(
-    kgseed: Vec<u8>, 
-    bigf: Vec<i64>, 
-    bigg: Vec<i64>, 
-    msg: &[u8]
-) -> (Vec<u8>, Vec<u8>){
-    const N: usize = 256;
-
-    hawksign_inner(
-        kgseed, 
-        bigf, 
-        bigg, 
-        msg, 
-        N, 
-        hawk256_params::LENSALT, 
-        hawk256_params::SIGMAVERIFY
-    )
-}
-
-pub fn hawksign_512(
-    kgseed: Vec<u8>, 
-    bigf: Vec<i64>, 
-    bigg: Vec<i64>, 
-    msg: &[u8]
-) -> (Vec<u8>, Vec<u8>){
-    const N: usize = 512;
-
-    hawksign_inner(
-        kgseed, 
-        bigf, 
-        bigg, 
-        msg, 
-        N, 
-        hawk512_params::LENSALT, 
-        hawk512_params::SIGMAVERIFY
-    )
-}
-
-
-pub fn hawksign_1024(
-    kgseed: Vec<u8>, 
-    bigf: Vec<i64>, 
-    bigg: Vec<i64>, 
-    msg: &[u8]
-) -> (Vec<u8>, Vec<u8>){
-    const N: usize = 1024;
-
-    hawksign_inner(
-        kgseed, 
-        bigf, 
-        bigg, 
-        msg, 
-        N, 
-        hawk1024_params::LENSALT, 
-        hawk1024_params::SIGMAVERIFY
-    )
-}
+// pub fn hawksign(
+//     n: usize,
+//     kgseed: Vec<u8>, 
+//     bigf: Vec<i64>, 
+//     bigg: Vec<i64>, 
+//     msg: &[u8]
+// ) -> (Vec<u8>, Vec<u8>) {
+//     
+//     let lensalt = match n {
+//         8 => hawk256_params::LENSALT,
+//         9 => hawk512_params::LENSALT,
+//         _ => hawk1024_params::LENSALT
+//     };
+//
+//     let sigmaverify = match n {
+//         8 => hawk256_params::SIGMAVERIFY,
+//         9 => hawk512_params::SIGMAVERIFY,
+//         _ => hawk1024_params::SIGMAVERIFY
+//     };
+// }
+//
+// pub fn hawksign_256(
+//     kgseed: Vec<u8>, 
+//     bigf: Vec<i64>, 
+//     bigg: Vec<i64>, 
+//     msg: &[u8]
+// ) -> (Vec<u8>, Vec<u8>){
+//     const N: usize = 256;
+//
+//     hawksign_inner(
+//         kgseed, 
+//         bigf, 
+//         bigg, 
+//         msg, 
+//         N, 
+//         hawk256_params::LENSALT, 
+//         hawk256_params::SIGMAVERIFY
+//     )
+// }
+//
+// pub fn hawksign_512(
+//     kgseed: Vec<u8>, 
+//     bigf: Vec<i64>, 
+//     bigg: Vec<i64>, 
+//     msg: &[u8]
+// ) -> (Vec<u8>, Vec<u8>){
+//     const N: usize = 512;
+//
+//     hawksign_inner(
+//         kgseed, 
+//         bigf, 
+//         bigg, 
+//         msg, 
+//         N, 
+//         hawk512_params::LENSALT, 
+//         hawk512_params::SIGMAVERIFY
+//     )
+// }
+//
+//
+// pub fn hawksign_1024(
+//     kgseed: Vec<u8>, 
+//     bigf: Vec<i64>, 
+//     bigg: Vec<i64>, 
+//     msg: &[u8]
+// ) -> (Vec<u8>, Vec<u8>){
+//     const N: usize = 1024;
+//
+//     hawksign_inner(
+//         kgseed, 
+//         bigf, 
+//         bigg, 
+//         msg, 
+//         N, 
+//         hawk1024_params::LENSALT, 
+//         hawk1024_params::SIGMAVERIFY
+//     )
+// }
