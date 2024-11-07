@@ -135,10 +135,14 @@ fn hawksign_inner(
     n: usize,
     lensalt: usize,
     sigmaverify: f64
-) -> Option<Vec<u8>> {
+) -> (Vec<u8>, Vec<u8>) {
     //
     // given secret key components and message, compute a signature
     //
+
+    assert_eq!(bigf.len(), n);
+    assert_eq!(bigg.len(), n);
+
     // create new rng
     let mut rng = RngContext::new(&get_random_bytes(10));
 
@@ -253,14 +257,60 @@ fn hawksign_inner(
     }
 }
 
-pub fn hawksign_256(kgseed: Vec<u8>, bigf: Vec<i64>, bigg: Vec<i64>, msg: &[u8]) {
+pub fn hawksign_256(
+    kgseed: Vec<u8>, 
+    bigf: Vec<i64>, 
+    bigg: Vec<i64>, 
+    msg: &[u8]
+) -> (Vec<u8>, Vec<u8>){
     const N: usize = 256;
-    assert_eq!(bigf.len(), N);
-    assert_eq!(bigg.len(), N);
 
-    // before calling hawksign_inner with parameters, some computations needs to be done
-    // here so that the compiler knows how much space to allocate
-    // or maybe not??
+    hawksign_inner(
+        kgseed, 
+        bigf, 
+        bigg, 
+        msg, 
+        N, 
+        hawk256_params::LENSALT, 
+        hawk256_params::SIGMAVERIFY
+    )
+}
 
-    hawksign_inner(kgseed, bigf, bigg, msg, N, hawk256_params::LENSALT, hawk256_params::SIGMAVERIFY);
+pub fn hawksign_512(
+    kgseed: Vec<u8>, 
+    bigf: Vec<i64>, 
+    bigg: Vec<i64>, 
+    msg: &[u8]
+) -> (Vec<u8>, Vec<u8>){
+    const N: usize = 512;
+
+    hawksign_inner(
+        kgseed, 
+        bigf, 
+        bigg, 
+        msg, 
+        N, 
+        hawk512_params::LENSALT, 
+        hawk512_params::SIGMAVERIFY
+    )
+}
+
+
+pub fn hawksign_1024(
+    kgseed: Vec<u8>, 
+    bigf: Vec<i64>, 
+    bigg: Vec<i64>, 
+    msg: &[u8]
+) -> (Vec<u8>, Vec<u8>){
+    const N: usize = 1024;
+
+    hawksign_inner(
+        kgseed, 
+        bigf, 
+        bigg, 
+        msg, 
+        N, 
+        hawk1024_params::LENSALT, 
+        hawk1024_params::SIGMAVERIFY
+    )
 }
