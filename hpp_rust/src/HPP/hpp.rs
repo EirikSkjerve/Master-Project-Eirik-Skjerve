@@ -3,14 +3,16 @@ use nalgebra as na;
 
 use std::time::Instant;
 
-use rand::distributions::{Distribution, Uniform};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
-use crate::cryptanalysis::HPP::gradient_descent;
+use rand::distributions::{Distribution, Uniform};
+// use rand_distr::{Normal, Distribution};
 
-const NUM_SAMPLES: usize = 100000;
-const N: usize = 64;
+use crate::HPP::gradient_descent;
+
+const NUM_SAMPLES: usize = 2000; 
+const N: usize = 8;
 
 /// returns n i8 integers uniformly distributed on -entry_bound..entry_bound
 pub fn get_uni_slice_int(n: usize, entry_bound: usize, seed: usize) -> Vec<i8> {
@@ -42,13 +44,14 @@ pub fn get_uni_slice_float(n: usize, dist_bound: usize, rng: &mut StdRng) -> Vec
     //  - rng: a pre-seeded StdRng instance
 
     // define upper and lower bound for the sampling
-    let bound = Uniform::from(-(dist_bound as f64)..(dist_bound as f64));
+    let dist = Uniform::from(-(dist_bound as f64)..(dist_bound as f64));
+    // let normal = Normal::new(0.0, 1.0).unwrap();
     // initialize empty vector to store the samples
     let mut rnd_bytes: Vec<f64> = Vec::with_capacity(n);
 
     // sample n times and return the vector
     for _ in 0..n {
-        rnd_bytes.push(bound.sample(rng));
+        rnd_bytes.push(dist.sample(rng));
     }
     rnd_bytes
 }
@@ -152,6 +155,9 @@ pub fn run_hpp_attack() {
     // generate some secret matrix V
     let sec_v_f = gen_sec_mat(N, entry_bound);
 
+    let vtv = sec_v_f.transpose() * sec_v_f.clone();
+    eprintln!("V^t V: {vtv}");
+
     // initialize
     // create random seed for rng
     let mut rng_seed = rand::thread_rng();
@@ -168,12 +174,15 @@ pub fn run_hpp_attack() {
 
     // generate a bunch of samples (that are uniformly distributed)
     // and multiply them with secret matrix v
-    for _ in 0..NUM_SAMPLES {
+    for i in 0..NUM_SAMPLES {
         let x = get_uni_slice_float(N, dist_bound, &mut rng);
         let x_vec = DVector::from_row_slice(&x);
         let y_vec = x_vec.transpose() * sec_v_f.clone();
+        eprintln!("y_{i}: {y_vec}");
         uni_samples.push(y_vec);
     }
+
+    // here the actual attack starts
 
     // now we have matrix Y
     let pub_y = DMatrix::from_rows(&uni_samples);
@@ -183,6 +192,7 @@ pub fn run_hpp_attack() {
 
     // round the entries
     let g_approx = g_approx_f.map(|x| x.round());
+    eprintln!("G: {g_approx}");
 
     // compute inverse of g
     let g_approx_inverse = g_approx

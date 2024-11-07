@@ -5,7 +5,11 @@ use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
 
-use crate::cryptanalysis::HPP::hpp::get_uni_slice_float;
+use crate::HPP::hpp::get_uni_slice_float;
+
+use std::{
+    io::{stdout, Write}
+};
 
 /// generate some uniformly distributed unit vector with entries in range [-1..1]
 fn gen_u_vec(n: usize, seed: usize) -> Matrix<f64, Dyn, Const<1>, VecStorage<f64, Dyn, Const<1>>> {
@@ -60,6 +64,10 @@ pub fn gradient_descent(
 
     let mut rng_seed = rand::thread_rng();
     let mut seed: usize = rng_seed.gen();
+
+    // for nice printouts
+    let mut stdout = stdout();
+
     while solutions.len() < n {
         let mut w = gen_u_vec(n, seed);
 
@@ -80,6 +88,11 @@ pub fn gradient_descent(
 
                 if !solutions.contains(&v) && !solutions.contains(&neg_v) {
                     solutions.push(v.clone());
+
+                    // clear previous output
+                    stdout.flush().unwrap();
+                    print!("\r{}/{} vectors found!", solutions.len(), n);
+
                 }
                 break;
             } else {
@@ -89,7 +102,7 @@ pub fn gradient_descent(
     }
 
     println!(
-        "RUST HPP GRADIENT DESCENT COMPLETED IN {} ITERATIONS",
+        "\nRUST HPP GRADIENT DESCENT COMPLETED IN {} ITERATIONS",
         iterations
     );
 
