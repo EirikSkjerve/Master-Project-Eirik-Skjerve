@@ -35,7 +35,6 @@ fn concat_bytes(arr: &Vec<Vec<u8>>) -> Vec<u8> {
     res
 }
 
-
 // symbreak
 pub fn symbreak(v: &Vec<i64>) -> bool {
     for x in v.iter() {
@@ -133,7 +132,7 @@ pub fn hawksign(
     bigg: Vec<i64>,
     msg: &[u8],
     n: usize,
-) -> (Vec<u8>, Vec<u8>) {
+) -> (Vec<i64>, Vec<u8>) {
     //
     // given secret key components and message, compute a signature
     //
@@ -142,19 +141,12 @@ pub fn hawksign(
     assert_eq!(bigg.len(), n);
     assert!(n==256||n==512||n==1024);
 
-    // get the correct parameters
-    let lensalt = match n {
-        8 => hawk256_params::LENSALT,
-        9 => hawk512_params::LENSALT,
-        _ => hawk1024_params::LENSALT
+    // get the right parameters
+    let (lensalt, sigmaverify) = match n {
+        256 => (hawk256_params:: LENSALT, hawk256_params::SIGMAVERIFY),
+        512 => (hawk512_params::LENSALT, hawk512_params::SIGMAVERIFY),
+        _ => (hawk1024_params::LENSALT, hawk1024_params::SIGMAVERIFY)
     };
-
-    let sigmaverify = match n {
-        8 => hawk256_params::SIGMAVERIFY,
-        9 => hawk512_params::SIGMAVERIFY,
-        _ => hawk1024_params::SIGMAVERIFY
-    };
-
 
     // create new rng
     let mut rng = RngContext::new(&get_random_bytes(10));
@@ -266,6 +258,6 @@ pub fn hawksign(
         // compute the actual signature sig = (h-w)/2
         let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x>>1).collect();
 
-        return Some((sig, salt));
+        (sig, salt)
     }
 }
