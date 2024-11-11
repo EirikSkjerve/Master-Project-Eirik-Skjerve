@@ -1,11 +1,11 @@
-// CODEC for hawk 512
+// CODEC for hawk 256
 
 use crate::compression::compress::compressgr;
 use crate::compression::decompress::decompressgr;
 use crate::compression::grutils::*;
 use crate::utils::bytes_to_poly;
 
-use crate::parameters::hawk512_params::*;
+use crate::parameters::hawk256_params::*;
 
 pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
     /*
@@ -254,7 +254,6 @@ pub fn dec_sig(logn: usize, sig_enc: &Vec<u8>) -> (Vec<u8>, Vec<i16>) {
 
     // check length of encoded signature
     if sig_enc.len() != LENSIG {
-        println!("HEI??");
         return (vec![0], vec![0]);
     }
 
