@@ -30,7 +30,6 @@ where
     //
 
     if a > T::from(0).unwrap() {
-
         let a_u128 = a.to_u128().unwrap();
         let b_u128 = b.to_u128().unwrap();
 

@@ -4,16 +4,11 @@ use crate::hawkverify::hawkverify;
 
 use crate::rngcontext::get_random_bytes;
 
-// need this to reset the table when computing ntt's for different values of n
-use crate::ntt_constants::res_z;
-
 use std::time::{Duration, Instant};
 
 use prettytable::{Cell, Row, Table};
 
-use crate::write_to_file::wvtf;
-
-pub const NUM_SAMPLES: usize = 500;
+pub const NUM_SAMPLES: usize = 1000;
 
 pub fn test_all() {
     let mut table = Table::new();
@@ -23,6 +18,7 @@ pub fn test_all() {
         Cell::new(&"sg (µs)"),
         Cell::new(&"vf (µs)"),
     ]));
+
     hawkrun(&mut table, 256);
     hawkrun(&mut table, 512);
     hawkrun(&mut table, 1024);
@@ -74,5 +70,4 @@ pub fn hawkrun(table: &mut Table, n: usize) {
         Cell::new(&(sig_time_stop / NUM_SAMPLES as u32).as_micros().to_string()),
         Cell::new(&(ver_time_stop / NUM_SAMPLES as u32).as_micros().to_string()),
     ]));
-    println!("Number of failed signatures for degree {n}: {num_failed}");
 }

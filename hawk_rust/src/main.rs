@@ -9,16 +9,7 @@ mod utils;
 
 mod parameters;
 
-// mod hawk1024;
-// mod hawk256;
-// mod hawk512;
-
-// mod compression;
-
-// mod linalg;
-// mod poly;
-
-// mod hawk_tests;
+mod hawk_tests;
 
 mod write_to_file;
 
@@ -26,10 +17,8 @@ mod hawkkeygen;
 mod hawksign;
 mod hawkverify;
 mod verifyutils;
-mod refactor;
 
-// use hawk_tests::test_all;
-use refactor::run_refactor;
+use hawk_tests::test_all;
 
 // memory measurement
 use peak_alloc::PeakAlloc;
@@ -40,7 +29,6 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 fn main() {
     // run several instances of hawk 256, 512, and 1024
     // measures avg. time usage
-    // test_all();
+    test_all();
     // run_hpp_attack();
-    run_refactor();
 }
