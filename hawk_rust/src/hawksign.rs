@@ -240,9 +240,6 @@ pub fn hawksign(
 
         // check norm of vector x is not too high
         // bounded by 8n*(sigma^2)
-        println!("HERE 1");
-        println!("Bound: {}", (8*n) as f64 * sigmaverify.powi(2));
-        println!("l2norm(x): {}", l2norm(&x));
         if (l2norm(&x) as f64) > (8*n) as f64 * sigmaverify.powi(2) {
             continue;
         }
