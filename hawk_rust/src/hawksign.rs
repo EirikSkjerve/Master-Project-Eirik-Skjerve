@@ -53,13 +53,14 @@ fn sample(s: &[u8], t: Vec<u8>, n: usize) -> Vec<i64>{
 
     // get the correct tables
     let (t0, t1) = match n {
-        8 => (hawk256_params::T0, hawk256_params::T1),
-        9 => (hawk512_params::T0, hawk512_params::T1),
+        256 => (hawk256_params::T0, hawk256_params::T1),
+        512 => (hawk512_params::T0, hawk512_params::T1),
         _ => (hawk1024_params::T0, hawk1024_params::T1)
     };
 
     // vector y of random high numbers
     // note that the entries in y are uniformly distributed
+
     let y = shake256x4(s, 5 * n / 2);
 
     // the value that is used as a part of the sample
@@ -127,15 +128,15 @@ fn sample(s: &[u8], t: Vec<u8>, n: usize) -> Vec<i64>{
 }
 
 pub fn hawksign(
-    kgseed: Vec<u8>,
-    bigf: Vec<i64>,
-    bigg: Vec<i64>,
+    privkey: &(Vec<u8>, Vec<i64>, Vec<i64>),
     msg: &[u8],
     n: usize,
-) -> (Vec<i64>, Vec<u8>) {
+) -> (Vec<u8>, Vec<u8>) {
     //
     // given secret key components and message, compute a signature
     //
+
+    let (kgseed, bigf, bigg) = privkey;
 
     assert_eq!(bigf.len(), n);
     assert_eq!(bigg.len(), n);
@@ -170,8 +171,8 @@ pub fn hawksign(
     let p = (1 << 16) + 1;
 
     // precompute f, g, F and G mod 2 to save computations
-    let f: Vec<i64> = poly_mod2(&f);
-    let g: Vec<i64> = poly_mod2(&g);
+    // let f: Vec<i64> = poly_mod2(&f);
+    // let g: Vec<i64> = poly_mod2(&g);
     let bigf: Vec<i64> = poly_mod2(&bigf);
     let bigg: Vec<i64> = poly_mod2(&bigg);
 
@@ -210,6 +211,7 @@ pub fn hawksign(
         let t0 = poly_add(
             &poly_mult_ntt(&h0, &f, p), 
             &poly_mult_ntt(&h1, &bigf, p));
+
         let t1 = poly_add(
             &poly_mult_ntt(&h0, &g, p), 
             &poly_mult_ntt(&h1, &bigg, p));
@@ -231,7 +233,6 @@ pub fn hawksign(
         ]);
 
         // sample vector x = (x0, x1)
-
         let x = sample(&s, t, n);
 
         // split x into two vectors
@@ -239,6 +240,9 @@ pub fn hawksign(
 
         // check norm of vector x is not too high
         // bounded by 8n*(sigma^2)
+        println!("HERE 1");
+        println!("Bound: {}", (8*n) as f64 * sigmaverify.powi(2));
+        println!("l2norm(x): {}", l2norm(&x));
         if (l2norm(&x) as f64) > (8*n) as f64 * sigmaverify.powi(2) {
             continue;
         }
@@ -250,6 +254,7 @@ pub fn hawksign(
             &poly_mult_ntt(&g, &x0, p)
             );
 
+
         // check symbreak condition
         if !symbreak(&w1) {
             w1 = w1.iter().map(|&x| -x).collect();
@@ -257,7 +262,8 @@ pub fn hawksign(
 
         // compute the actual signature sig = (h-w)/2
         let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x>>1).collect();
+        let sig: Vec<u8> = sig.iter().map(|&x| x as u8).collect();
 
-        (sig, salt)
+        return (sig, salt);
     }
 }

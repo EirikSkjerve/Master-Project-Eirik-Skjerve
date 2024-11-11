@@ -3,22 +3,22 @@ mod fft_constants;
 mod ntt;
 mod ntt_constants;
 
-mod hawk_tests;
-
 mod ntru_solve;
 mod rngcontext;
 mod utils;
 
 mod parameters;
 
-mod hawk1024;
-mod hawk256;
-mod hawk512;
+// mod hawk1024;
+// mod hawk256;
+// mod hawk512;
 
-mod compression;
+// mod compression;
 
-mod linalg;
-mod poly;
+// mod linalg;
+// mod poly;
+
+// mod hawk_tests;
 
 mod write_to_file;
 
@@ -27,9 +27,8 @@ mod hawksign;
 mod hawkverify;
 mod verifyutils;
 mod refactor;
-mod fixed_fft;
 
-use hawk_tests::test_all;
+// use hawk_tests::test_all;
 use refactor::run_refactor;
 
 // memory measurement

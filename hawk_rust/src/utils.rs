@@ -18,7 +18,7 @@ pub fn bytes_to_poly(h: &[u8], n: usize) -> Vec<i64> {
 // implements integer modulation for positive and negative integers
 pub fn modulo<T: PrimInt>(a: T, b: T) -> T
 where
-    T: Num + FromPrimitive,
+    T: Num + FromPrimitive + std::fmt::Display,
 {
     //
     // returns a mod b
@@ -28,6 +28,17 @@ where
     //
     // convert the inputs to u128
     //
+
+    if a > T::from(0).unwrap() {
+
+        let a_u128 = a.to_u128().unwrap();
+        let b_u128 = b.to_u128().unwrap();
+
+        // perform the calculations
+        let result = ((a_u128 % b_u128) + b_u128) % b_u128;
+
+        return T::from_u128(result).unwrap();
+    }
 
     let a_i128 = a.to_i128().unwrap();
     let b_i128 = b.to_i128().unwrap();

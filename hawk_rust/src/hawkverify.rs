@@ -15,7 +15,7 @@ pub fn ptc(a: &Vec<i64>, b: i64) -> Vec<i64> {
 
 pub fn hawkverify(
     msg: &[u8], 
-    pub_key: (&Vec<i64>, &Vec<i64>), 
+    pub_key: &(Vec<i64>, Vec<i64>), 
     signature: &Vec<u8>, 
     salt: &Vec<u8>,
     n: usize
