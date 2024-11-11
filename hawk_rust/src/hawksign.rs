@@ -133,7 +133,7 @@ pub fn hawksign(
     bigg: Vec<i64>,
     msg: &[u8],
     n: usize,
-) -> (Vec<u8>, Vec<u8>) {
+) -> (Vec<i64>, Vec<u8>) {
     //
     // given secret key components and message, compute a signature
     //
@@ -266,6 +266,6 @@ pub fn hawksign(
         // compute the actual signature sig = (h-w)/2
         let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x>>1).collect();
 
-        return Some((sig, salt));
+        return (sig, salt);
     }
 }
