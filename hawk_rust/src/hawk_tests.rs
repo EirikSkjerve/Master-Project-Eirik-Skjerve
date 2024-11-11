@@ -1,13 +1,6 @@
-use crate::hawk1024::{
-    hawkkeygen_1024::hawkkeygen_1024, hawksign_1024::hawksign_1024,
-    hawkverify_1024::hawkverify_1024,
-};
-use crate::hawk256::{
-    hawkkeygen_256::hawkkeygen_256, hawksign_256::hawksign_256, hawkverify_256::hawkverify_256,
-};
-use crate::hawk512::{
-    hawkkeygen_512::hawkkeygen_512, hawksign_512::hawksign_512, hawkverify_512::hawkverify_512,
-};
+use crate::hawkkeygen::hawkkeygen;
+use crate::hawksign::hawksign;
+use crate::hawkverify::hawkverify;
 
 use crate::rngcontext::get_random_bytes;
 
@@ -30,9 +23,9 @@ pub fn test_all() {
         Cell::new(&"sg (µs)"),
         Cell::new(&"vf (µs)"),
     ]));
-    hawk_256(&mut table);
-    // hawk_512(&mut table);
-    // hawk_1024(&mut table);
+    hawkrun(&mut table, 256);
+    hawkrun(&mut table, 512);
+    hawkrun(&mut table, 1024);
 
     println!(
         "Average of {} signature generation and verifications",
@@ -41,184 +34,45 @@ pub fn test_all() {
     table.printstd();
 }
 
-pub fn hawk_256(table: &mut Table) {
-    res_z();
-    let init_seed = get_random_bytes(15);
+pub fn hawkrun(table: &mut Table, n: usize) {
     // generate keypair
     let kgen_time_start = Instant::now();
-    let (privkey, pubkey) = hawkkeygen_256(&init_seed);
+    let (privkey, pubkey) = hawkkeygen(n);
     let kgen_time_end = kgen_time_start.elapsed();
 
     // pre-generate some messages
-    let mgen_time_start = Instant::now();
     let mut messages: Vec<Vec<u8>> = Vec::with_capacity(NUM_SAMPLES);
     for _ in 0..NUM_SAMPLES {
         messages.push(get_random_bytes(100));
     }
-    let mgen_time_end = mgen_time_start.elapsed();
 
     // keep track of number of failed signatures
     let mut num_failed = 0;
 
     // create collection of signatures corresponding to messages
-    let mut signatures: Vec<Vec<u8>> = Vec::with_capacity(NUM_SAMPLES);
+    let mut signatures: Vec<(Vec<i64>, Vec<u8>)> = Vec::with_capacity(NUM_SAMPLES);
     let sig_time_start = Instant::now();
     for i in 0..NUM_SAMPLES {
-        signatures.push(hawksign_256(&privkey, &messages[i]));
+        signatures.push(hawksign(&privkey, &messages[i], n));
     }
     let sig_time_stop = sig_time_start.elapsed();
 
     // verify the message/signature pairs
     let ver_time_start = Instant::now();
     for i in 0..NUM_SAMPLES {
-        let verification = hawkverify_256(&messages[i], &pubkey, &signatures[i]);
+        let verification = hawkverify(&messages[i], &pubkey, &signatures[i].0, &signatures[i].1, n);
 
         if !verification {
             num_failed += 1;
         }
     }
 
-    // testing writing to file here
-    // let _ = wvtf("output/testouot.txt", &signatures[0]);
-
     let ver_time_stop = ver_time_start.elapsed();
     table.add_row(Row::new(vec![
-        Cell::new("256"),
+        Cell::new(&n.to_string()),
         Cell::new(&kgen_time_end.as_millis().to_string()),
         Cell::new(&(sig_time_stop / NUM_SAMPLES as u32).as_micros().to_string()),
         Cell::new(&(ver_time_stop / NUM_SAMPLES as u32).as_micros().to_string()),
     ]));
-}
-
-pub fn hawk_512(table: &mut Table) {
-    res_z();
-    let init_seed = get_random_bytes(15);
-    // generate keypair
-    // println!("Generating keypair for Hawk {}...", "512".bright_blue());
-    let kgen_time_start = Instant::now();
-    let (privkey, pubkey) = hawkkeygen_512(&init_seed);
-    let kgen_time_end = kgen_time_start.elapsed();
-    // println!(
-    //     "Hawk 512 keypair generated in {} \n ",
-    //     format_duration(kgen_time_end)
-    // );
-    // println!("Hawk 512 keypair generated in {:?} ", kgen_time_end);
-
-    // pre-generate some messages
-    // println!("Generating {} random messages", NUM_SAMPLES);
-    let mgen_time_start = Instant::now();
-    let mut messages: Vec<Vec<u8>> = Vec::with_capacity(NUM_SAMPLES);
-    for _ in 0..NUM_SAMPLES {
-        messages.push(get_random_bytes(100));
-    }
-    let mgen_time_end = mgen_time_start.elapsed();
-    // println!(
-    //     "Time used generating {} random messages: {:?} \n",
-    //     NUM_SAMPLES, mgen_time_end
-    // );
-
-    // keep track of number of failed signatures
-    let mut num_failed = 0;
-
-    // create collection of signatures corresponding to messages
-    let mut signatures: Vec<Vec<u8>> = Vec::with_capacity(NUM_SAMPLES);
-    // println!("Generating {} signatures...", NUM_SAMPLES);
-    let sig_time_start = Instant::now();
-    for i in 0..NUM_SAMPLES {
-        signatures.push(hawksign_512(&privkey, &messages[i]));
-    }
-    let sig_time_stop = sig_time_start.elapsed();
-    // println!(
-    //     "Time used generating {} signatures: {:?} \n",
-    //     NUM_SAMPLES, sig_time_stop
-    // );
-
-    // verify the message/signature pairs
-    // println!("Verifying {} signatures...", NUM_SAMPLES);
-    let ver_time_start = Instant::now();
-    for i in 0..NUM_SAMPLES {
-        let verification = hawkverify_512(&messages[i], &pubkey, &signatures[i]);
-
-        if !verification {
-            num_failed += 1;
-        }
-    }
-    let ver_time_stop = ver_time_start.elapsed();
-    // println!(
-    //     "Time used verifying {} signatures: {:?}",
-    //     NUM_SAMPLES, ver_time_stop
-    // );
-    table.add_row(Row::new(vec![
-        Cell::new("512"),
-        Cell::new(&kgen_time_end.as_millis().to_string()),
-        Cell::new(&(sig_time_stop / NUM_SAMPLES as u32).as_micros().to_string()),
-        Cell::new(&(ver_time_stop / NUM_SAMPLES as u32).as_micros().to_string()),
-    ]));
-}
-
-pub fn hawk_1024(table: &mut Table) {
-    res_z();
-
-    let init_seed = get_random_bytes(15);
-    // generate keypair
-    // println!("Generating keypair for Hawk {}...", "1024".bright_blue());
-    let kgen_time_start = Instant::now();
-    let (privkey, pubkey) = hawkkeygen_1024(&init_seed);
-    let kgen_time_end = kgen_time_start.elapsed();
-    // println!(
-    //     "Hawk 1024 keypair generated in {} \n ",
-    //     format_duration(kgen_time_end)
-    // );
-    // println!("Hawk 1024 keypair generated in {:?} ", kgen_time_end);
-
-    // pre-generate some messages
-    // println!("Generating {} random messages", NUM_SAMPLES);
-    let mgen_time_start = Instant::now();
-    let mut messages: Vec<Vec<u8>> = Vec::with_capacity(NUM_SAMPLES);
-    for _ in 0..NUM_SAMPLES {
-        messages.push(get_random_bytes(100));
-    }
-    let mgen_time_end = mgen_time_start.elapsed();
-    // println!(
-    //     "Time used generating {} random messages: {:?} \n",
-    //     NUM_SAMPLES, mgen_time_end
-    // );
-
-    // keep track of number of failed signatures
-    let mut num_failed = 0;
-
-    // create collection of signatures corresponding to messages
-    let mut signatures: Vec<Vec<u8>> = Vec::with_capacity(NUM_SAMPLES);
-    // println!("Generating {} signatures...", NUM_SAMPLES);
-    let sig_time_start = Instant::now();
-    for i in 0..NUM_SAMPLES {
-        signatures.push(hawksign_1024(&privkey, &messages[i]));
-    }
-    let sig_time_stop = sig_time_start.elapsed();
-    // println!(
-    //     "Time used generating {} signatures: {:?} \n",
-    //     NUM_SAMPLES, sig_time_stop
-    // );
-    //
-    // // verify the message/signature pairs
-    // println!("Verifying {} signatures...", NUM_SAMPLES);
-    let ver_time_start = Instant::now();
-    for i in 0..NUM_SAMPLES {
-        let verification = hawkverify_1024(&messages[i], &pubkey, &signatures[i]);
-
-        if !verification {
-            num_failed += 1;
-        }
-    }
-    let ver_time_stop = ver_time_start.elapsed();
-    // println!(
-    //     "Time used verifying {} signatures: {:?}",
-    //     NUM_SAMPLES, ver_time_stop
-    // );
-    table.add_row(Row::new(vec![
-        Cell::new("1024"),
-        Cell::new(&kgen_time_end.as_millis().to_string()),
-        Cell::new(&(sig_time_stop / NUM_SAMPLES as u32).as_micros().to_string()),
-        Cell::new(&(ver_time_stop / NUM_SAMPLES as u32).as_micros().to_string()),
-    ]));
+    println!("Number of failed signatures for degree {n}: {num_failed}");
 }
