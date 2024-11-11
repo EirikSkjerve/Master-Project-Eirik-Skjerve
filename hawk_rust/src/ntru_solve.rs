@@ -2,7 +2,7 @@ extern crate num_bigint;
 extern crate num_traits;
 
 use num_bigint::{BigInt, ToBigInt};
-use num_traits::{One, Zero, Signed, ToPrimitive};
+use num_traits::{One, Signed, ToPrimitive, Zero};
 
 use crate::fft::{add_fft, adj_fft, div_fft, fft, ifft, mul_fft};
 use crate::utils::{bigint_to_f64_vec, bigint_to_i64_vec, bigint_vec};
@@ -224,12 +224,13 @@ pub fn galois_conjugate(a: Vec<BigInt>) -> Vec<BigInt> {
     //
 
     let neg_one = -1.to_bigint().unwrap();
-    let res: Vec<BigInt> = (0..a.len()).map(|i| neg_one.pow(i as u32) * &a[i]).collect();
+    let res: Vec<BigInt> = (0..a.len())
+        .map(|i| neg_one.pow(i as u32) * &a[i])
+        .collect();
     res
 }
 
 pub fn ntrusolve(f: &Vec<i64>, g: &Vec<i64>) -> Option<(Vec<i64>, Vec<i64>)> {
-
     // solve the NTRU-equation
     // Given f and g, return F and G such that fG - gF = 1,
     // or None if no solution could be found
@@ -264,7 +265,7 @@ fn ntrusolve_inner(f: &Vec<BigInt>, g: &Vec<BigInt>) -> Option<(Vec<BigInt>, Vec
     if n == 1 {
         let (d, u, v) = xgcd(f[0].clone(), g[0].clone());
 
-        // if gcd of f and g at innermost level is not one, we can't find solution to 
+        // if gcd of f and g at innermost level is not one, we can't find solution to
         // ntru-equation
         if d != BigInt::one() {
             println!("gcd({}, {}) = {}, aborting", f[0], g[0], d);
@@ -281,8 +282,7 @@ fn ntrusolve_inner(f: &Vec<BigInt>, g: &Vec<BigInt>) -> Option<(Vec<BigInt>, Vec
     let gp = field_norm(g.clone());
 
     // solve ntru-equation for halved degree by recursive call
-    if let Some((bigfp, biggp)) = ntrusolve_inner(&fp, &gp){
-
+    if let Some((bigfp, biggp)) = ntrusolve_inner(&fp, &gp) {
         // reconstruct solution to ntru-equation for this degree
         // by multiplying F'(x^2) * g(-x)
         // and            G'(x^2) * f(-x)
@@ -305,7 +305,7 @@ pub fn bitsize(a: BigInt) -> u32 {
     // compute (approximate) bitsize of an integer a,
     // up to precision of 8
     //
-    
+
     // clone a mutable copy of the absolute value of input value
     let mut val = a.abs().clone();
     // create mutable temporary variable
@@ -347,7 +347,7 @@ pub fn adjust_fft(
 }
 
 pub fn calculate_size(f: Vec<BigInt>, g: Vec<BigInt>) -> u32 {
-    // return max of 
+    // return max of
     //              53
     //              bitsize(max(|f|))
     //              bitsize(max(|g|))

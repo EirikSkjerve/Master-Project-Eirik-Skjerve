@@ -11,9 +11,33 @@ fn ptc(a: &Vec<i64>, b: i64) -> Vec<i64> {
     a.clone().iter().map(|&x| x*b).collect()
 }
 
-fn rebuildw0(q00: &Vec<i64>, q01: &Vec<i64>, w1: &Vec<i64>, h0: &Vec<i64>) -> Vec<i64> {
-    vec![]
-}
+// fn rebuildw0(
+//     q00: &Vec<i64>, 
+//     q01: &Vec<i64>, 
+//     w1: &Vec<i64>, 
+//     h0: &Vec<i64>,
+//     highs0: i64,
+//     highs1: i64,
+//     high00: i64,
+//     high01: i64) -> Vec<i64> {
+//
+//     let two: i64 = 2;
+//     let n = q00.len();
+//
+//     let cw1 = 1 << (29 - (1 + highs1));
+//     let cq00 = 1 << (29 - high00);
+//     let cq01 = 1 << (29 - high01);
+//
+//     let cs0 = (2*cw1*cq01)/(n*cq00);
+//     // let w1_fft = fft()
+//
+//     vec![]
+// }
+//
+// fn poly_qnorm(q00: &Vec<i64>, q01: &Vec<i64>, w0: &Vec<i64>, w1: &Vec<i64>, p: i64) -> i64 {
+//
+//     0
+// }
 
 fn hawkverify_inner(
     msg: &[u8], 
@@ -60,7 +84,13 @@ fn hawkverify_inner(
         return false;
     }
 
+    // assuming this always returns something since this version don't do encoding
     let w0 = rebuildw0(&q00, &q01, &w1, &h0);
+
+    // primes used for doing ntt computations with Q
+    let (p1, p2): (i64, i64) = (2147473409, 2147389441);
+
+    let r1 = poly_qnorm(&q00, &q01, &w0, &w1, p1);
 
     false
 }

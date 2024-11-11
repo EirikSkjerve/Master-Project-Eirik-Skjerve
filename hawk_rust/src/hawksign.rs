@@ -51,7 +51,7 @@ pub fn symbreak(v: &Vec<i64>) -> bool {
 }
 
 fn sample(s: &[u8], t: Vec<u8>, n: usize) -> Vec<i64>{
-    
+
     // get the correct tables
     let (t0, t1) = match n {
         8 => (hawk256_params::T0, hawk256_params::T1),
