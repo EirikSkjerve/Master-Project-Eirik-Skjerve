@@ -16,7 +16,7 @@ pub fn ptc(a: &Vec<i64>, b: i64) -> Vec<i64> {
 pub fn hawkverify(
     msg: &[u8], 
     pub_key: &(Vec<i64>, Vec<i64>), 
-    signature: &Vec<u8>, 
+    signature: &Vec<i64>, 
     salt: &Vec<u8>,
     n: usize
     ) -> bool {
@@ -76,6 +76,9 @@ pub fn hawkverify(
         &bytes_to_poly(&h[0..n / 8], n),
         &bytes_to_poly(&h[n / 8..n / 4], n),
     );
+
+    println!("h in verify: {:?}", h);
+
     // reconstruct digest h
 
     let w1 = poly_sub(
@@ -83,6 +86,8 @@ pub fn hawkverify(
         &ptc(&s1, 2)
         );
 
+
+    println!("w1 from vf: {:?}", w1);
     if !symbreak(&w1) {
         println!("Symbreak failed");
         return false;
