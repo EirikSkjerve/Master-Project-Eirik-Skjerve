@@ -3,6 +3,7 @@ use crate::{
     fft::inverse_fft,
     ntru_solve::ntrusolve,
     parameters::{hawk1024_params, hawk256_params, hawk512_params},
+    ntt_constants::res_z
 };
 
 use crate::utils::*;
@@ -23,6 +24,9 @@ fn hawkkeygen_inner(
     high11: usize,
     rng: &mut RngContext,
 ) -> Option<((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i64>))> {
+
+
+
     // create a seed that determines f and g for later regeneration
     let kgseed = rng.random(lenkgseed);
 
@@ -128,46 +132,48 @@ pub fn hawkkeygen(n: usize) -> ((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i6
     assert!(n == 256 || n == 512 || n == 1024);
 
     let lenkgseed = match n {
-        8 => hawk256_params::LENKGSEED,
-        9 => hawk512_params::LENKGSEED,
+        256 => hawk256_params::LENKGSEED,
+        512 => hawk512_params::LENKGSEED,
         _ => hawk1024_params::LENKGSEED
     };
 
 
     let sigmakrsec = match n {
-        8 => hawk256_params::SIGMAKRSEC,
-        9 => hawk512_params::SIGMAKRSEC,
+        256 => hawk256_params::SIGMAKRSEC,
+        512 => hawk512_params::SIGMAKRSEC,
         _ => hawk1024_params::SIGMAKRSEC
     };
 
     let beta0 = match n {
-        8 => hawk256_params::BETA0,
-        9 => hawk512_params::BETA0,
+        256 => hawk256_params::BETA0,
+        512 => hawk512_params::BETA0,
         _ => hawk1024_params::BETA0
     };
 
     let high11 = match n {
-        8 => hawk256_params::HIGH11,
-        9 => hawk512_params::HIGH11,
+        256 => hawk256_params::HIGH11,
+        512 => hawk512_params::HIGH11,
         _ => hawk1024_params::HIGH11
     };
 
     // initialize a new RngContext instance, used for generating random bits
     let mut rng = RngContext::new(&get_random_bytes(10));
 
+    // reset precomputed roots for usage in ntt
+    res_z();
     // try to generate hawk keypair
     // if inner function fails, loop runs again
     loop {
         match hawkkeygen_inner(
             n,
-            hawk256_params::LENKGSEED,
-            hawk256_params::SIGMAKRSEC,
-            hawk256_params::BETA0,
-            hawk256_params::HIGH11,
+            lenkgseed,
+            sigmakrsec,
+            beta0,
+            high11,
             &mut rng,
         ) {
             Some(keypair) => return keypair,
-            None => println!(""),
+            None => print!(""),
         }
     }
 

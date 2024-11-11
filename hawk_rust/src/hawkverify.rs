@@ -77,8 +77,6 @@ pub fn hawkverify(
         &bytes_to_poly(&h[n / 8..n / 4], n),
     );
 
-    println!("h in verify: {:?}", h);
-
     // reconstruct digest h
 
     let w1 = poly_sub(
@@ -87,7 +85,6 @@ pub fn hawkverify(
         );
 
 
-    println!("w1 from vf: {:?}", w1);
     if !symbreak(&w1) {
         println!("Symbreak failed");
         return false;
@@ -122,5 +119,5 @@ pub fn hawkverify(
         return false;
     }
 
-    false
+    true
 }

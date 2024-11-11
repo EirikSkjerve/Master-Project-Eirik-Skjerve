@@ -2,21 +2,25 @@ use crate::{hawkkeygen, hawksign, hawkverify};
 
 pub fn run_refactor() {
     // degree n
-    let n = 256;
-    // create public private keypair
-    println!("Generating keypair");
-    let (privkey, pubkey) = hawkkeygen::hawkkeygen(n);
-    println!("Keypair generated");
+    let ns: [usize; 3] = [256, 512, 1024];
+    let num_rounds = 100;
+    let mut num_fails = 0;
+    for n in ns.iter(){
 
-    // create some message
-    let message: [u8; 8] = [1,2,3,4,5,6,7,8];
+        println!("Creating keypairs for degree {}",n);
+        let (privkey, pubkey) = hawkkeygen::hawkkeygen(*n); 
 
-    println!("Generating signature for message {:?}", message);
-    let (signature, salt) = hawksign::hawksign(&privkey, &message, n);
-    println!("Signature generated");
+        println!("Generating {num_rounds} signatures");
+        for i in 0..num_rounds {
+            let message: [u8; 5] = [i, i, i, i, i];
+            let (signature, salt) = hawksign::hawksign(&privkey, &message, *n);
 
-    let verification = hawkverify::hawkverify(&message, &pubkey, &signature, &salt, n);
+            let verification = hawkverify::hawkverify(&message, &pubkey, &signature, &salt, *n);
 
-    println!("Verification: {}", verification);
-
+            if !verification {
+                num_fails += 1;
+            }
+        }
+    }
+    println!("Number of failures: {num_fails}");
 }

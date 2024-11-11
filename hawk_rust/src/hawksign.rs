@@ -257,9 +257,6 @@ pub fn hawksign(
             w1 = w1.iter().map(|&x| -x).collect();
         }
 
-        println!("w1 from sign: {:?}", w1);
-
-        println!("h in sign: {:?}", h);
         // compute the actual signature sig = (h-w)/2
         let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x>>1).collect();
         // println!("Sig before conversion: {:?}", sig);

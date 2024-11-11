@@ -8,12 +8,12 @@ use std::collections::HashMap;
 // initialize empty hashmap
 static mut ZETA_TABLE: Option<HashMap<u128, (Vec<u128>, Vec<u128>)>> = None;
 
-// unsure if this is needed
-// pub fn res_z() {
-//     unsafe {
-//         ZETA_TABLE = None;
-//     }
-// }
+// reset the table
+pub fn res_z() {
+    unsafe {
+        ZETA_TABLE = None;
+    }
+}
 
 fn z_map() -> &'static mut HashMap<u128, (Vec<u128>, Vec<u128>)> {
     //
