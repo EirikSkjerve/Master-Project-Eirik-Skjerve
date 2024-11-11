@@ -25,6 +25,7 @@ mod write_to_file;
 mod hawkkeygen;
 mod hawksign;
 mod hawkverify;
+mod verifyutils;
 mod refactor;
 mod fixed_fft;
 

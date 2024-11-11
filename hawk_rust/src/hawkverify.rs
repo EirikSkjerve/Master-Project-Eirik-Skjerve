@@ -5,39 +5,13 @@ use sha3::{
 
 use crate::utils::{bytes_to_poly, modulo, poly_sub};
 use crate::hawksign::symbreak;
+use crate::verifyutils::{rebuildw0, poly_qnorm};
+use crate::parameters::{hawk256_params, hawk512_params, hawk1024_params};
 
 // poly times const
-fn ptc(a: &Vec<i64>, b: i64) -> Vec<i64> {
+pub fn ptc(a: &Vec<i64>, b: i64) -> Vec<i64> {
     a.clone().iter().map(|&x| x*b).collect()
 }
-
-// fn rebuildw0(
-//     q00: &Vec<i64>, 
-//     q01: &Vec<i64>, 
-//     w1: &Vec<i64>, 
-//     h0: &Vec<i64>,
-//     highs0: i64,
-//     highs1: i64,
-//     high00: i64,
-//     high01: i64) -> Vec<i64> {
-//
-//     let two: i64 = 2;
-//     let n = q00.len();
-//
-//     let cw1 = 1 << (29 - (1 + highs1));
-//     let cq00 = 1 << (29 - high00);
-//     let cq01 = 1 << (29 - high01);
-//
-//     let cs0 = (2*cw1*cq01)/(n*cq00);
-//     // let w1_fft = fft()
-//
-//     vec![]
-// }
-//
-// fn poly_qnorm(q00: &Vec<i64>, q01: &Vec<i64>, w0: &Vec<i64>, w1: &Vec<i64>, p: i64) -> i64 {
-//
-//     0
-// }
 
 fn hawkverify_inner(
     msg: &[u8], 
@@ -46,6 +20,27 @@ fn hawkverify_inner(
     salt: &Vec<u8>,
     n: usize
     ) -> bool {
+
+    // get the correct parameters
+    let (highs0, highs1, high00, high01) = match n {
+        256 => ( hawk256_params::HIGHS0,
+                 hawk256_params::HIGHS1,
+                 hawk256_params::HIGH00,
+                 hawk256_params::HIGH01
+            ),
+        
+        512 => ( hawk512_params::HIGHS0,
+                 hawk512_params::HIGHS1,
+                 hawk512_params::HIGH00,
+                 hawk512_params::HIGH01
+            ),
+
+        _ => ( hawk1024_params::HIGHS0,
+                 hawk1024_params::HIGHS1,
+                 hawk1024_params::HIGH00,
+                 hawk1024_params::HIGH01
+            ),
+    };
 
     // convert signature to Vec<i64>
     let s1: Vec<i64> = signature.iter().map(|&x| x as i64).collect();
@@ -84,8 +79,17 @@ fn hawkverify_inner(
         return false;
     }
 
-    // assuming this always returns something since this version don't do encoding
-    let w0 = rebuildw0(&q00, &q01, &w1, &h0);
+    let w0 = rebuildw0(
+        &q00, 
+        &q01, 
+        &w1, 
+        &h0,
+        highs0,
+        highs1,
+        high00,
+        high01
+        );
+
 
     // primes used for doing ntt computations with Q
     let (p1, p2): (i64, i64) = (2147473409, 2147389441);
@@ -102,5 +106,6 @@ pub fn hawkverify(
     n: usize
 ) -> bool{
 
+    assert!(n==256||n==512||n==1024);
     false
 }
