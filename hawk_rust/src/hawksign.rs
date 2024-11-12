@@ -49,13 +49,12 @@ pub fn symbreak(v: &Vec<i64>) -> bool {
     false
 }
 
-fn sample(s: &[u8], t: Vec<u8>, n: usize) -> Vec<i64>{
-
+fn sample(s: &[u8], t: Vec<u8>, n: usize) -> Vec<i64> {
     // get the correct tables
     let (t0, t1) = match n {
         256 => (hawk256_params::T0, hawk256_params::T1),
         512 => (hawk512_params::T0, hawk512_params::T1),
-        _ => (hawk1024_params::T0, hawk1024_params::T1)
+        _ => (hawk1024_params::T0, hawk1024_params::T1),
     };
 
     // vector y of random high numbers
@@ -90,7 +89,7 @@ fn sample(s: &[u8], t: Vec<u8>, n: usize) -> Vec<i64>{
 
                 // here the actual sampling is done by checking how many of the elements in the
                 // CD-Tables are strictly larger than the uniformly sampled c
-                // and since the tables are CDTs of discrete gaussian, the outputted number is a 
+                // and since the tables are CDTs of discrete gaussian, the outputted number is a
                 // random variable from the discrete gaussian distribution
                 loop {
                     if t0[z] == 0 || t1[z] == 0 {
@@ -140,13 +139,13 @@ pub fn hawksign(
 
     assert_eq!(bigf.len(), n);
     assert_eq!(bigg.len(), n);
-    assert!(n==256||n==512||n==1024);
+    assert!(n == 256 || n == 512 || n == 1024);
 
     // get the right parameters
     let (lensalt, sigmaverify) = match n {
-        256 => (hawk256_params:: LENSALT, hawk256_params::SIGMAVERIFY),
+        256 => (hawk256_params::LENSALT, hawk256_params::SIGMAVERIFY),
         512 => (hawk512_params::LENSALT, hawk512_params::SIGMAVERIFY),
-        _ => (hawk1024_params::LENSALT, hawk1024_params::SIGMAVERIFY)
+        _ => (hawk1024_params::LENSALT, hawk1024_params::SIGMAVERIFY),
     };
 
     // create new rng
@@ -208,13 +207,9 @@ pub fn hawksign(
         );
 
         // compute target vector t as B*h mod 2
-        let t0 = poly_add(
-            &poly_mult_ntt(&h0, &f, p), 
-            &poly_mult_ntt(&h1, &bigf, p));
+        let t0 = poly_add(&poly_mult_ntt(&h0, &f, p), &poly_mult_ntt(&h1, &bigf, p));
 
-        let t1 = poly_add(
-            &poly_mult_ntt(&h0, &g, p), 
-            &poly_mult_ntt(&h1, &bigg, p));
+        let t1 = poly_add(&poly_mult_ntt(&h0, &g, p), &poly_mult_ntt(&h1, &bigg, p));
 
         // join t0 and t1 together as Vec<u8>
         let t = concat_bytes(&vec![
@@ -240,17 +235,13 @@ pub fn hawksign(
 
         // check norm of vector x is not too high
         // bounded by 8n*(sigma^2)
-        if (l2norm(&x) as f64) > (8*n) as f64 * sigmaverify.powi(2) {
+        if (l2norm(&x) as f64) > (8 * n) as f64 * sigmaverify.powi(2) {
             continue;
         }
 
         // compute one part of the signature
         // w = B^-1 x, so w1 = g*x0 - f*x1
-        let mut w1 = poly_sub(
-            &poly_mult_ntt(&f, &x1, p),
-            &poly_mult_ntt(&g, &x0, p)
-            );
-
+        let mut w1 = poly_sub(&poly_mult_ntt(&f, &x1, p), &poly_mult_ntt(&g, &x0, p));
 
         // check symbreak condition
         if !symbreak(&w1) {
@@ -258,7 +249,7 @@ pub fn hawksign(
         }
 
         // compute the actual signature sig = (h-w)/2
-        let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x>>1).collect();
+        let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x >> 1).collect();
         // println!("Sig before conversion: {:?}", sig);
         // let sig: Vec<u8> = sig.iter().map(|&x| x as u8).collect();
 

@@ -2,8 +2,8 @@
 use crate::{
     fft::inverse_fft,
     ntru_solve::ntrusolve,
+    ntt_constants::res_z,
     parameters::{hawk1024_params, hawk256_params, hawk512_params},
-    ntt_constants::res_z
 };
 
 use crate::utils::*;
@@ -24,9 +24,6 @@ fn hawkkeygen_inner(
     high11: usize,
     rng: &mut RngContext,
 ) -> Option<((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i64>))> {
-
-
-
     // create a seed that determines f and g for later regeneration
     let kgseed = rng.random(lenkgseed);
 
@@ -76,7 +73,7 @@ fn hawkkeygen_inner(
     // let ntru_res: Option<(Vec<i64>, Vec<i64>)> = Some(ntrusolve(&f, &g));
     let ntrusolve_res = ntrusolve(&f, &g);
     match ntrusolve_res {
-        Some(_) => println!(""),
+        Some(_) => {}
         None => return None,
     }
 
@@ -122,8 +119,7 @@ fn hawkkeygen_inner(
     Some((private_key, public_key))
 }
 
-pub fn hawkkeygen(n: usize) -> ((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i64>)){
-
+pub fn hawkkeygen(n: usize) -> ((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i64>)) {
     // main function for generating hawk keypair
     // input degree n
     // outputs private key (kgseed, F, G)
@@ -134,26 +130,25 @@ pub fn hawkkeygen(n: usize) -> ((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i6
     let lenkgseed = match n {
         256 => hawk256_params::LENKGSEED,
         512 => hawk512_params::LENKGSEED,
-        _ => hawk1024_params::LENKGSEED
+        _ => hawk1024_params::LENKGSEED,
     };
-
 
     let sigmakrsec = match n {
         256 => hawk256_params::SIGMAKRSEC,
         512 => hawk512_params::SIGMAKRSEC,
-        _ => hawk1024_params::SIGMAKRSEC
+        _ => hawk1024_params::SIGMAKRSEC,
     };
 
     let beta0 = match n {
         256 => hawk256_params::BETA0,
         512 => hawk512_params::BETA0,
-        _ => hawk1024_params::BETA0
+        _ => hawk1024_params::BETA0,
     };
 
     let high11 = match n {
         256 => hawk256_params::HIGH11,
         512 => hawk512_params::HIGH11,
-        _ => hawk1024_params::HIGH11
+        _ => hawk1024_params::HIGH11,
     };
 
     // initialize a new RngContext instance, used for generating random bits
@@ -161,22 +156,15 @@ pub fn hawkkeygen(n: usize) -> ((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i6
 
     // reset precomputed roots for usage in ntt
     res_z();
+
     // try to generate hawk keypair
     // if inner function fails, loop runs again
     loop {
-        match hawkkeygen_inner(
-            n,
-            lenkgseed,
-            sigmakrsec,
-            beta0,
-            high11,
-            &mut rng,
-        ) {
+        match hawkkeygen_inner(n, lenkgseed, sigmakrsec, beta0, high11, &mut rng) {
             Some(keypair) => return keypair,
-            None => print!(""),
+            None => {}
         }
     }
-
 }
 
 // generates polynomials f and g

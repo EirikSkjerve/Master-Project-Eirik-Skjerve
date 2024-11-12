@@ -1,11 +1,9 @@
+use crate::hawkverify::ptc;
 use crate::ntt::*;
 use crate::ntt_constants::brv;
 use crate::utils::{adjoint, mod_pow, modulo};
-use crate::hawkverify::ptc;
 use num_complex::Complex;
 use std::f64::consts::PI;
-// using this import to floor the quotient after division in the following algorithm
-use num::Integer;
 
 pub fn delta(k: usize) -> (i64, i64) {
     let i = Complex::new(0.0, 1.0);
@@ -27,7 +25,6 @@ pub fn delta(k: usize) -> (i64, i64) {
     (re, im)
 }
 
-
 fn sign(x: i64) -> i64 {
     // returns the sign of an i64:
     // 1 if x is negative, 0 otherwise
@@ -45,7 +42,7 @@ pub fn rebuildw0(
     highs0: usize,
     highs1: usize,
     high00: usize,
-    high01: usize
+    high01: usize,
 ) -> Vec<i64> {
     let n = q00.len();
 
@@ -55,7 +52,7 @@ pub fn rebuildw0(
     let cq00 = 1 << (29 - high00);
     let cq01 = 1 << (29 - high01);
 
-    let cs0 = (2 * (cw1) * (cq01)) / ((n as i64 * cq00));
+    let cs0 = (2 * (cw1) * (cq01)) / (n as i64 * cq00);
     let w1_fft = fft(&ptc(w1, cw1));
 
     let mut z00 = q00.clone();
@@ -78,10 +75,10 @@ pub fn rebuildw0(
     let n_uz = n as usize;
     for u in 0..(n_uz / 2) {
         let mut x_re = q01_fft[u] * w1_fft[u];
-        x_re -= q01_fft[u + (n_uz / 2)]  * w1_fft[u + (n_uz / 2)] ;
+        x_re -= q01_fft[u + (n_uz / 2)] * w1_fft[u + (n_uz / 2)];
 
-        let mut x_im = q01_fft[u]  * w1_fft[u + (n_uz / 2)] ;
-        x_im += q01_fft[u + (n_uz / 2)]  * w1_fft[u] ;
+        let mut x_im = q01_fft[u] * w1_fft[u + (n_uz / 2)];
+        x_im += q01_fft[u + (n_uz / 2)] * w1_fft[u];
 
         let (x_re, z_re) = (x_re.abs(), sign(x_re));
         let (x_im, z_im) = (x_im.abs(), sign(x_im));
@@ -90,15 +87,17 @@ pub fn rebuildw0(
 
         if v <= 0
             || v >= base_i64.pow(32)
-            || (x_re ) >= v * base_i64.pow(32)
-            || (x_im ) >= v * base_i64.pow(32)
+            || (x_re) >= v * base_i64.pow(32)
+            || (x_im) >= v * base_i64.pow(32)
         {
             // return None here instead
             return vec![0];
         }
 
-        let y_re = x_re.div_floor(&v);
-        let y_im = x_im.div_floor(&v);
+        // let y_re = x_re.div_floor(&v);
+        let y_re = num::Integer::div_floor(&x_re, &v);
+        // let y_im = x_im.div_floor(&v);
+        let y_im = num::Integer::div_floor(&x_im, &v);
 
         q01_fft[u] = y_re - (2 * z_re * y_re);
         q01_fft[u + (n_uz / 2)] = y_im - (2 * z_im * y_im);
@@ -110,7 +109,8 @@ pub fn rebuildw0(
 
     for u in 0..n_uz {
         let v = (cs0 * h0[u]) + t[u];
-        let z = (v + cs0).div_floor(&(2 * cs0));
+        // let z = (v + cs0).div_floor(&(2 * cs0));
+        let z = num::Integer::div_floor(&(v + cs0), &(2 * cs0));
 
         if z < -base_i64.pow(highs0 as u32) || z >= base_i64.pow(highs0 as u32) {
             // return None here instead
@@ -123,7 +123,6 @@ pub fn rebuildw0(
 
     w0
 }
-
 
 pub fn fft(f: &Vec<i64>) -> Vec<i64> {
     let n = f.len();
@@ -139,11 +138,11 @@ pub fn fft(f: &Vec<i64>) -> Vec<i64> {
             let e_im: i64 = e.1 as i64;
 
             for v in v0..v0 + (t / 2) {
-                let x1_re: i64 = f_fft[v] ;
-                let x1_im: i64 = f_fft[v + (n / 2)] ;
+                let x1_re: i64 = f_fft[v];
+                let x1_im: i64 = f_fft[v + (n / 2)];
 
-                let x2_re: i64 = f_fft[v + (t / 2)] ;
-                let x2_im: i64 = f_fft[v + (t / 2) + (n / 2)] ;
+                let x2_re: i64 = f_fft[v + (t / 2)];
+                let x2_im: i64 = f_fft[v + (t / 2) + (n / 2)];
 
                 let t_re = (x2_re * e_re) - (x2_im * e_im);
                 let t_im = (x2_re * e_im) + (x2_im * e_re);
@@ -173,15 +172,15 @@ pub fn ifft(f_fft: &Vec<i64>) -> Vec<i64> {
         let mut v0 = 0;
         for u in 0..(m / 2) {
             let e = delta(u + m);
-            let e_re = e.0 ;
-            let e_im = -e.1 ;
+            let e_re = e.0;
+            let e_im = -e.1;
 
             for v in v0..v0 + (t / 2) {
-                let x1_re = f[v] ;
-                let x1_im = f[v + (n / 2)] ;
+                let x1_re = f[v];
+                let x1_im = f[v + (n / 2)];
 
-                let x2_re = f[v + (t / 2)] ;
-                let x2_im = f[v + (t / 2) + (n / 2)] ;
+                let x2_re = f[v + (t / 2)];
+                let x2_im = f[v + (t / 2) + (n / 2)];
 
                 let t1_re = x1_re + x2_re;
                 let t1_im = x1_im + x2_im;
@@ -203,15 +202,7 @@ pub fn ifft(f_fft: &Vec<i64>) -> Vec<i64> {
     f
 }
 
-
-pub fn poly_qnorm(
-    q00: &Vec<i64>, 
-    q01: &Vec<i64>, 
-    w0: &Vec<i64>, 
-    w1: &Vec<i64>, 
-    p: i64
-    ) -> i64 {
-
+pub fn poly_qnorm(q00: &Vec<i64>, q01: &Vec<i64>, w0: &Vec<i64>, w1: &Vec<i64>, p: i64) -> i64 {
     // compute q-norm of w = (w0, w1)
 
     let n = q00.len();
