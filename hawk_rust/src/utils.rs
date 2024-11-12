@@ -29,15 +29,15 @@ where
     // convert the inputs to u128
     //
 
-    if a > T::from(0).unwrap() {
-        let a_u128 = a.to_u128().unwrap();
-        let b_u128 = b.to_u128().unwrap();
-
-        // perform the calculations
-        let result = ((a_u128 % b_u128) + b_u128) % b_u128;
-
-        return T::from_u128(result).unwrap();
-    }
+    // if a > T::from(0).unwrap() {
+    //     let a_u128 = a.to_u128().unwrap();
+    //     let b_u128 = b.to_u128().unwrap();
+    //
+    //     // perform the calculations
+    //     let result = ((a_u128 % b_u128) + b_u128) % b_u128;
+    //
+    //     return T::from_u128(result).unwrap();
+    // }
 
     let a_i128 = a.to_i128().unwrap();
     let b_i128 = b.to_i128().unwrap();

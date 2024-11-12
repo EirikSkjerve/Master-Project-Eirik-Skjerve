@@ -31,8 +31,7 @@ impl RngContext {
     }
 }
 
-pub fn shake256x4(message: &[u8], num: usize) -> Vec<i64> {
-    // SHAKE256x4 equivalent in Rust
+pub fn shake256x4(message: &[u8], num: usize) -> Vec<u64> {
     // creates 4 SHAKE256 instances and returns a digest vector of length num
     let mut digest = Vec::new();
 
@@ -54,14 +53,14 @@ pub fn shake256x4(message: &[u8], num: usize) -> Vec<i64> {
     }
 
     // Convert the four streams into interleaved form
-    let mut y: Vec<i64> = vec![0; num];
+    let mut y: Vec<u64> = vec![0; num];
     let mut j = 0;
 
     for i in 0..(num / 4) {
-        y[j] = i64::from_le_bytes(digest[0][i * 8..(i + 1) * 8].try_into().unwrap());
-        y[j + 1] = i64::from_le_bytes(digest[1][i * 8..(i + 1) * 8].try_into().unwrap());
-        y[j + 2] = i64::from_le_bytes(digest[2][i * 8..(i + 1) * 8].try_into().unwrap());
-        y[j + 3] = i64::from_le_bytes(digest[3][i * 8..(i + 1) * 8].try_into().unwrap());
+        y[j] = u64::from_le_bytes(digest[0][i * 8..(i + 1) * 8].try_into().unwrap());
+        y[j + 1] = u64::from_le_bytes(digest[1][i * 8..(i + 1) * 8].try_into().unwrap());
+        y[j + 2] = u64::from_le_bytes(digest[2][i * 8..(i + 1) * 8].try_into().unwrap());
+        y[j + 3] = u64::from_le_bytes(digest[3][i * 8..(i + 1) * 8].try_into().unwrap());
         j += 4;
     }
 

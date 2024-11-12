@@ -56,6 +56,8 @@ fn sample(s: &[u8], t: Vec<u8>, n: usize) -> Vec<i64> {
         512 => (hawk512_params::T0, hawk512_params::T1),
         _ => (hawk1024_params::T0, hawk1024_params::T1),
     };
+    println!("t0: {:?}", t0);
+    println!("t1: {:?}", t1);
 
     // vector y of random high numbers
     // note that the entries in y are uniformly distributed
@@ -114,6 +116,7 @@ fn sample(s: &[u8], t: Vec<u8>, n: usize) -> Vec<i64> {
 
                 // flip the sign if the original value from y is too high
                 if a >= 1 << 63 {
+                    // println!("{}", r);
                     v = -v;
                 }
 
@@ -229,6 +232,8 @@ pub fn hawksign(
 
         // sample vector x = (x0, x1)
         let x = sample(&s, t, n);
+        
+        println!("x: {:?}", x);
 
         // split x into two vectors
         let (x0, x1) = (&x[0..n].to_vec(), &x[n..].to_vec());
@@ -242,16 +247,18 @@ pub fn hawksign(
         // compute one part of the signature
         // w = B^-1 x, so w1 = g*x0 - f*x1
         let mut w1 = poly_sub(&poly_mult_ntt(&f, &x1, p), &poly_mult_ntt(&g, &x0, p));
+        // println!("w: {:?}", w1);
 
         // check symbreak condition
         if !symbreak(&w1) {
             w1 = w1.iter().map(|&x| -x).collect();
         }
 
+        // println!("h: {:?}", h);
+
         // compute the actual signature sig = (h-w)/2
         let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x >> 1).collect();
-        // println!("Sig before conversion: {:?}", sig);
-        // let sig: Vec<u8> = sig.iter().map(|&x| x as u8).collect();
+        // println!("s: {:?}", sig);
 
         return (sig, salt);
     }
