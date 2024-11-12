@@ -3,22 +3,20 @@ mod fft_constants;
 mod ntt;
 mod ntt_constants;
 
-mod grutils;
-
-mod hawk_tests;
-
 mod ntru_solve;
-mod params;
 mod rngcontext;
 mod utils;
 
 mod parameters;
 
-mod hawk1024;
-mod hawk256;
-mod hawk512;
+mod hawk_tests;
 
-mod compression;
+mod write_to_file;
+
+mod hawkkeygen;
+mod hawksign;
+mod hawkverify;
+mod verifyutils;
 
 use hawk_tests::test_all;
 
@@ -28,18 +26,9 @@ use peak_alloc::PeakAlloc;
 #[global_allocator]
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
-/*
-   Driver code for HAWK implementation.
-
-   Integer types:
-   n: 256-1024, use u16,
-   log n: 8-10, use u8,
-   vectors of bits: 0/1, use u8,
-   vectors f and g: initially low numbers, but is changed fast.
-       set as Vec<i64>, will have negative values
-
-*/
-
 fn main() {
+    // run several instances of hawk 256, 512, and 1024
+    // measures avg. time usage
     test_all();
+    // run_hpp_attack();
 }

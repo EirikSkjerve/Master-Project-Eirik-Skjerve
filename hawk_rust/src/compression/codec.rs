@@ -2,7 +2,7 @@
 
 use crate::compression::compress::compressgr;
 use crate::compression::decompress::decompressgr;
-use crate::grutils::*;
+use crate::compression::grutils::*;
 use crate::utils::bytes_to_poly;
 
 use crate::parameters::hawk256_params::*;
@@ -20,7 +20,7 @@ pub fn enc_pub(logn: usize, q00: &Vec<i64>, q01: &Vec<i64>) -> Vec<u8> {
         return vec![0];
     }
 
-    let v: usize = 16 - HIGH00 as usize;
+    let v: usize = 16 - HIGH00;
 
     let mut q00_c = q00.clone();
     q00_c[0] = (q00[0]) >> v;

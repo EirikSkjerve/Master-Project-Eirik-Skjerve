@@ -1,27 +1,29 @@
 // HAWK 512 parameter set
 
-pub const LENPRIV: usize = 184;
-pub const LENPUB: usize = 1024;
-pub const LENSIG: usize = 555;
+// many are commented out because they are not used when encoding/decoding is not used
 
-pub const N: usize = 512;
-pub const QS: u128 = 1 << 64;
-
-pub const SIGMASIGN: f64 = 1.278;
+// pub const LENPRIV: usize = 184;
+// pub const LENPUB: usize = 1024;
+// pub const LENSIG: usize = 555;
+//
+// pub const N: usize = 512;
+// pub const QS: u128 = 1 << 64;
+//
+// pub const SIGMASIGN: f64 = 1.278;
 pub const SIGMAVERIFY: f64 = 1.425;
 pub const SIGMAKRSEC: f64 = 1.425;
 
 pub const LENSALT: usize = 24;
 pub const LENKGSEED: usize = 24;
-pub const LENHPUB: usize = 32;
+// pub const LENHPUB: usize = 32;
 
-pub const LOW00: usize = 5;
+// pub const LOW00: usize = 5;
 pub const HIGH00: usize = 9;
-pub const LOW01: usize = 9;
+// pub const LOW01: usize = 9;
 pub const HIGH01: usize = 12;
 pub const HIGH11: usize = 15;
 pub const HIGHS0: usize = 13;
-pub const LOWS1: usize = 5;
+// pub const LOWS1: usize = 5;
 pub const HIGHS1: usize = 9;
 
 pub const BETA0: f64 = 1.0 / 1000.0;
