@@ -56,8 +56,6 @@ fn sample(s: &[u8], t: Vec<u8>, n: usize) -> Vec<i64> {
         512 => (hawk512_params::T0, hawk512_params::T1),
         _ => (hawk1024_params::T0, hawk1024_params::T1),
     };
-    println!("t0: {:?}", t0);
-    println!("t1: {:?}", t1);
 
     // vector y of random high numbers
     // note that the entries in y are uniformly distributed
@@ -233,8 +231,6 @@ pub fn hawksign(
         // sample vector x = (x0, x1)
         let x = sample(&s, t, n);
         
-        println!("x: {:?}", x);
-
         // split x into two vectors
         let (x0, x1) = (&x[0..n].to_vec(), &x[n..].to_vec());
 
