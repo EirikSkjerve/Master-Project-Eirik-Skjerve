@@ -110,7 +110,7 @@ pub fn rebuildw0(
     for u in 0..n_uz {
         let v = (cs0 * h0[u]) + t[u];
         // let z = (v + cs0).div_floor(&(2 * cs0));
-        let z = num::Integer::div_floor(&(v+cs0),&(2*cs0));
+        let z = num::Integer::div_floor(&(v + cs0), &(2 * cs0));
 
         if z < -base_i64.pow(highs0 as u32) || z >= base_i64.pow(highs0 as u32) {
             // return None here instead
