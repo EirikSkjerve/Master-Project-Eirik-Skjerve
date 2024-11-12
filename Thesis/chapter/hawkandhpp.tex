@@ -9,9 +9,12 @@ Present simple sketch of keygen, sign and ver, as well as an example in dimensio
 \subsection{Signature verification}
 
 \section{Learning a parallelepiped}
-The paper \textit{Learning a Parallelepiped: Cryptanalysis of GGH and NTRU Signatures} by Phong Q. Nguyen and Oded Regev from 2006 \cite{hpp}
-introduced a method for breaking signature schemes that follow the GGH structure. By collecting enough signatures on the form $\mathbf{s} = \nint{\textbf{m} \mathbf{B}^{-1}}\mathbf{B}$
-where $\mathbf{m}$ is a hash of some message and $\mathbf{B}$ is the secret basis, one can easily recover $\mathbf{B}$. 
+The paper \textit{Learning a Parallelepiped: Cryptanalysis of GGH and NTRU Signatures} by Phong Q. Nguyen and Oded Regev from 2006 
+introduced a method for breaking digital signature schemes based on the GHH scheme \cite{hpp}. 
+Essentially, by observing enough \textit{message, signature} pairs, one can deduce the secret key.
+
+By collecting enough signatures on the form $\mathbf{s} = \nint{\textbf{m} \mathbf{B}^{-1}}\mathbf{B}$
+where $\mathbf{m}$ is a hash of some message and $\mathbf{B}$ is the secret basis, one can recover $\mathbf{B}$. 
 \subsection{Assumptions}
 First we look at an idealized case to get some understanding of the Hidden Parallelepiped Problem:
 Let $\mathbf{B}$ be a secret $n \times n$ matrix. Let $\{\mathbf{s}_1, \mathbf{s}_2, ... \mathbf{s}_p\}$ where $\mathbf{s}_i = \nint{\textbf{m}_i \mathbf{B}^{-1}}\mathbf{B}$
