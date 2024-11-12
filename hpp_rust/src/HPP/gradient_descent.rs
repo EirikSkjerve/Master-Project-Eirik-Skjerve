@@ -7,11 +7,10 @@ use rand::SeedableRng;
 
 use crate::HPP::hpp::get_uni_slice_float;
 
-use std::{
-    io::{stdout, Write}
-};
+use std::io::{stdout, Write};
 
 /// generate some uniformly distributed unit vector with entries in range [-1..1]
+/// i.e. some vector on the unit "circle"
 fn gen_u_vec(n: usize, seed: usize) -> Matrix<f64, Dyn, Const<1>, VecStorage<f64, Dyn, Const<1>>> {
     // generate some random numbers
     let z = get_uni_slice_float(n, 1, &mut StdRng::seed_from_u64(seed as u64));
@@ -45,7 +44,7 @@ fn nabla_mom4(
     let uw = u * w;
     // power of 3 to each entry
     let uw3 = uw.map(|x| x.powi(3));
-    let uw3u = 4.0 * (uw3.clone().transpose() * u) / u.nrows() as f64;
+    let uw3u = 4.0 * (uw3.transpose() * u) / u.nrows() as f64;
     uw3u
 }
 
@@ -68,26 +67,41 @@ pub fn gradient_descent(
     // for nice printouts
     let mut stdout = stdout();
 
+    // run until n unique solutions are found
     while solutions.len() < n {
-        let mut w = gen_u_vec(n, seed);
+        
+        // step 1
+        let mut w = gen_u_vec(n, seed+solutions.len());
 
         seed += 1;
         loop {
+            eprintln!("fresh w: {w:.4}");
             iterations += 1;
+            // step 2
             let g = nabla_mom4(&u, &w).transpose();
+            eprintln!("g: {g:.4}");
 
+            // step 3
             let mut w_new = w.clone() - (rate * g);
+
+            // step 4
             let norm_sq: f64 = w_new.iter().map(|&x| x.powi(2)).sum();
             w_new /= norm_sq.sqrt();
 
+            eprintln!("new w: {w_new:.4}");
+
+            println!("{} vs. {}", mom4(&u, &w), mom4(&u, &w_new));
+
+            // step 5
             if mom4(&u, &w) <= mom4(&u, &w_new) {
-                // round entries
+                // round entries and apply L^-1 to w
                 let vtemp = w.clone().transpose() * linv.clone();
                 let v = vtemp.map(|x| x.round() as i32);
                 let neg_v = -v.clone();
 
+                // only add new solutions
                 if !solutions.contains(&v) && !solutions.contains(&neg_v) {
-                    solutions.push(v.clone());
+                    solutions.push(v);
 
                     // clear previous output
                     stdout.flush().unwrap();
@@ -96,6 +110,7 @@ pub fn gradient_descent(
                 }
                 break;
             } else {
+                // step 8
                 w = w_new;
             }
         }

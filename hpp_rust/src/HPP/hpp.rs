@@ -11,8 +11,8 @@ use rand::distributions::{Distribution, Uniform};
 
 use crate::HPP::gradient_descent;
 
-const NUM_SAMPLES: usize = 2000; 
-const N: usize = 8;
+const NUM_SAMPLES: usize = 20; 
+const N: usize = 2;
 
 /// returns n i8 integers uniformly distributed on -entry_bound..entry_bound
 pub fn get_uni_slice_int(n: usize, entry_bound: usize, seed: usize) -> Vec<i8> {
@@ -62,9 +62,11 @@ fn gen_sec_mat(
     degree: usize,
     entry_bound: usize,
 ) -> Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>> {
+    let mut ctr = 1;
     loop {
         // generate slice of uniformly random integers between -entry_bound..entry_bound
-        let uni_slice = get_uni_slice_int(degree * degree, entry_bound, 42);
+        ctr += 1;
+        let uni_slice = get_uni_slice_int(degree * degree, entry_bound, 42 + ctr);
         // convert the integers to floats for later calculation
         let uni_slice_f: Vec<f64> = uni_slice.iter().map(|&x| x as f64).collect();
 
@@ -164,6 +166,8 @@ pub fn run_hpp_attack() {
     let seed: u64 = rng_seed.gen();
     println!("Seed: {}", seed);
 
+    let seed = 11624233396751494047;
+
     let mut rng = StdRng::seed_from_u64(seed);
 
     // just hardcoding this for now
@@ -178,7 +182,7 @@ pub fn run_hpp_attack() {
         let x = get_uni_slice_float(N, dist_bound, &mut rng);
         let x_vec = DVector::from_row_slice(&x);
         let y_vec = x_vec.transpose() * sec_v_f.clone();
-        eprintln!("y_{i}: {y_vec}");
+        eprintln!("y_{i}: {y_vec:.2}");
         uni_samples.push(y_vec);
     }
 
@@ -226,6 +230,7 @@ pub fn run_hpp_attack() {
     println!("gradient descent used: {:?}", start.elapsed());
 
     let sec_v = sec_v_f.map(|x| x.round() as i32);
+    eprintln!("Approximation of rows: {guess_sol}");
 
     let rho_timer = Instant::now();
     check_v_approximation(&sec_v, &guess_sol);
