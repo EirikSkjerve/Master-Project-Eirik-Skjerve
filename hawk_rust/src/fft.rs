@@ -48,11 +48,6 @@ pub fn fft(f: &Vec<f64>) -> Vec<Complex<f64>> {
     return y;
 }
 
-pub fn fft_i64(f: &Vec<i64>) -> Vec<Complex<f64>> {
-    let f_f: Vec<f64> = f.iter().map(|&x| x as f64).collect();
-    return fft(&f_f);
-}
-
 pub fn ifft(f_fft: &Vec<Complex<f64>>) -> Vec<f64> {
     let n = f_fft.len();
 

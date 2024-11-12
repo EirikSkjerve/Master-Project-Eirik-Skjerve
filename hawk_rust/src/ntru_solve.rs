@@ -2,7 +2,7 @@ extern crate num_bigint;
 extern crate num_traits;
 
 use num_bigint::{BigInt, ToBigInt};
-use num_traits::{One, Signed, ToPrimitive, Zero};
+use num_traits::{One, Signed, Zero};
 
 use crate::fft::{add_fft, adj_fft, div_fft, fft, ifft, mul_fft};
 use crate::utils::{bigint_to_f64_vec, bigint_to_i64_vec, bigint_vec};

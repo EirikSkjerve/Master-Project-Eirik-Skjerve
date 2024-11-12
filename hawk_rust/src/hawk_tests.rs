@@ -4,7 +4,7 @@ use crate::hawkverify::hawkverify;
 
 use crate::rngcontext::get_random_bytes;
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use prettytable::{Cell, Row, Table};
 
@@ -43,7 +43,7 @@ pub fn hawkrun(table: &mut Table, n: usize) {
     }
 
     // keep track of number of failed signatures
-    let mut num_failed = 0;
+    // let mut num_failed = 0;
 
     // create collection of signatures corresponding to messages
     let mut signatures: Vec<(Vec<i64>, Vec<u8>)> = Vec::with_capacity(NUM_SAMPLES);
@@ -56,11 +56,11 @@ pub fn hawkrun(table: &mut Table, n: usize) {
     // verify the message/signature pairs
     let ver_time_start = Instant::now();
     for i in 0..NUM_SAMPLES {
-        let verification = hawkverify(&messages[i], &pubkey, &signatures[i].0, &signatures[i].1, n);
+        let _ = hawkverify(&messages[i], &pubkey, &signatures[i].0, &signatures[i].1, n);
 
-        if !verification {
-            num_failed += 1;
-        }
+        // if !verification {
+        //     num_failed += 1;
+        // }
     }
 
     let ver_time_stop = ver_time_start.elapsed();

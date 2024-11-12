@@ -4,8 +4,6 @@ use crate::ntt_constants::brv;
 use crate::utils::{adjoint, mod_pow, modulo};
 use num_complex::Complex;
 use std::f64::consts::PI;
-// using this import to floor the quotient after division in the following algorithm
-use num::Integer;
 
 pub fn delta(k: usize) -> (i64, i64) {
     let i = Complex::new(0.0, 1.0);
@@ -96,8 +94,10 @@ pub fn rebuildw0(
             return vec![0];
         }
 
-        let y_re = x_re.div_floor(&v);
-        let y_im = x_im.div_floor(&v);
+        // let y_re = x_re.div_floor(&v);
+        let y_re = num::Integer::div_floor(&x_re, &v);
+        // let y_im = x_im.div_floor(&v);
+        let y_im = num::Integer::div_floor(&x_im, &v);
 
         q01_fft[u] = y_re - (2 * z_re * y_re);
         q01_fft[u + (n_uz / 2)] = y_im - (2 * z_im * y_im);
@@ -109,7 +109,8 @@ pub fn rebuildw0(
 
     for u in 0..n_uz {
         let v = (cs0 * h0[u]) + t[u];
-        let z = (v + cs0).div_floor(&(2 * cs0));
+        // let z = (v + cs0).div_floor(&(2 * cs0));
+        let z = num::Integer::div_floor(&(v+cs0),&(2*cs0));
 
         if z < -base_i64.pow(highs0 as u32) || z >= base_i64.pow(highs0 as u32) {
             // return None here instead
