@@ -50,46 +50,6 @@ pub fn xgcd(mut a: BigInt, mut b: BigInt) -> (BigInt, BigInt, BigInt) {
 
     (a, s0, t0)
 }
-// pub fn xgcd(a_inp: BigInt, b_inp: BigInt) -> (BigInt, BigInt, BigInt) {
-//     /*
-//      * Implements extended euclidean algorithm to find Bezout's coefficients
-//      * Inputs: integers a and b
-//      * Outputs: gcd(a,b) and s, t such that a*s + b*t = gcd(a,b)
-//      */
-//
-//     // swap the order if a is less than b
-//     if a_inp < b_inp {
-//         let res = xgcd(b_inp, a_inp);
-//         return (res.0, res.2, res.1);
-//     }
-//
-//     // initialize variables
-//     let mut cof: [BigInt; 4] = [BigInt::one(), BigInt::ZERO, BigInt::ZERO, BigInt::one()];
-//     let mut a = a_inp;
-//     let mut b = b_inp;
-//
-//     // perform the algorithm
-//     while b != BigInt::ZERO {
-//         // rounded division
-//         let q = &a / &b;
-//
-//         // calculates the gcd
-//         let mut temp = b.clone();
-//         b = a % &b;
-//         a = temp;
-//
-//         // calculates the coefficients
-//         temp = cof[1].clone();
-//         cof[1] = cof[0].clone() - &q * cof[1].clone();
-//         cof[0] = temp;
-//
-//         temp = cof[3].clone();
-//         cof[3] = cof[2].clone() - &q * cof[3].clone();
-//         cof[2] = temp;
-//     }
-//
-//     (a, cof[0].clone(), cof[2].clone())
-// }
 
 pub fn karatsuba(a: Vec<BigInt>, b: Vec<BigInt>, n: usize) -> Vec<BigInt> {
     //
@@ -268,7 +228,6 @@ fn ntrusolve_inner(f: &Vec<BigInt>, g: &Vec<BigInt>) -> Option<(Vec<BigInt>, Vec
         // if gcd of f and g at innermost level is not one, we can't find solution to
         // ntru-equation
         if d != BigInt::one() {
-            println!("gcd({}, {}) = {}, aborting", f[0], g[0], d);
             return None;
         } else {
             // otherwise, output from extended euclidean algorithm is solution to ntru-equation
