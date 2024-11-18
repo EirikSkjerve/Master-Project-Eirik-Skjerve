@@ -7,9 +7,9 @@ announced a standardization process for new standard schemes for KEMs (Key Encap
 including KRYSTALS-Dilithium which is to be standardized, are based on lattice problems that are believed to be hard to solve for both classical and quantum computers (source). \hfill \break \\
 
 Cryptographic schemes based on lattice problems are not an enirely new phenomenon, however. NTRU-Sign, published in 2003(source), is a digital signature scheme based on the hardness of the Closest Vector Problem (source).
-The original scheme was broken due to Phong. Q. Nguyen \& Oded Regev in 2006 \cite{hpp}, who showed that by observing enough signatures generated with one secret key, one can retrieve the secret key.
+The original scheme was broken due to Phong. Q. Nguyen \& Oded Regev in 2006 \cite{NR09}, who showed that by observing enough signatures generated with one secret key, one can retrieve the secret key.
 A newer digital signature scheme, Hawk (source), submitted to NIST's standardization process, is a scheme similar that of NTRU and GGH. 
-The goal of this thesis is to try and adapt the Hidden Parallelepiped Problem attack to Hawk \cite{hawk}. Hawk spec here \cite{hawkspec}
+The goal of this thesis is to try and adapt the Hidden Parallelepiped Problem attack to Hawk: \cite{HawkSpec24}.
 
 \section{Objectives}
 The objective for this thesis consists of two main parts:
@@ -18,7 +18,7 @@ The objective for this thesis consists of two main parts:
     Implementing a scheme on ones own is a good way to actually learn how it works. I chose to implement it in Rust for the sake of learning the programming language.
     Moreover, having ones own version makes it easier to experiment, adjust and modify to ones need. It would also be a challenge to understand and work with complicated source code someone else has written.
 
-\item \textbf{Cryptanalysis and experimentation}. As part two of the thesis I want to do cryptanalysis of Hawk. The goal is to use the "Learning a parallelepiped" attack \cite{hpp} and adjusting it to try and break Hawk. 
+\item \textbf{Cryptanalysis and experimentation}. As part two of the thesis I want to do cryptanalysis of Hawk. The goal is to use the "Learning a parallelepiped" attack \cite{NR09} and adjusting it to try and break Hawk. 
     This requires both theoretical and practical work, and experiments will be implemented in Rust.
 \end{itemize}
 \section{Thesis outline}
