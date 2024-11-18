@@ -101,13 +101,14 @@ pub fn gradient_descent(
         }
     }
 
-    println!(
-        "\nRUST HPP GRADIENT DESCENT COMPLETED IN {} ITERATIONS",
-        iterations
-    );
+    // println!(
+    //     "\nRUST HPP GRADIENT DESCENT COMPLETED IN {} ITERATIONS",
+    //     iterations
+    // );
 
     // convert vec of row vectors to matrix object
     let v_mat = Matrix::from_rows(&solutions);
+    println!("");
 
     // return the guess
     v_mat

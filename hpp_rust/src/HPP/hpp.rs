@@ -6,13 +6,36 @@ use std::time::Instant;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
-use rand::distributions::{Distribution, Uniform};
-// use rand_distr::{Normal, Distribution};
+// use rand::distributions::{Distribution, Uniform};
+use rand_distr::{Normal, Distribution};
 
 use crate::HPP::gradient_descent;
 
-const NUM_SAMPLES: usize = 2000; 
-const N: usize = 8;
+const NUM_SAMPLES: usize = 1000000;
+const N: usize = 512;
+
+// gives a measure of the difference between two matrices
+fn mat_dist(a_mat: &DMatrix<f64>, b_mat: &DMatrix<f64>){
+
+    let mut num_diff = 0;
+    let mut sum_diff: f64 = 0.0;
+    for i in 0..a_mat.nrows() {
+        for j in 0..b_mat.nrows() {
+            let a = a_mat[(i, j)];
+            let b = b_mat[(i, j)];
+
+            if a!=b {
+                println!("{} != {}", a, b);
+                num_diff += 1;
+                sum_diff += (a-b).abs();
+            }
+        }
+    }
+    
+    let avg_diff = sum_diff/num_diff as f64;
+    println!("Matrices have different elements: {}", num_diff);
+    println!("Average difference between elements: {}", avg_diff);
+}
 
 /// returns n i8 integers uniformly distributed on -entry_bound..entry_bound
 pub fn get_uni_slice_int(n: usize, entry_bound: usize, seed: usize) -> Vec<i8> {
@@ -21,6 +44,7 @@ pub fn get_uni_slice_int(n: usize, entry_bound: usize, seed: usize) -> Vec<i8> {
     //  - entry_bound: the range to sample in
     //  - seed: a seed for the StdRng instance
 
+    use rand::distributions::{Distribution, Uniform};
     // define upper and lower bound for the sampling
     let bound = Uniform::from(-(entry_bound as i8)..(entry_bound as i8) + 1);
     // seed an rng
@@ -43,9 +67,10 @@ pub fn get_uni_slice_float(n: usize, dist_bound: usize, rng: &mut StdRng) -> Vec
     //  - dist_bound: the range to sample in
     //  - rng: a pre-seeded StdRng instance
 
+    use rand::distributions::{Distribution, Uniform};
     // define upper and lower bound for the sampling
-    let dist = Uniform::from(-(dist_bound as f64)..(dist_bound as f64));
-    // let normal = Normal::new(0.0, 1.0).unwrap();
+    // let dist = Uniform::from(-(dist_bound as f64)..(dist_bound as f64));
+    let dist = Normal::new(0.0, 2.0).unwrap();
     // initialize empty vector to store the samples
     let mut rnd_bytes: Vec<f64> = Vec::with_capacity(n);
 
@@ -62,9 +87,11 @@ fn gen_sec_mat(
     degree: usize,
     entry_bound: usize,
 ) -> Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>> {
+    let mut ctr = 0;
     loop {
+        ctr += 1;
         // generate slice of uniformly random integers between -entry_bound..entry_bound
-        let uni_slice = get_uni_slice_int(degree * degree, entry_bound, 42);
+        let uni_slice = get_uni_slice_int(degree * degree, entry_bound, 42+ctr);
         // convert the integers to floats for later calculation
         let uni_slice_f: Vec<f64> = uni_slice.iter().map(|&x| x as f64).collect();
 
@@ -156,13 +183,13 @@ pub fn run_hpp_attack() {
     let sec_v_f = gen_sec_mat(N, entry_bound);
 
     let vtv = sec_v_f.transpose() * sec_v_f.clone();
-    eprintln!("V^t V: {vtv}");
+    // eprintln!("Actual covariance matrix V^t V: {vtv}");
 
     // initialize
     // create random seed for rng
     let mut rng_seed = rand::thread_rng();
     let seed: u64 = rng_seed.gen();
-    println!("Seed: {}", seed);
+    // println!("Seed: {}", seed);
 
     let mut rng = StdRng::seed_from_u64(seed);
 
@@ -178,7 +205,6 @@ pub fn run_hpp_attack() {
         let x = get_uni_slice_float(N, dist_bound, &mut rng);
         let x_vec = DVector::from_row_slice(&x);
         let y_vec = x_vec.transpose() * sec_v_f.clone();
-        eprintln!("y_{i}: {y_vec}");
         uni_samples.push(y_vec);
     }
 
@@ -188,11 +214,14 @@ pub fn run_hpp_attack() {
     let pub_y = DMatrix::from_rows(&uni_samples);
 
     // approximation of Gram Matrix
-    let g_approx_f = (1.0 / ex2) * (pub_y.transpose() * pub_y.clone()) * (1.0 / NUM_SAMPLES as f64);
-
+    // let g_approx_f = (1.0 / ex2) * (pub_y.transpose() * pub_y.clone()) * (1.0 / NUM_SAMPLES as f64);
+    let g_approx_f = (1.0/4.0)*(pub_y.transpose() * pub_y.clone()) / NUM_SAMPLES as f64;
     // round the entries
     let g_approx = g_approx_f.map(|x| x.round());
-    eprintln!("G: {g_approx}");
+    // eprintln!("Approximated covariance matrix G: {g_approx}");
+
+    mat_dist(&vtv, &g_approx);
+    return;
 
     // compute inverse of g
     let g_approx_inverse = g_approx
