@@ -92,20 +92,25 @@ Consequently, $\lim_{\eta\to\infty} \vec{v}^t \vec{v} = \mat{V}^t \bb{E}[\vec{x}
 and conversely $\lim_{\eta\to\infty} \mat{V}^t \mat{V} = (\vec{v}^t \vec{v})/ \sigma^2$.
 \end{proof}
 
-This means that we can in theory approximate the covariance matrix $\mat{V}^t \mat{V}$ by averaging over $\vec{v}^t \vec{v}$ and dividing this by $\sigma ^2$. 
+This means that we can in theory approximate the covariance matrix $\mat{V}^t \mat{V}$ by averaging over $\vec{v}^t \vec{v}$ and dividing by $\sigma ^2$. 
 However, experiments show that a normal distribution requires many more samples, perhaps exponentially many(?). Why is this??
 The question is also the following: how accurate does our approximation actually need to be?
-
-The Hypercube transformation steps should be the same regardless of what distribution the samples follow. 
-For completeness: 
+\paragraph{Hypercube transformation}
+Assume now that we know $\mat{V}^t \mat{V}$. Consider instead of $\PP{V}$, $\PP[\eta]{V}$.
+Then by following part 1 of \textbf{Lemma 2} and its proof from \cite{NR09} we can transform our hidden parallelepiped $\PP[\eta]{V}$ into $\PP[\eta]{C}$, a hidden hypercube,
+since this does not depend on what distribution the samples follow - it only assumes one knows $\mat{V}^t\mat{V}$.
+For completeness, by adapting the second part of the proof of \textbf{Lemma 2} to our case: 
 \begin{proof}
-    Assume $\mat{G} = \mat{V}^t \mat{V}$ and $\mat{L}$ such that $\mat{G}^{-1} = \mat{L} \mat{L}^t$ and $\mat{C} = \mat{V} \mat{L}$ 
-    like in \textbf{Lemma 2} in \cite{NR09}. 
-    Now, let $\vec{v}$ be \textit{normally} distributed over $\mathcal{P}(\mat{V})$. 
-    Then it is clear that since $\vec{v} = \vec{x} \mat{V}$, then $\vec{v} \mat{L} = \vec{x} \mat{V} \mat{L} = \vec{x} \mat{C}$
-    and $\vec{v} \mat{L}$ is normally distributed over the hidden hypercube $\mathcal{P}(\mat{C})$.
+    Let $\vec{v} = \vec{x}\mat{V}$ where $\vec{x}$ is normally distributed according to $\normdist{0}{\sigma}$, however we only consider the finite interval $[-\eta,\eta]$.
+    It follows then that $\vec{v}\mat{L} = \vec{x}\mat{V}\mat{L} = \vec{x}\mat{C}$ has a (truncated) uniform distribution over $\PP[\eta]{C}$.
 \end{proof}
-So we should be able to map our normally distributed samples onto the hidden hypercube.
+Thus, we should also, in theory, be able to map our normally distributed samples onto the hidden hypercube.
+
+\paragraph{Learning a hypercube}
+It is clear that samples uniformly over $\PP[\eta]{V}$ centered at the origin will form a hypersphere of which every rotation leaves the sphere practically equal. As a consequence, any measure of the fourth moment of one-dimensional projections are 
+useless because every projection will yield the same result.
+For completeness, we show the results.
+
 
 % As a countermeasure against these types of attacks, it was proposed in \cite{GPV07} to not use the uniform distribution when creating signatures. Rather, by sampling from a Discrete Gaussian distribution
 % (a discrete analogue to the Normal distribution), signatures do not "leak" any information about the secret parallelepiped, and the geometry of the key remains concealed.
