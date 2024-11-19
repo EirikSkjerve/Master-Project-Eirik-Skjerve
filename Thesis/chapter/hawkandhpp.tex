@@ -1,3 +1,10 @@
+\newcommand{\PP}[2][]{\mathcal{P}_{#1}(\mat{#2})}
+\newcommand{\mat}[1]{\mathit{#1}}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\newcommand{\GLnR}{\mathcal{GL}_{n}(\mathbb{R})}
+\newcommand{\normdist}[2]{\mathcal{N}(#1, #2)}
+\newcommand{\bb}[1]{\mathbb{#1}}
+
 \chapter{Hawk and \textit{Learning a parallelepiped}}
 
 \section{Hawk}
@@ -16,43 +23,43 @@ The attack broke the NTRU-Sign scheme by observing as little as 400 signatures.
 
 \subsection{Solving the Hidden Parallelepiped Problem}
 First we define an idealized version of both the problem to solve and the solution as proposed in \cite{NR09}. Then we discuss the problem and solution in a practical context.
-\paragraph{Hidden Parallelepiped Problem (HPP):} Let $\mathit{V} = [\mathbf{v}_1, ... \mathbf{v}_n ]$ be a secret $n \times n$ matrix and $\mathit{V} \in \mathcal{GL}_n (\mathbb{R})$.
-Define by $\mathcal{P}(\mathit{V}) = \{\sum_{i=1}^{n} x_i \mathbf{v}_i : x_i \in [-1, 1]\}$ a secret $n$-dimensional parallelepiped defined by V.
-Given a polynomial (in $n$) number of vector samples uniformly distributed over $\mathcal{P}(\mathit{V})$, recover the rows $\mathbf{v}_i$ of $\mathit{V}$. \\
+\paragraph{Hidden Parallelepiped Problem (HPP):} Let $\mat{V} = [\vec{v}_1, ... \vec{v}_n ]$ be a secret $n \times n$ matrix and $\mat{V} \in \GLnR$.
+Define by $\PP{V} = \{\sum_{i=1}^{n} x_i \vec{v}_i : x_i \in [-1, 1]\}$ a secret $n$-dimensional parallelepiped defined by V.
+Given a polynomial (in $n$) number of vector samples uniformly distributed over $\PP{V}$, recover the rows $\vec{v}_i$ of $\mat{V}$. \\
 We solve this problem in two main steps: 
 \begin{enumerate}
     \item Transforming the hidden parallelepiped into a hidden hypercube:
     \item Learning the hypercube:
 \end{enumerate}
 \paragraph{Parallelepiped $\rightarrow$ Hypercube}
-The first step of the attack is to convert our hidden parallelepiped $\mathcal{P}(\mathit{V})$ into a hidden hypercube 
-$\mathcal{P}(\mathit{C})$ with orthogonal basis vectors.
-Essentially, one moves each sampled point in accordance to a transformation matrix $\mathit{L}$ computed the following way: \\
+The first step of the attack is to convert our hidden parallelepiped $\PP{V}$ into a hidden hypercube 
+$\PP{C}$ with orthogonal basis vectors.
+Essentially, one moves each sampled point in accordance to a transformation matrix $\mat{L}$ computed the following way: \\
 \begin{itemize}
-    \item Approximate $\mathit{G} \approx \mathit{V}^T \mathit{V}$ using our samples $\mathcal{X} = \{\mathbf{x}_1, ..., \mathbf{x}_u\}$
-    \item Compute $\mathit{L}$ such that $\mathit{L} \mathit{L}^{T} = \mathit{G}^{-1}$
-    \item Then $\mathit{C} = \mathit{V} \mathit{L}$
-    \item By multiplying our samples $\mathcal{X}$ to the right by $\mathit{L}$, they are now uniformly distributed over the hidden hypercube $\mathcal{P}(\mathit{C})$
+    \item Approximate $\mat{G} \approx \mat{V}^T \mat{V}$ using our samples $\mathcal{X} = \{\vec{x}_1, ..., \vec{x}_u\}$
+    \item Compute $\mat{L}$ such that $\mat{L} \mat{L}^{T} = \mat{G}^{-1}$
+    \item Then $\mat{C} = \mat{V} \mat{L}$
+    \item By multiplying our samples $\mathcal{X}$ to the right by $\mat{L}$, they are now uniformly distributed over the hidden hypercube $\PP{C}$
     \item \textbf{(---SHOW CALCULATIONS---)}
 \end{itemize}
 
 \paragraph{Learning a Hypercube:}
-The second step is to learn the hypercube. Given samples over $\mathcal{P}(\mathit{C})$, we deduce the rows of the secret matrix $\mathit{C}$ with the method described in Algorithm 1. After the rows are approximated,
-one can multiply the rows $\{\mathbf{c}_1, ..., \mathbf{c}_2\}$ by $\mathit{L}^{-1}$ such that we have $\{\mathbf{v}_1, ..., \mathbf{v}_2\}$, and we are done.
+The second step is to learn the hypercube. Given samples over $\PP{C}$, we deduce the rows of the secret matrix $\mat{C}$ with the method described in Algorithm 1. After the rows are approximated,
+one can multiply the rows $\{\vec{c}_1, ..., \vec{c}_2\}$ by $\mat{L}^{-1}$ such that we have $\{\vec{v}_1, ..., \vec{v}_2\}$, and we are done.
 \begin{algorithm}
     \caption{Learning a Hypercube}
     \begin{algorithmic}
-        \Require Descent parameter $\delta$, samples $\mathcal{X}$ uniformly distributed over $\mathcal{P}(\mathit{C})$
-        \Ensure A row vector $\pm \mathbf{v}_i$ of $\mathit{C}$
-        \State Choose uniformly at random $\mathbf{w}$ on the unit sphere of $\mathbb{R}^n$
+        \Require Descent parameter $\delta$, samples $\mathcal{X}$ uniformly distributed over $\PP{C}$
+        \Ensure A row vector $\pm \vec{v}_i$ of $\mat{C}$
+        \State Choose uniformly at random $\vec{w}$ on the unit sphere of $\bb{R}^n$
         \Loop
-        \State Compute $\mathbf{g}$, an approximation of $\nabla mom_{4}(\mathbf{w})$
-        \State Let $\mathbf{w}_{new} = \mathbf{w} - \delta \mathbf{g}$
-        \State Place $\mathbf{w}_{new}$ back on the unit sphere by dividing it by $\left \Vert \mathbf{w}_{new} \right \Vert$
-        \If{$mom_4(\mathbf{w}_{new}) \ge mom_4(\mathbf{w})$} \Comment $mom_4$ are approximated by samples 
-            \State \Return $\mathbf{w}$
+        \State Compute $\vec{g}$, an approximation of $\nabla mom_{4}(\vec{w})$
+        \State Let $\vec{w}_{new} = \vec{w} - \delta \vec{g}$
+        \State Place $\vec{w}_{new}$ back on the unit sphere by dividing it by $\left \Vert \vec{w}_{new} \right \Vert$
+        \If{$mom_4(\vec{w}_{new}) \ge mom_4(\vec{w})$} \Comment $mom_4$ are approximated by samples 
+            \State \Return $\vec{w}$
         \Else
-            \State Replace $\mathbf{w}$ with $\mathbf{w_{new}}$ and continue loop
+            \State Replace $\vec{w}$ with $\vec{w_{new}}$ and continue loop
         \EndIf
         \EndLoop
     \end{algorithmic}
@@ -60,25 +67,45 @@ one can multiply the rows $\{\mathbf{c}_1, ..., \mathbf{c}_2\}$ by $\mathit{L}^{
 \hfill \break \\
 \subsection{HPP against NTRU}
 \subsection{HPP against normally distributed samples}
-The key component and assumption of the \textit{Learning a parallelepiped} attack is that the provided samples are distributed \textit{uniformly} over $\mathcal{P}(\mathit{V})$. 
-Assume now that samples over $\mathcal{P}(\mathit{V})$ is distributed normally.
+In the following, we see what happens to the computations that the attack is based on if we replace the uniform distribution by a normal distribution.
+The key component and assumption of the \textit{Learning a parallelepiped} attack is that the provided samples are distributed \textit{uniformly} over $\PP{V}$.
+Recall that $\PP{V}$ is defined as $\{\sum_{i=1}^n x_i \vec{v}_i : x_i \in [-1, 1]^n\}$ where $\vec{v}_i$ are rows of $\mat{V}$. (Generally one could take another interval than $[-1, 1]$ and do appropriate scaling.)
+It is clear that one runs into trouble if the sampled vectors are on the form $\vec{v} = \vec{x} \mat{V}$ where $\vec{x}$ follows a normal distribution, i.e. $x_i \sim \normdist{\mu}{\sigma}$.
 
-\paragraph{Approximating $\mathit{V}^t \mathit{V}$}
-Let $\mathit{V} \in \mathcal{GL}_n(\mathbb{R})$. Let $\mathbf{v}$ be chosen from a normal distribution over $\mathcal{P}(\mathit{V})$. 
-Then $\mathbb{E}[\mathbf{v}^t\mathbf{v}] = \mathit{V}^t \mathit{V}/\sigma^2$.\\
+\paragraph{Part 1}
+First of all, the distribution $\normdist{\mu},{\sigma}$ is defined over the interval $[- \infty, \infty]$, so it does not make sense to talk about samples "normally distributed over $\PP{V}$" without tweaking any definitions.
+Therefore, let $[- \eta, \eta]$ be a finite interval on which to consider a truncated normal distribution $\normdist{\mu}{\sigma})$ such that $\int_{-\eta}^{\eta} f_X(x) dx = 1 - \delta$ for some small $\delta$
+where $f_X(x)$ is the probability density function of $\normdist{\mu}{\sigma}$ (see definition in section 2).
+Now we consider $\PP[\eta]{V} = \{\sum_{i=1}^n x_i \vec{v}_i : x_i \in [-\eta, \eta]^n\}$ and proceed as in the original HPP with $\PP[\eta]{V}$ instead of $\PP{V}$.
+
+\paragraph{Approximating $\mat{V}^t \mat{V}$}
+Let $\mat{V} \in \GLnR$. Let $\vec{v}$ be chosen from a truncated normal distribution $\normdist{0}{\sigma}$ over $\PP[\eta]{V}$.
+Then $\lim_{\eta\to\infty}$ $\bb{E}[\vec{v}^t\vec{v}] = \mat{V}^t \mat{V} \cdot \sigma^2$, where $\sigma^2$ is the variance of the current distribution.
 
 \begin{proof}
-Let $\mathbf{v} = \mathbf{x}\mathit{V}$ where $\mathbf{x}$ is distributed over $\mathcal{N}(\mu = 0,\sigma)$, over the interval $[-\infty, \infty]$.
-Then $\mathbf{v}^t\mathbf{v} = \mathit{V}^t \mathbf{x}^t \mathbf{x} \mathit{V}$. Considering $\mathbb{E}[\mathbf{x}^t \mathbf{x}]$, we see that for $i \neq j$, 
-$\mathbb{E}[x_i x_j] = \mathbb{E}[x_i] \mathbb{E}[x_j] = 0 \cdot 0 = 0$ due to independent random variables.
-For $\mathbb{E}[x_i^2] = \mathbb{V}[x_i]$ since $\mathbb{V}[x_i] = \mathbb{E}[x_i^2] - \mathbb{E}[x_i]^2 = \mathbb{E}[x_i^2] - 0 = \sigma ^2$.
-Therefore, $\mathbb{E}[\mathbf{x}^t \mathbf{x}] = \frac{\mathit{I}_n}{\sigma^2}$, i.e. the identity matrix with diagonal entries divided by $\sigma ^2$.
-Consequently, $\mathbf{v}^t \mathbf{v} = \mathit{V}^t \mathbb{E}[\mathbf{x}^t\mathbf{x}] \mathit{V} = \mathit{V}^t \frac{\mathit{I}_n}{\sigma^2} \mathit{V} = \mathit{V}^t \mathit{V} / \sigma ^2$ 
-and conversely $\mathit{V}^t \mathit{V} = \sigma^2 \cdot \mathbf{v}^t \mathbf{v}$.
+    Let $\vec{v} = \vec{x}\mat{V}$ be all our samples, where $\vec{x}$ is such that $x_i \sim \normdist{0}{\sigma}$ over the interval $[-\eta, \eta]$.
+Then $\vec{v}^t\vec{v} = \mat{V}^t \vec{x}^t \vec{x} \mat{V}$. Considering $\bb{E}[\vec{x}^t \vec{x}]$, we see that for $i \neq j$, 
+$\bb{E}[x_i x_j] = \bb{E}[x_i] \bb{E}[x_j] = 0 \cdot 0 = 0$ due to independent random variables.
+For $i=j$, $\lim_{\eta\to\infty} \bb{E}[x_i^2] = \bb{V}[x_i]$ since $\bb{V}[x_i] = \bb{E}[x_i^2] - \bb{E}[x_i]^2 = \bb{E}[x_i^2] - 0 = \sigma ^2$.
+Therefore, $\lim_{\eta\to\infty} \bb{E}[\vec{x}^t \vec{x}] = \mat{I}_n \cdot \sigma^2$, i.e. the identity matrix with diagonal entries multiplied by $\sigma ^2$.
+Consequently, $\lim_{\eta\to\infty} \vec{v}^t \vec{v} = \mat{V}^t \bb{E}[\vec{x}^t\vec{x}] \mat{V} = \mat{V}^t \mat{I}_n \cdot \sigma^2 \mat{V} = (\mat{V}^t \mat{V}) \cdot \sigma ^2$ 
+and conversely $\lim_{\eta\to\infty} \mat{V}^t \mat{V} = (\vec{v}^t \vec{v})/ \sigma^2$.
 \end{proof}
 
-This means that we can in theory approximate the covariance matrix $\mathit{V}^t \mathit{V}$. However, it is clear that when the distribution is normal instead of uniform, one needs many more samples (why is this?).
-The question is also the following: how accurate does our approximation need to be?
+This means that we can in theory approximate the covariance matrix $\mat{V}^t \mat{V}$ by averaging over $\vec{v}^t \vec{v}$ and dividing this by $\sigma ^2$. 
+However, experiments show that a normal distribution requires many more samples, perhaps exponentially many(?). Why is this??
+The question is also the following: how accurate does our approximation actually need to be?
+
+The Hypercube transformation steps should be the same regardless of what distribution the samples follow. 
+For completeness: 
+\begin{proof}
+    Assume $\mat{G} = \mat{V}^t \mat{V}$ and $\mat{L}$ such that $\mat{G}^{-1} = \mat{L} \mat{L}^t$ and $\mat{C} = \mat{V} \mat{L}$ 
+    like in \textbf{Lemma 2} in \cite{NR09}. 
+    Now, let $\vec{v}$ be \textit{normally} distributed over $\mathcal{P}(\mat{V})$. 
+    Then it is clear that since $\vec{v} = \vec{x} \mat{V}$, then $\vec{v} \mat{L} = \vec{x} \mat{V} \mat{L} = \vec{x} \mat{C}$
+    and $\vec{v} \mat{L}$ is normally distributed over the hidden hypercube $\mathcal{P}(\mat{C})$.
+\end{proof}
+So we should be able to map our normally distributed samples onto the hidden hypercube.
 
 % As a countermeasure against these types of attacks, it was proposed in \cite{GPV07} to not use the uniform distribution when creating signatures. Rather, by sampling from a Discrete Gaussian distribution
 % (a discrete analogue to the Normal distribution), signatures do not "leak" any information about the secret parallelepiped, and the geometry of the key remains concealed.
