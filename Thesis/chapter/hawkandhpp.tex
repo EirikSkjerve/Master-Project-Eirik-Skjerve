@@ -107,10 +107,26 @@ For completeness, by adapting the second part of the proof of \textbf{Lemma 2} t
 Thus, we should also, in theory, be able to map our normally distributed samples onto the hidden hypercube.
 
 \paragraph{Learning a hypercube}
-It is clear that samples uniformly over $\PP[\eta]{V}$ centered at the origin will form a hypersphere of which every rotation leaves the sphere practically equal. As a consequence, any measure of the fourth moment of one-dimensional projections are 
+It is clear that samples uniformly over $\PP[\eta]{V}$ centered at the origin will form a hypersphere for which any rotation leaves the sphere practically equal. As a consequence, any measure of the fourth moment of one-dimensional projections are 
 useless because every projection will yield the same result.
 For completeness, we show the results.
 
+Analogous to \cite{NR09} we compute the 2nd and 4th moment of a vector $\vec{w}$ as: \\
+\begin{equation}
+mom_{\mat{V}, 2}(\vec{w}) = \sigma^2 \vec{w}\mat{V}^t\mat{V}\vec{w}^t \\
+\end{equation}
+\begin{equation}
+mom_{\mat{V}, 4}(\vec{w}) = 3 \sigma^4 (\sum_{i=1}^{n} <v_i, \vec{w}>^4 + \sum_{i \neq j} <v_i, \vec{w}>^2 <v_j, \vec{w}>^2)
+\end{equation}
+It turns out that if $\mat{V} \in \mathcal{O}(\bb{R})$, i.e. our samples are over a hypercube and $\vec{w}$ is on the unit sphere the 4th moment is constant. We show this by rewriting (3.2) as  
+\[ mom_{\mat{V}, 4}(\vec{w}) = 3\sigma^4(\sum_{i=1}^n<v_i, \vec{w}>^4 + \sum_{i=1}^n <v_i, \vec{w}>^2 \sum_{j=1}^n <v_j, \vec{w}>^2 - \sum_{i=1}^n<v_i, \vec{w}>^4 )\]
+\[ = 3\sigma^4(\sum_{i=1}^n <v_i, \vec{w}>^2 \sum_{j=1}^n <v_j, \vec{w}>^2) = 3\sigma^4(\sigma^2\left \Vert \vec{w} \right \Vert^2)^2 = 3\sigma^8\]
+because $mom_{\mat{V}, 2}(\vec{w}) = \sum_{i=1}^n <v_i, \vec{w}>^2 = \sigma^2 \left \Vert \vec{w} \right \Vert^2$ when $\mat{V} \in \mathcal{O}(\bb{R})$ and $\left \Vert \vec{w} \right \Vert^2 = 1$ when $\vec{w}$ lies on the unit sphere.
+
+In conclusion, if samples over the secret paralellepiped $\PP{V}$ follow a continuous normal distribution, the covariance matrix approximation requires many samples, and a gradient descent based on the fourth moment described in \cite{NR09}
+is impossible because the fourth moment is constant over the unit sphere of $\bb{R}^n$.
+
+\paragraph{What about a discrete Gaussian distribution?}
 
 % As a countermeasure against these types of attacks, it was proposed in \cite{GPV07} to not use the uniform distribution when creating signatures. Rather, by sampling from a Discrete Gaussian distribution
 % (a discrete analogue to the Normal distribution), signatures do not "leak" any information about the secret parallelepiped, and the geometry of the key remains concealed.
