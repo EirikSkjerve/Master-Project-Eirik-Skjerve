@@ -9,6 +9,7 @@ We are currently interested in [HAWK](https://hawk-sign.info/), which is based o
 2. Clone this repo
 3. cd hawk_rust
 4. cargo run (optional parameter "--release" for optimized compilation)
+<br/>
 Average timing result of key generation and 100 signature generations and verifications for 
 each degree 256, 512, and 1024
 
