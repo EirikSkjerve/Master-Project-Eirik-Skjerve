@@ -8,7 +8,7 @@ use std::time::Instant;
 
 use prettytable::{Cell, Row, Table};
 
-pub const NUM_SAMPLES: usize = 1;
+pub const NUM_SAMPLES: usize = 100;
 
 pub fn test_all() {
     // define table of timings

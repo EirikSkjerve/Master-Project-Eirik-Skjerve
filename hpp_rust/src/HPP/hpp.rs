@@ -11,8 +11,9 @@ use rand_distr::{Normal, Distribution};
 
 use crate::HPP::gradient_descent;
 
-const NUM_SAMPLES: usize = 1000000;
-const N: usize = 512;
+const NUM_SAMPLES: usize = 400000;
+const N: usize = 128;
+const SIGMA: f64 = 2.0;
 
 // gives a measure of the difference between two matrices
 fn mat_dist(a_mat: &DMatrix<f64>, b_mat: &DMatrix<f64>){
@@ -25,7 +26,7 @@ fn mat_dist(a_mat: &DMatrix<f64>, b_mat: &DMatrix<f64>){
             let b = b_mat[(i, j)];
 
             if a!=b {
-                println!("{} != {}", a, b);
+                // println!("{} != {}", a, b);
                 num_diff += 1;
                 sum_diff += (a-b).abs();
             }
@@ -70,7 +71,7 @@ pub fn get_uni_slice_float(n: usize, dist_bound: usize, rng: &mut StdRng) -> Vec
     use rand::distributions::{Distribution, Uniform};
     // define upper and lower bound for the sampling
     // let dist = Uniform::from(-(dist_bound as f64)..(dist_bound as f64));
-    let dist = Normal::new(0.0, 2.0).unwrap();
+    let dist = Normal::new(0.0, SIGMA).unwrap();
     // initialize empty vector to store the samples
     let mut rnd_bytes: Vec<f64> = Vec::with_capacity(n);
 
@@ -215,7 +216,7 @@ pub fn run_hpp_attack() {
 
     // approximation of Gram Matrix
     // let g_approx_f = (1.0 / ex2) * (pub_y.transpose() * pub_y.clone()) * (1.0 / NUM_SAMPLES as f64);
-    let g_approx_f = (1.0/4.0)*(pub_y.transpose() * pub_y.clone()) / NUM_SAMPLES as f64;
+    let g_approx_f = (1.0/SIGMA.powi(2))*(pub_y.transpose() * pub_y.clone()) / NUM_SAMPLES as f64;
     // round the entries
     let g_approx = g_approx_f.map(|x| x.round());
     // eprintln!("Approximated covariance matrix G: {g_approx}");

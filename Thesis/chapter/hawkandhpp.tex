@@ -73,7 +73,7 @@ Recall that $\PP{V}$ is defined as $\{\sum_{i=1}^n x_i \vec{v}_i : x_i \in [-1, 
 It is clear that one runs into trouble if the sampled vectors are on the form $\vec{v} = \vec{x} \mat{V}$ where $\vec{x}$ follows a normal distribution, i.e. $x_i \sim \normdist{\mu}{\sigma}$.
 
 \paragraph{Part 1}
-First of all, the distribution $\normdist{\mu},{\sigma}$ is defined over the interval $[- \infty, \infty]$, so it does not make sense to talk about samples "normally distributed over $\PP{V}$" without tweaking any definitions.
+First of all, the distribution $\normdist{\mu}{\sigma}$ is defined over the interval $[- \infty, \infty]$, so it does not make sense to talk about samples "normally distributed over $\PP{V}$" without tweaking any definitions.
 Therefore, let $[- \eta, \eta]$ be a finite interval on which to consider a truncated normal distribution $\normdist{\mu}{\sigma})$ such that $\int_{-\eta}^{\eta} f_X(x) dx = 1 - \delta$ for some small $\delta$
 where $f_X(x)$ is the probability density function of $\normdist{\mu}{\sigma}$ (see definition in section 2).
 Now we consider $\PP[\eta]{V} = \{\sum_{i=1}^n x_i \vec{v}_i : x_i \in [-\eta, \eta]^n\}$ and proceed as in the original HPP with $\PP[\eta]{V}$ instead of $\PP{V}$.
@@ -107,11 +107,11 @@ For completeness, by adapting the second part of the proof of \textbf{Lemma 2} t
 Thus, we should also, in theory, be able to map our normally distributed samples onto the hidden hypercube.
 
 \paragraph{Learning a hypercube}
-It is clear that samples uniformly over $\PP[\eta]{V}$ centered at the origin will form a hypersphere for which any rotation leaves the sphere practically equal. As a consequence, any measure of the fourth moment of one-dimensional projections are 
+It is clear that samples uniformly over $\PP[\eta]{C}$ centered at the origin will form a hypersphere for which any rotation leaves the sphere practically equal. As a consequence, any measure of the fourth moment of one-dimensional projections are 
 useless because every projection will yield the same result.
 For completeness, we show the results.
 
-Analogous to \cite{NR09} we compute the 2nd and 4th moment of a vector $\vec{w}$ as: \\
+Analogous to \cite{NR09} we compute the 2nd and 4th moment of a vector $\vec{w}$: \\
 \begin{equation}
 mom_{\mat{V}, 2}(\vec{w}) = \sigma^2 \vec{w}\mat{V}^t\mat{V}\vec{w}^t \\
 \end{equation}

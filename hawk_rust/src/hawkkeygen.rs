@@ -113,6 +113,7 @@ fn hawkkeygen_inner(
     // pubblic key is two elements from Q. The rest can be reconstructed
     let public_key = (q00, q01);
 
+
     // note that we do not perform compression here
 
     // return generated keypairs

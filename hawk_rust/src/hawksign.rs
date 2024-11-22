@@ -230,6 +230,7 @@ pub fn hawksign(
 
         // sample vector x = (x0, x1)
         let x = sample(&s, t, n);
+
         
         // split x into two vectors
         let (x0, x1) = (&x[0..n].to_vec(), &x[n..].to_vec());
@@ -239,6 +240,9 @@ pub fn hawksign(
         if (l2norm(&x) as f64) > (8 * n) as f64 * sigmaverify.powi(2) {
             continue;
         }
+    
+        // println!("Sample x: {:?}", x);
+        // println!("f: {:?}\ng: {:?}", f, g);
 
         // compute one part of the signature
         // w = B^-1 x, so w1 = g*x0 - f*x1
