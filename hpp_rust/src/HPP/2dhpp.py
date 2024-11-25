@@ -18,11 +18,11 @@ def random_matrix_w_det_one():
 if __name__ == "__main__":
     # B = random_matrix_with_determinant_one()
 
-    B = np.array(([1, 0], [0, 1]))
+    B = np.array(([1, 1], [0, 1]))
     # B = random_matrix_w_det_one()
     print(f"B: {B}")
 
-    num_samples = 10000
+    num_samples = 1000000
     mean = 0
     std_dev = 2
 
@@ -41,9 +41,9 @@ if __name__ == "__main__":
     xsu = [wsu[i][0] for i in range(num_samples)]
     ysu = [wsu[i][1] for i in range(num_samples)]
 
-    plt.grid(True)
+    # plt.grid(True)
     plt.scatter(xsn, ysn, color="green", alpha=0.1)
-    plt.scatter(xsu, ysu, alpha=0.1)
+    # plt.scatter(xsu, ysu, alpha=0.1)
 
     # # Generate points for the unit circle
     # theta = np.linspace(0, 2 * np.pi, 100)
