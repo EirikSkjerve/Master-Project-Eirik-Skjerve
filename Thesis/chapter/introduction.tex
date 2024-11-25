@@ -1,15 +1,17 @@
 \chapter{Introduction}
 \section{Context and motivation}
-Digital signatures are an important part of secure communication today. The most used cryptographic scheme used for digital signatures today is DSA (Digital Signature Algorithm) or RSA (Rivest, Shamir, and Adleman) signatures (source).
-However, in 1994, Peter Shor developed Shor's algorithm, which, given a large enough quantum computer, is able to solve the hard problems DSA and RSA is based upon, namely the Discrete Logarithm Problem and Prime Factorization(source). 
-Whether big enough quantum computers will emerge any time soon is debatable. However, measures against this potential looming threat has already begun. In 2016, NIST (National Institute of Standards and Technology)
-announced a standardization process for new standard schemes for KEMs (Key Encapsulation Methods) and digital signatures that have strong security against quantum computers (source). Many of the submissions to this process,
-including KRYSTALS-Dilithium which is to be standardized, are based on lattice problems that are believed to be hard to solve for both classical and quantum computers (source). \hfill \break \\
+Digital signatures are an integral part of secure communication today. The widely used DSA (Digital Signature Algorithm)
+and RSA (Rivest, Shamir, and Adleman) signature schemes are in peril due to the potential emergence of quantum computers which, 
+theoretically, are able to break the hard problems DSA and RSA-sign are based upon.
+Whether practical quantum computers with these powers will emerge any time soon is debatable. However, measures against this potential looming threat has already begun. 
+In 2016, NIST (National Institute of Standards and Technology) announced a process for selecting new standard schemes for Key Encapsulation Methods (abbr. KEMs) and 
+digital signatures that are resilient against quantum computers (source to NIST pages here). Many of the submissions to this process (including KRYSTALS-Dilithium which is to be standardized) 
+are based on lattice problems that are believed to be hard to solve for both classical and quantum computers. \hfill \break \\
 
-Cryptographic schemes based on lattice problems are not an enirely new phenomenon, however. NTRU-Sign, published in 2003(source), is a digital signature scheme based on the hardness of the Closest Vector Problem (source).
-The original scheme was broken due to Phong. Q. Nguyen \& Oded Regev in 2006 \cite{NR09}, who showed that by observing enough signatures generated with one secret key, one can retrieve the secret key.
-A newer digital signature scheme, Hawk (source), submitted to NIST's standardization process, is a scheme similar that of NTRU and GGH. 
-The goal of this thesis is to try and adapt the Hidden Parallelepiped Problem attack to Hawk: \cite{HawkSpec24}.
+Cryptographic schemes based on lattice problems are not an enirely new phenomenon, however. The NTRU scheme and its signature counterpart NTRU-Sign, published in 2003 (source for this),
+is a digital signature scheme based on the hardness of the Closest Vector Problem.
+The original scheme was broken by Phong. Q. Nguyen \& Oded Regev in 2006 \cite{NR09}, who showed that one can retrieve a secret key by observing enough signatures generated with the key.
+A newer digital signature scheme submitted to NIST's standardization process, Hawk \cite{HawkSpec24}, is somewhat similar to that of NTRU. 
 
 \section{Objectives}
 The objective for this thesis consists of two main parts:
