@@ -88,11 +88,16 @@ pub fn hawkverify(
         return false;
     }
 
+    // rebuild the missing part of the signature w 
     let w0 = rebuildw0(&q00, &q01, &w1, &h0, highs0, highs1, high00, high01);
+
+    // println!("w0 from veri: {:?}", w0);
 
     // primes used for doing ntt computations with Q
     let (p1, p2): (i64, i64) = (2147473409, 2147389441);
 
+    // calculate q-norm of signature w.r.t. two primes p1 and p2, same as used in signature
+    // generation
     let r1 = poly_qnorm(&q00, &q01, &w0, &w1, p1);
     let r2 = poly_qnorm(&q00, &q01, &w0, &w1, p2);
 
@@ -103,9 +108,11 @@ pub fn hawkverify(
 
     let r1 = r1 / (n as i64);
 
+    // check the q norm is not too high
     if (r1 as f64) > (8 * n) as f64 * sigmaverify.powi(2) {
         return false;
     }
 
+    // accept signature
     true
 }
