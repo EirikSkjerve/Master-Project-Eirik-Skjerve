@@ -8,7 +8,7 @@ use std::time::Instant;
 
 use prettytable::{Cell, Row, Table};
 
-pub const NUM_SAMPLES: usize = 100;
+pub const NUM_SAMPLES: usize = 1000;
 
 pub fn test_all() {
     // define table of timings
@@ -32,12 +32,16 @@ pub fn test_all() {
 }
 
 pub fn hawkrun(table: &mut Table, n: usize) {
-    // generate keypair
+    // start time for key generation
     let kgen_time_start = Instant::now();
+
+    // generate keypair
     let (privkey, pubkey) = hawkkeygen(n);
+
+    // end time for key generation
     let kgen_time_end = kgen_time_start.elapsed();
 
-    // pre-generate some messages
+    // pre-generate some random, uniformly generated messages
     let mut messages: Vec<Vec<u8>> = Vec::with_capacity(NUM_SAMPLES);
     for _ in 0..NUM_SAMPLES {
         messages.push(get_random_bytes(10));
@@ -45,19 +49,24 @@ pub fn hawkrun(table: &mut Table, n: usize) {
 
     // create collection of signatures corresponding to messages
     let mut signatures: Vec<(Vec<i64>, Vec<u8>)> = Vec::with_capacity(NUM_SAMPLES);
+    // start time for signature generation
     let sig_time_start = Instant::now();
     for i in 0..NUM_SAMPLES {
+        // sign the messages
         signatures.push(hawksign(&privkey, &messages[i], n));
     }
+    // end time for signature generation
     let sig_time_stop = sig_time_start.elapsed();
 
     // verify the message/signature pairs
+    // start time for signature verification
     let ver_time_start = Instant::now();
     for i in 0..NUM_SAMPLES {
         let _ = hawkverify(&messages[i], &pubkey, &signatures[i].0, &signatures[i].1, n);
 
     }
 
+    // end time for signature verification
     let ver_time_stop = ver_time_start.elapsed();
 
     // write all times to table
