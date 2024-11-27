@@ -246,3 +246,79 @@ pub fn poly_mult_ntt(f: &Vec<i64>, g: &Vec<i64>, p: i64) -> Vec<i64> {
 
     fg
 }
+
+fn transpose(f: &Vec<Vec<i64>>) -> Vec<Vec<i64>> {
+    // transposes a 2d list, i.e. swaps every i and j position
+
+    let mut ft: Vec<Vec<i64>> = Vec::new();
+
+    for i in 0..f.len() {
+        let mut temp: Vec<i64> = Vec::new();
+        for j in 0..f[i].len() {
+            temp.push(f[j][i]);
+        }
+        ft.push(temp);
+    }
+
+    ft
+}
+
+pub fn rot(f: &Vec<i64>) -> Vec<Vec<i64>> {
+    // implements the rot() functionality from Hawk spec. paper
+    // rot(f) = (vec(f), vec(fX),..., vec(fX^{n-1}))
+
+    let n = f.len();
+    let mut rotf: Vec<Vec<i64>> = Vec::new();
+    rotf.push(f.clone());
+    let mut cur = f.clone();
+    for i in 1..n {
+        let temp = -cur.remove(n - 1);
+        cur.insert(0, temp);
+        rotf.push(cur.clone());
+    }
+
+    rotf
+}
+
+pub fn rot_key(f: &Vec<i64>, g: &Vec<i64>, bigf: &Vec<i64>, bigg: &Vec<i64>) -> Vec<Vec<i64>> {
+    // performs rot on a key, either B or Q
+    // so for example rot_key(B) = (rot(f), rot(F), rot(g), rot(G)), and likewise for q
+    // assumes all input polynomials are of the same length
+
+    let n = f.len();
+
+    // rotate each part individually
+    let rotf = rot(f);
+    let rotg = rot(g);
+    let rotbigf = rot(bigf);
+    let rotbigg = rot(bigg);
+
+    // result vector
+    let mut res: Vec<Vec<i64>> = vec![Vec::with_capacity(2 * n); 2 * n];
+
+    // join rot(f) and rot(F) and add the resulting rows to res
+    for i in 0..n {
+        let mut rowi: Vec<i64> = Vec::with_capacity(2 * n);
+        for j in 0..n {
+            rowi.push(rotf[j][i]);
+        }
+        for j in 0..n {
+            rowi.push(rotbigf[j][i]);
+        }
+        res[i] = rowi;
+    }
+
+    // join rot(g) and rot(G) and add the resulting rows to res
+    for i in n..2 * n {
+        let mut rowi: Vec<i64> = Vec::with_capacity(2 * n);
+        for j in 0..n {
+            rowi.push(rotg[j][i - n]);
+        }
+        for j in 0..n {
+            rowi.push(rotbigg[j][i - n]);
+        }
+        res[i] = rowi;
+    }
+
+    res
+}
