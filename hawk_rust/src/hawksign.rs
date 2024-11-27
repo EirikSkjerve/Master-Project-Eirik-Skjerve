@@ -170,11 +170,9 @@ pub fn hawksign(
     // prime used for ntt computations
     let p = (1 << 16) + 1;
 
-    // precompute f, g, F and G mod 2 to save computations
-    // let f: Vec<i64> = poly_mod2(&f);
-    // let g: Vec<i64> = poly_mod2(&g);
-    let bigf: Vec<i64> = poly_mod2(&bigf);
-    let bigg: Vec<i64> = poly_mod2(&bigg);
+    // F and G mod 2    
+    let bigf_mod2: Vec<i64> = poly_mod2(&bigf);
+    let bigg_mod2: Vec<i64> = poly_mod2(&bigg);
 
     // start a loop that terminates when a valid signature is created
     loop {
@@ -208,9 +206,9 @@ pub fn hawksign(
         );
 
         // compute target vector t as B*h mod 2
-        let t0 = poly_add(&poly_mult_ntt(&h0, &f, p), &poly_mult_ntt(&h1, &bigf, p));
+        let t0 = poly_add(&poly_mult_ntt(&h0, &f, p), &poly_mult_ntt(&h1, &bigf_mod2, p));
 
-        let t1 = poly_add(&poly_mult_ntt(&h0, &g, p), &poly_mult_ntt(&h1, &bigg, p));
+        let t1 = poly_add(&poly_mult_ntt(&h0, &g, p), &poly_mult_ntt(&h1, &bigg_mod2, p));
 
         // join t0 and t1 together as Vec<u8>
         let t = concat_bytes(&vec![
@@ -231,7 +229,6 @@ pub fn hawksign(
         // sample vector x = (x0, x1)
         let x = sample(&s, t, n);
 
-        
         // split x into two vectors
         let (x0, x1) = (&x[0..n].to_vec(), &x[n..].to_vec());
 
@@ -240,19 +237,18 @@ pub fn hawksign(
         if (l2norm(&x) as f64) > (8 * n) as f64 * sigmaverify.powi(2) {
             continue;
         }
-    
-        // println!("Sample x: {:?}", x);
-        // println!("f: {:?}\ng: {:?}", f, g);
 
         // compute one part of the signature
         // w = B^-1 x, so w1 = g*x0 - f*x1
+        let mut w0 = poly_sub(&poly_mult_ntt(&bigg, &x0, p), &poly_mult_ntt(&bigf, &x1, p));
         let mut w1 = poly_sub(&poly_mult_ntt(&f, &x1, p), &poly_mult_ntt(&g, &x0, p));
-        // println!("w: {:?}", w1);
 
         // check symbreak condition
         if !symbreak(&w1) {
+            w0 = w0.iter().map(|&x| -x).collect();
             w1 = w1.iter().map(|&x| -x).collect();
         }
+        // println!("w0 from sign: {:?}", w0);
 
         // compute the actual signature sig = (h-w)/2
         let sig: Vec<i64> = poly_sub(&h1, &w1).iter().map(|&x| x >> 1).collect();
