@@ -5,7 +5,7 @@ use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
 
-use crate::HPP::hpp::get_uni_slice_float;
+use crate::hpp::hpp::get_uni_slice_float;
 
 use std::{
     io::{stdout, Write}

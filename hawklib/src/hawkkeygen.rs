@@ -110,9 +110,6 @@ fn hawkkeygen_inner(
     // private key is seed for generating f and g, and F and G
     let private_key = (kgseed, bigf.clone(), bigg.clone());
 
-    // testing purposes
-    // let test = rot_key(&f, &g, &bigf, &bigg);
-
     // pubblic key is two elements from Q. The rest can be reconstructed
     let public_key = (q00, q01);
 

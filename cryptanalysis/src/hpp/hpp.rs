@@ -9,11 +9,11 @@ use rand::{Rng, SeedableRng};
 // use rand::distributions::{Distribution, Uniform};
 use rand_distr::{Normal, Distribution};
 
-use crate::HPP::gradient_descent;
+use crate::hpp::gradient_descent;
 
-const NUM_SAMPLES: usize = 400000;
-const N: usize = 128;
-const SIGMA: f64 = 2.0;
+const NUM_SAMPLES: usize = 900000;
+const N: usize = 512;
+const SIGMA: f64 = 2.02;
 
 // gives a measure of the difference between two matrices
 fn mat_dist(a_mat: &DMatrix<f64>, b_mat: &DMatrix<f64>){
