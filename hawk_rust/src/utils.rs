@@ -277,22 +277,29 @@ pub fn rot(f: &Vec<i64>) -> Vec<Vec<i64>> {
         rotf.push(cur.clone());
     }
 
-    rotf
+    transpose(&rotf)
 }
 
-pub fn rot_key(f: &Vec<i64>, g: &Vec<i64>, bigf: &Vec<i64>, bigg: &Vec<i64>) -> Vec<Vec<i64>> {
-    // performs rot on a key, either B or Q
+pub fn rot_key(a: &Vec<i64>, b: &Vec<i64>, c: &Vec<i64>, d: &Vec<i64>) -> Vec<Vec<i64>> {
+    // performs rot on a key, either B or Q with elements a, b, c, and d in position 00, 10, 01, 11
     // so for example rot_key(B) = (rot(f), rot(F), rot(g), rot(G)), and likewise for q
     // assumes all input polynomials are of the same length
 
-    let n = f.len();
+    let n = a.len();
+    assert_eq!(a.len(), b.len());
+    assert_eq!(b.len(), c.len());
+    assert_eq!(c.len(), d.len());
 
     // rotate each part individually
-    let rotf = rot(f);
-    let rotg = rot(g);
-    let rotbigf = rot(bigf);
-    let rotbigg = rot(bigg);
+    let rota = rot(a);
+    let rotb = rot(b);
+    let rotc = rot(c);
+    let rotd = rot(d);
 
+    // println!("rota: {:?}", rota);
+    // println!("rotb: {:?}", rotb);
+    // println!("rotc: {:?}", rotc);
+    // println!("rotd: {:?}", rotd);
     // result vector
     let mut res: Vec<Vec<i64>> = vec![Vec::with_capacity(2 * n); 2 * n];
 
@@ -300,10 +307,10 @@ pub fn rot_key(f: &Vec<i64>, g: &Vec<i64>, bigf: &Vec<i64>, bigg: &Vec<i64>) -> 
     for i in 0..n {
         let mut rowi: Vec<i64> = Vec::with_capacity(2 * n);
         for j in 0..n {
-            rowi.push(rotf[j][i]);
+            rowi.push(rota[i][j]);
         }
         for j in 0..n {
-            rowi.push(rotbigf[j][i]);
+            rowi.push(rotc[i][j]);
         }
         res[i] = rowi;
     }
@@ -312,13 +319,47 @@ pub fn rot_key(f: &Vec<i64>, g: &Vec<i64>, bigf: &Vec<i64>, bigg: &Vec<i64>) -> 
     for i in n..2 * n {
         let mut rowi: Vec<i64> = Vec::with_capacity(2 * n);
         for j in 0..n {
-            rowi.push(rotg[j][i - n]);
+            rowi.push(rotb[i-n][j]);
         }
         for j in 0..n {
-            rowi.push(rotbigg[j][i - n]);
+            rowi.push(rotd[i-n][j]);
         }
         res[i] = rowi;
     }
 
     res
+}
+
+pub fn matmul(b: &Vec<Vec<i64>>, x: &Vec<i64>) -> Vec<i64>{
+    let n = x.len();
+    let mut res = vec![0; n];
+    
+    for (i, row) in b.iter().enumerate() {
+        res[i] = (0..n).map(|j| x[j]*row[j]).sum();
+    }
+
+    res
+}
+
+pub fn polymul(x: &Vec<i64>, y: &Vec<i64>) -> Vec<i64> {
+    // normal polynomial multiplication with mod X^n + 1
+
+    assert_eq!(x.len(), y.len());
+    let n = x.len();
+
+    let mut res = vec![0; 2*n];
+        
+    // assuming here x and y have the same length
+    for i in 0..n {
+        for j in 0..n {
+            res[i+j] += x[i]*y[j]; 
+        }
+    }
+
+    // reduce mod x^n + 1
+    for i in n..2*n {
+        res[i-n] -= res[i];
+    }
+
+    res[0..n].to_vec()
 }
