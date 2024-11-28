@@ -1,15 +1,9 @@
-// use crate::hawkkeygen::hawkkeygen;
-// use crate::hawksign::hawksign;
-// use crate::hawkverify::hawkverify;
-
-
 use hawklib::hawkkeygen::hawkkeygen;
 use hawklib::hawksign::hawksign;
 use hawklib::hawkverify::hawkverify;
 
-use crate::rngcontext::get_random_bytes;
-
 use std::time::Instant;
+use rand::Rng;
 
 use prettytable::{Cell, Row, Table};
 
@@ -86,4 +80,19 @@ pub fn hawkrun(table: &mut Table, n: usize) {
         Cell::new(&(sig_time_stop / NUM_SAMPLES as u32).as_micros().to_string()),
         Cell::new(&(ver_time_stop / NUM_SAMPLES as u32).as_micros().to_string()),
     ]));
+}
+
+pub fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
+    // return num_bytes random bytes in a Vec<u8>
+    //
+    // example: get_random_bytes(4) -> vec![100,200,33,99]
+
+    let mut res = Vec::with_capacity(num_bytes);
+    let mut rng = rand::thread_rng();
+
+    for _ in 0..num_bytes {
+        res.push(rng.gen_range(0..255));
+    }
+
+    res
 }
