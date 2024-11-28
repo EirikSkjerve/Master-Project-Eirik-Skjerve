@@ -1,6 +1,11 @@
-use crate::hawkkeygen::hawkkeygen;
-use crate::hawksign::hawksign;
-use crate::hawkverify::hawkverify;
+// use crate::hawkkeygen::hawkkeygen;
+// use crate::hawksign::hawksign;
+// use crate::hawkverify::hawkverify;
+
+
+use hawklib::hawkkeygen::hawkkeygen;
+use hawklib::hawksign::hawksign;
+use hawklib::hawkverify::hawkverify;
 
 use crate::rngcontext::get_random_bytes;
 
@@ -8,7 +13,7 @@ use std::time::Instant;
 
 use prettytable::{Cell, Row, Table};
 
-pub const NUM_SAMPLES: usize = 1000;
+pub const NUM_SAMPLES: usize = 100;
 
 pub fn test_all() {
     // define table of timings
@@ -60,11 +65,16 @@ pub fn hawkrun(table: &mut Table, n: usize) {
 
     // verify the message/signature pairs
     // start time for signature verification
+    let mut num_fails = 0;
     let ver_time_start = Instant::now();
     for i in 0..NUM_SAMPLES {
-        let _ = hawkverify(&messages[i], &pubkey, &signatures[i].0, &signatures[i].1, n);
-
+        let ver = hawkverify(&messages[i], &pubkey, &signatures[i].0, &signatures[i].1, n);
+        if !ver {
+            num_fails+=1;
+        }
     }
+
+    println!("{} failures", num_fails);
 
     // end time for signature verification
     let ver_time_stop = ver_time_start.elapsed();
