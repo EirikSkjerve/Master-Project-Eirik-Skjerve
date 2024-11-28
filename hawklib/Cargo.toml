@@ -1,0 +1,24 @@
+[package]
+name = "hawklib"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sha3 = "0.10.5"
+rand = "0.8"
+rand_core = "0.6"
+prime_factorization = "1.0.4"
+num = "0.4"
+
+num-bigint = "0.4"
+num-traits = "0.2"
+
+num-complex = "0.4.6"
+libm = "0.2.8"
+peak_alloc = "0.2.0"
+
+prettytable-rs = "^0.10"
+colored = "2.0"
+humantime = "2.1"
+nalgebra = "0.33.1"
+rand_distr = "0.4.3"
