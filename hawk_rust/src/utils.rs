@@ -271,7 +271,7 @@ pub fn rot(f: &Vec<i64>) -> Vec<Vec<i64>> {
     let mut rotf: Vec<Vec<i64>> = Vec::new();
     rotf.push(f.clone());
     let mut cur = f.clone();
-    for i in 1..n {
+    for _ in 1..n {
         let temp = -cur.remove(n - 1);
         cur.insert(0, temp);
         rotf.push(cur.clone());
@@ -296,10 +296,6 @@ pub fn rot_key(a: &Vec<i64>, b: &Vec<i64>, c: &Vec<i64>, d: &Vec<i64>) -> Vec<Ve
     let rotc = rot(c);
     let rotd = rot(d);
 
-    // println!("rota: {:?}", rota);
-    // println!("rotb: {:?}", rotb);
-    // println!("rotc: {:?}", rotc);
-    // println!("rotd: {:?}", rotd);
     // result vector
     let mut res: Vec<Vec<i64>> = vec![Vec::with_capacity(2 * n); 2 * n];
 
