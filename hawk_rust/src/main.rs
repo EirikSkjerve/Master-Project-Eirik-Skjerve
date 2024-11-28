@@ -1,5 +1,5 @@
-mod hawk_tests;
-use hawk_tests::test_all;
+mod benchmark;
+use benchmark::test_all;
 
 // memory measurement
 use peak_alloc::PeakAlloc;
