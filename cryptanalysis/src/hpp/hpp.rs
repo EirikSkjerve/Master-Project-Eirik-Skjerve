@@ -89,12 +89,21 @@ fn gen_sec_mat(
     entry_bound: usize,
 ) -> Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>> {
     let mut ctr = 0;
-    loop {
+    loop{
+
+        let mut rng_seed = rand::thread_rng();
+        let seed: u64 = rng_seed.gen();
+
+        let mut rng = StdRng::seed_from_u64(seed);
+
         ctr += 1;
         // generate slice of uniformly random integers between -entry_bound..entry_bound
         let uni_slice = get_uni_slice_int(degree * degree, entry_bound, 42+ctr);
         // convert the integers to floats for later calculation
         let uni_slice_f: Vec<f64> = uni_slice.iter().map(|&x| x as f64).collect();
+
+        let uni_slice = get_uni_slice_float(degree*degree,entry_bound, &mut rng);
+        let uni_slice_f: Vec<f64> = uni_slice.iter().map(|&x| x.round()).collect();
 
         // create a matrix from this slice
         let sec_v = DMatrix::from_column_slice(degree, degree, &uni_slice_f);
@@ -190,7 +199,6 @@ pub fn run_hpp_attack() {
     // create random seed for rng
     let mut rng_seed = rand::thread_rng();
     let seed: u64 = rng_seed.gen();
-    // println!("Seed: {}", seed);
 
     let mut rng = StdRng::seed_from_u64(seed);
 
