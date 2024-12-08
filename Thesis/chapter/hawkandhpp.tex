@@ -3,6 +3,7 @@
 \renewcommand{\vec}[1]{\mathbf{#1}}
 \newcommand{\GLnR}{\mathcal{GL}_{n}(\mathbb{R})}
 \newcommand{\normdist}[2]{\mathcal{N}(#1, #2^2)}
+\newcommand{\dgdist}{\mathcal{D}_{2\bb{Z}+c, \sigma}}
 \newcommand{\bb}[1]{\mathbb{#1}}
 
 \chapter{Hawk and \textit{Learning a parallelepiped}}
@@ -65,15 +66,16 @@ one can multiply the rows $\{\vec{c}_1, ..., \vec{c}_2\}$ by $\mat{L}^{-1}$ such
     \end{algorithmic}
 \end{algorithm}
 \hfill \break \\
-\subsection{HPP against NTRU}
+
 \subsection{HPP against normally distributed samples}
 In the following, we see what happens to the computations the \textit{Learning a parallelepiped} attack is based on if we replace the uniform distribution by a normal distribution.
 The key component and assumption of the \textit{Learning a parallelepiped} attack is that the provided samples are distributed uniformly over $\PP{V}$.
-Recall that $\PP{V}$ is defined as $\{\sum_{i=1}^n x_i \vec{v}_i : x_i \in [-1, 1]^n\}$ where $\vec{v}_i$ are rows of $\mat{V}$ (generally one can take another interval than $[-1, 1]$ and do appropriate scaling).
+Recall that $\PP{V}$ is defined as $\{\sum_{i=1}^n x_i \vec{v}_i : x_i \in [-1, 1]\}$ where $\vec{v}_i$ are rows of $\mat{V}$ and $x_i$ is uniformly distributed over $[-1, 1]$ 
+(generally one can take another interval than $[-1, 1]$ and do appropriate scaling).
 One runs into trouble if the sampled vectors are on the form $\vec{v} = \vec{x} \mat{V}$ where $\vec{x}$ follows a normal distribution, i.e. $x_i \sim \normdist{\mu}{\sigma}$.
 Although one might be able to approximate the covariance matrix $\mat{V}^t \mat{V}$, one can not do a gradient descent based on the fourth moment given such samples; the fourth moment is constant since the samples form a hypersphere.
 
-\paragraph{Adapting definition of $\PP{V}$}
+\paragraph{Adapting the definition of $\PP{V}$}
 Firstly, the distribution $\normdist{\mu}{\sigma}$ is defined over the interval $[- \infty, \infty]$, so it does not make sense to talk about samples "normally distributed over $\PP{V}$" without tweaking any definitions.
 Therefore, let $[- \eta, \eta]$ be a finite interval on which to consider a truncated normal distribution $\mathcal{N}_{\eta}(\mu, \sigma^2)$ such that $\int_{-\eta}^{\eta} f_X(x) dx = 1 - \delta$ for some negligibly small $\delta$
 where $f_X(x)$ is the probability density function of $\normdist{\mu}{\sigma}$.
@@ -124,6 +126,7 @@ Thus, we end up with:
 \begin{equation}
 mom_{\mat{V}, 2}(\vec{w}) = \sigma^2 \vec{w}\mat{V}^t\mat{V}\vec{w}^t \\
 \end{equation}
+We observe that if $\mat{V} \in \mathcal{O}(\bb{R})$, $mom_{\mat{V}, 2}(\vec(w)) = \left \Vert \vec{w} \right \Vert^2$
 
 For $k=4$, inside the $\bb{E}[ \ ]$ we have 
 \[
@@ -131,24 +134,46 @@ For $k=4$, inside the $\bb{E}[ \ ]$ we have
 \]
 We consider three cases for the indices $i, j, k,$ and $l$:
 \begin{enumerate}
-    \item \textbf{All equal}: if $i = j = k = l$, then we have $\sum_{1=1}^{n} \bb{E}[x_i ^4] \langle \vec{v}_i, \vec{w} \rangle^4$. A well known result for the normal distribution $\normdist{0}{\sigma}$ is that $\bb{E}[x^4] = 3 \sigma^4$.
-        
+    \item \textbf{None equal}: if $i, j, k,$ and $l$ are different, the expression equals 0 due to independent random variables.
+    \item \textbf{All equal}: if $i = j = k = l$, then we have $\sum_{1=1}^{n} \bb{E}[x_i ^4] \langle \vec{v}_i, \vec{w} \rangle^4$. 
+        A well known result for the normal distribution $\normdist{0}{\sigma}$ is that $\bb{E}[x^4] = 3 \sigma^4$.
+    \item \textbf{Pairwise equal}: if either 
+        \begin{itemize}
+            \item $i=j \neq k=l$
+            \item $i=l \neq j=k$
+            \item $i=k \neq j=l$
+        \end{itemize}
+        we have the following:
+        \[
+            \sum_{i\neq j} \bb{E}[x_i^2x_j^2] \langle \vec{v}_i, \vec{w} \rangle ^2 \langle \vec{v}_j, \vec{w} \rangle^2
+        \]
+        Since $\bb{E}[x_i^2x_j^2] = \bb{E}[x_i^2]\bb{E}[x_j^2] = \sigma^4$ due to independent random variables, we have
+        \[
+            \sigma^4 \sum_{i\neq j} \langle \vec{v}_i, \vec{w} \rangle ^2 \langle \vec{v}_j, \vec{w} \rangle^2
+        \]
 \end{enumerate}
-
+Putting together the expressions above we have:
+\[mom_{\mat{V}, 4}(\vec{w}) = 3 \sigma^4 \sum_{i=1}^{n} \langle \vec{v}_i, \vec{w}\rangle^4 + 3(\sigma^4 \sum_{i \neq j} \langle \vec{v}_i, \vec{w}\rangle^2 \langle \vec{v}_j, \vec{w}\rangle^2)\]
 \begin{equation}
-mom_{\mat{V}, 4}(\vec{w}) = 3 \sigma^4 (\sum_{i=1}^{n} <v_i, \vec{w}>^4 + \sum_{i \neq j} <v_i, \vec{w}>^2 <v_j, \vec{w}>^2)
+    mom_{\mat{V}, 4}(\vec{w}) = 3 \sigma^4 (\sum_{i=1}^{n} \langle \vec{v}_i, \vec{w}\rangle^4 + \sum_{i \neq j} \langle \vec{v}_i, \vec{w}\rangle^2 \langle \vec{v}_j, \vec{w}\rangle^2)
 \end{equation}
-It turns out that if $\mat{V} \in \mathcal{O}(\bb{R})$, i.e. our samples are over a hypercube and $\vec{w}$ is on the unit sphere the 4th moment is constant. We show this by rewriting (3.2) as  
-\[ mom_{\mat{V}, 4}(\vec{w}) = 3\sigma^4(\sum_{i=1}^n<v_i, \vec{w}>^4 + \sum_{i=1}^n <v_i, \vec{w}>^2 \sum_{j=1}^n <v_j, \vec{w}>^2 - \sum_{i=1}^n<v_i, \vec{w}>^4 )\]
-\[ = 3\sigma^4(\sum_{i=1}^n <v_i, \vec{w}>^2 \sum_{j=1}^n <v_j, \vec{w}>^2) = 3\sigma^4(\sigma^2\left \Vert \vec{w} \right \Vert^2)^2 = 3\sigma^8\]
-because $mom_{\mat{V}, 2}(\vec{w}) = \sum_{i=1}^n <v_i, \vec{w}>^2 = \sigma^2 \left \Vert \vec{w} \right \Vert^2$ when $\mat{V} \in \mathcal{O}(\bb{R})$ and $\left \Vert \vec{w} \right \Vert^2 = 1$ when $\vec{w}$ lies on the unit sphere.
 
-In conclusion, if samples over the secret parallellepiped $\PP{V}$ follow a continuous normal distribution, the covariance matrix approximation requires many samples, and a gradient descent based on the fourth moment described in \cite{NR09}
+Claim: If $\mat{V} \in \mathcal{O}(\bb{R})$, and $\vec{w}$ is on the unit sphere, $mom_{\mat{V}, 4}(\vec{w})$ is constant. 
+
+\begin{proof}
+This can be shown by rewriting (3.2) as  
+\[ mom_{\mat{V}, 4}(\vec{w}) = 3\sigma^4(\sum_{i=1}^n \langle \vec{v}_i, \vec{w}\rangle^4 + \sum_{i=1}^n \langle \vec{v}_i, \vec{w} \rangle^2 \sum_{j=1}^n \langle \vec{v}_j, \vec{w}\rangle^2 - \sum_{i=1}^n\langle \vec{v}_i, \vec{w}\rangle^4 )\]
+\[ mom_{\mat{V}, 4}(\vec{w}) = 3\sigma^4(\sum_{i=1}^n \langle \vec{v}_i, \vec{w}\rangle^2 \sum_{j=1}^n \langle \vec{v}_j, \vec{w}\rangle^2) = 3\sigma^4(\sigma^2\left \Vert \vec{w} \right \Vert^2)^2 = 3\sigma^8\]
+because $mom_{\mat{V}, 2}(\vec{w}) = \sum_{i=1}^n \langle \vec{v}_i, \vec{w}\rangle^2 = \sigma^2 \left \Vert \vec{w} \right \Vert^2$ when $\mat{V} \in \mathcal{O}(\bb{R})$ and $\left \Vert \vec{w} \right \Vert^2 = 1$ when $\vec{w}$ lies on the unit sphere.
+\end{proof}
+
+In conclusion, if samples over the secret parallelepiped $\PP[\eta]{V}$ follow a continuous normal distribution, a gradient descent based on the fourth moment described in \cite{NR09}
 is impossible because the fourth moment is constant over the unit sphere of $\bb{R}^n$.
 
 \paragraph{What about a discrete Gaussian distribution?}
 We now do the same computations considering the discrete Gaussian distribution as described in section 2 and \cite{HawkSpec24}. It turns out that this distribution behaves like the Normal distribution, and consequently gradient descent
-is impossible.
+is impossible. \\ 
+Consider the Discrete Gaussian Distribution as described in \cite{HawkSpec24} denoted 
 
 % As a countermeasure against these types of attacks, it was proposed in \cite{GPV07} to not use the uniform distribution when creating signatures. Rather, by sampling from a Discrete Gaussian distribution
 % (a discrete analogue to the Normal distribution), signatures do not "leak" any information about the secret parallelepiped, and the geometry of the key remains concealed.
