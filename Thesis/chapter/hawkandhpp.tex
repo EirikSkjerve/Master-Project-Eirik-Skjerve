@@ -79,19 +79,19 @@ Although one might be able to approximate the covariance matrix $\mat{V}^t \mat{
 Firstly, the distribution $\normdist{\mu}{\sigma}$ is defined over the interval $[- \infty, \infty]$, so it does not make sense to talk about samples "normally distributed over $\PP{V}$" without tweaking any definitions.
 Therefore, let $[- \eta, \eta]$ be a finite interval on which to consider a truncated normal distribution $\mathcal{N}_{\eta}(\mu, \sigma^2)$ such that $\int_{-\eta}^{\eta} f_X(x) dx = 1 - \delta$ for some negligibly small $\delta$
 where $f_X(x)$ is the probability density function of $\normdist{\mu}{\sigma}$.
-Now we consider $\PP[\eta]{V} = \{\sum_{i=1}^n x_i \vec{v}_i : x_i \in [-\eta, \eta]^n\}$ and proceed as in the original HPP with $\PP[\eta]{V}$ instead of $\PP{V}$.
+Now we consider $\PP[\eta]{V} = \{\sum_{i=1}^n x_i \vec{v}_i : x_i \in [-\eta, \eta]\}$ and proceed as in the original HPP with $\PP[\eta]{V}$ instead of $\PP{V}$.
 
 \paragraph{Approximating $\mat{V}^t \mat{V}$}
 Let $\mat{V} \in \GLnR$. Let $\vec{v}$ be chosen from a truncated normal distribution $\mathcal{N}_{\eta}(0, \sigma^2)$ over $\PP[\eta]{V}$.
-Then $\lim_{\eta\to\infty}$ $\bb{E}[\vec{v}^t\vec{v}] = \mat{V}^t \mat{V} \cdot \sigma^2$, where $\sigma^2$ is the variance of the current distribution.
+Then $\lim_{\eta\to\infty}$ $\bb{E}[\vec{v}^t\vec{v}] = \mat{V}^t \mat{V} \cdot \sigma^2$.
 
 \begin{proof}
-    Let samples be on the form $\vec{v} = \vec{x}\mat{V}$, where $\vec{x}$ is a vector where each element $x_i \sim \mathcal{N}_{\eta}(0, \sigma^2)$ over the interval $[-\eta, \eta]$.
+    Let samples be on the form $\vec{v} = \vec{x}\mat{V}$, where $\vec{x}$ is a row vector where each element $x_i \sim \mathcal{N}_{\eta}(0, \sigma^2)$.
     Then $\vec{v}^t\vec{v} = (\vec{x} \mat{V})^t (\vec{x} \mat{V}) = (\mat{V}^t \vec{x}^t)(\vec{x} \mat{V}) = \mat{V}^t \vec{x}^t \vec{x} \mat{V}$. Considering $\bb{E}[\vec{x}^t \vec{x}]$, we see that for $i \neq j$, 
 $\bb{E}[x_i x_j] = \bb{E}[x_i] \bb{E}[x_j] = 0 \cdot 0 = 0$ due to independent random variables.
 For $i=j$, $\lim_{\eta\to\infty} \bb{E}[x_i^2] = \bb{V}[x_i] = \sigma^2$ since $\bb{V}[x_i] = \bb{E}[x_i^2] - \bb{E}[x_i]^2 = \bb{E}[x_i^2] - 0 = \sigma ^2$.
-Therefore, $\lim_{\eta\to\infty} \bb{E}[\vec{x}^t \vec{x}] = \mat{I}_n \cdot \sigma^2$, i.e. the identity matrix with diagonal entries multiplied by $\sigma ^2$.
-Consequently, $\lim_{\eta\to\infty} \vec{v}^t \vec{v} = \mat{V}^t \bb{E}[\vec{x}^t\vec{x}] \mat{V} = \mat{V}^t \mat{I}_n \cdot \sigma^2 \mat{V} = (\mat{V}^t \mat{V}) \cdot \sigma ^2$ 
+Therefore, $\lim_{\eta\to\infty} \bb{E}[\vec{x}^t \vec{x}] = \mat{I}_n \cdot \sigma^2$, i.e. the matrix with $\sigma ^2$ on the diagonal.
+Consequently, $\lim_{\eta\to\infty} \vec{v}^t \vec{v} = \mat{V}^t \bb{E}[\vec{x}^t\vec{x}] \mat{V} = \mat{V}^t (\mat{I}_n \cdot \sigma^2) \mat{V} = (\mat{V}^t \mat{V}) \cdot \sigma ^2$ 
 and conversely $\lim_{\eta\to\infty} \mat{V}^t \mat{V} = (\vec{v}^t \vec{v})/ \sigma^2$.
 \end{proof}
 
@@ -105,32 +105,31 @@ Then by following part 1 of \textbf{Lemma 2} and its proof from \cite{NR09} we c
 since this does not depend on what distribution the samples follow - it only assumes one knows $\mat{V}^t\mat{V}$.
 For completeness, by adapting the second part of \textbf{Lemma 2} to our case: 
 \begin{proof}
-    Let $\vec{v} = \vec{x}\mat{V}$ where $\vec{x}$ is normally distributed according to $\mathcal{N}_{\eta}(0, \sigma^2)$, considering the finite interval $[-\eta,\eta]$.
-    It follows then that $\vec{v}\mat{L} = \vec{x}\mat{V}\mat{L} = \vec{x}\mat{C}$ has a truncated uniform distribution over $\PP[\eta]{C}$.
+    Let $\vec{v} = \vec{x}\mat{V}$ where $\vec{x}$ is normally distributed according to $\mathcal{N}_{\eta}(0, \sigma^2)$.
+    Then samples $\vec{v}$ are distributed according to $\mathcal{N}_{\eta}(0, \sigma^2)$ over $\PP[\eta]{V}$.
+    It follows then $\vec{v}\mat{L} = \vec{x}\mat{V}\mat{L} = \vec{x}\mat{C}$ has a truncated uniform distribution over $\PP[\eta]{C}$.
 \end{proof}
 Thus, we should also be able to map our normally distributed samples onto the hidden hypercube.
 
 \paragraph{Learning a hypercube}
-It is clear that samples uniformly over $\PP[\eta]{C}$ centered at the origin will form a hypersphere for which any rotation leaves the sphere practically equal. As a consequence, any measure of the fourth moment of one-dimensional projections is
-useless because every projection will yield the same result.
-For completeness, we show the results.
+It is clear that samples uniformly over $\PP[\eta]{C}$ centered at the origin will form a hypersphere for which any orthogonal rotation leaves the sphere similar in shape. 
+As a consequence, any measure of the fourth moment of one-dimensional projections is useless because every projection will yield the same result.
 
-Analogous to \cite{NR09} we compute the 2nd and 4th moment of $\PP{V}$ over a vector $\vec{w} \in \bb{R}$: \\
-
-The \textit{k}-th moment of $\PP{V}$ over a vector $\vec{w}$ is defined as $mom_{\mat{V}, k} = \bb{E}[\langle \vec{u}, \vec{w} \rangle ^k]$ where $\vec{u} = \sum_{i=1}^{n} x_i \vec{v}_i$ and $x_i \sim \mathcal{N}_{\eta}(0, \sigma^2)$.
+Analogous to \cite{NR09} we compute the 2nd and 4th moment of $\PP[\eta]{V}$ over a vector $\vec{w} \in \bb{R}^n$.
+The \textit{k}-th moment of $\PP[\eta]{V}$ over a vector $\vec{w}$ is defined as $mom_{\mat{V}, k} = \bb{E}[\langle \vec{u}, \vec{w} \rangle ^k]$ where $\vec{u} = \sum_{i=1}^{n} x_i \vec{v}_i$ and $x_i \sim \mathcal{N}_{\eta}(0, \sigma^2)$.
 First we consider $\langle \vec{u}, \vec{w} \rangle = \langle \sum_{i=1}^{n} x_i\vec{v}_i, \vec{w}\rangle = \sum_{i=1}^{n}x_i \langle\vec{v}_i, \vec{w} \rangle$.
 Then for $k=2$, $\bb{E}[(\sum_{i=1}^{n}x_i \langle\vec{v}_i, \vec{w} \rangle)^2] = \bb{E}[\sum_{i=1}^{n} \sum_{j=1}^{n} x_i x_j \langle \vec{v}_i, \vec{w} \rangle \langle \vec{v}_j \vec{w} \rangle]$.
 Due to independent random variables, $x_i x_j = 0$ when $i \neq j$, so we have $\bb{E}[\sum_{i=1}^{n}x_i ^2 \langle \vec{v}_i, \vec{w} \rangle ^2] = \sum_{i=1}^{n}\bb{E}[x_i^2]\langle \vec{v}_i, \vec{w} \rangle^2$ 
-$= \sigma^2 \sum_{i=1}^{n}\langle \vec{v}_i, \vec{w} \rangle^2$.
+$= \sigma^2 \sum_{i=1}^{n}\langle \vec{v}_i, \vec{w} \rangle^2$ for sufficiently large $\eta$ due to the well known result that $\bb{E}[x^2] = \sigma^2$ for $x \sim \mathcal{N}(0, \sigma^2)$.
 Thus, we end up with:
 \begin{equation}
 mom_{\mat{V}, 2}(\vec{w}) = \sigma^2 \vec{w}\mat{V}^t\mat{V}\vec{w}^t \\
 \end{equation}
-We observe that if $\mat{V} \in \mathcal{O}(\bb{R})$, $mom_{\mat{V}, 2}(\vec(w)) = \left \Vert \vec{w} \right \Vert^2$
+We observe that if $\mat{V} \in \mathcal{O}(\bb{R})$, $mom_{\mat{V}, 2}(\vec{w}) = \sigma^2 \left \Vert \vec{w} \right \Vert^2$
 
-For $k=4$, inside the $\bb{E}[ \ ]$ we have 
+For $k=4$:
 \[
-    (\sum_{i=1}^{n} x_i \langle \vec{v}_i, \vec{w} \rangle)^4 = \sum_{i=1}^{n}\sum_{j=1}^{n}\sum_{k=1}^{n}\sum_{l=1}^{n}x_i x_j x_k x_l \langle \vec{v}_i, \vec{w} \rangle \langle \vec{v}_j, \vec{w} \rangle \langle \vec{v}_k, \vec{w} \rangle \langle \vec{v}_l, \vec{w} \rangle
+    \bb{E}[(\sum_{i=1}^{n} x_i \langle \vec{v}_i, \vec{w} \rangle)^4] = \bb{E}[\sum_{i=1}^{n}\sum_{j=1}^{n}\sum_{k=1}^{n}\sum_{l=1}^{n}x_i x_j x_k x_l \langle \vec{v}_i, \vec{w} \rangle \langle \vec{v}_j, \vec{w} \rangle \langle \vec{v}_k, \vec{w} \rangle \langle \vec{v}_l, \vec{w} \rangle]
 \]
 We consider three cases for the indices $i, j, k,$ and $l$:
 \begin{enumerate}
@@ -152,8 +151,9 @@ We consider three cases for the indices $i, j, k,$ and $l$:
             \sigma^4 \sum_{i\neq j} \langle \vec{v}_i, \vec{w} \rangle ^2 \langle \vec{v}_j, \vec{w} \rangle^2
         \]
 \end{enumerate}
-Putting together the expressions above we have:
-\[mom_{\mat{V}, 4}(\vec{w}) = 3 \sigma^4 \sum_{i=1}^{n} \langle \vec{v}_i, \vec{w}\rangle^4 + 3(\sigma^4 \sum_{i \neq j} \langle \vec{v}_i, \vec{w}\rangle^2 \langle \vec{v}_j, \vec{w}\rangle^2)\]
+Putting together the expressions above we have
+\[mom_{\mat{V}, 4}(\vec{w}) = 3 \sigma^4 \sum_{i=1}^{n} \langle \vec{v}_i, \vec{w}\rangle^4 + 3(\sigma^4 \sum_{i \neq j} \langle \vec{v}_i, \vec{w}\rangle^2 \langle \vec{v}_j, \vec{w}\rangle^2)\] 
+since there are three cases where indices pair up two and two. The final result becomes:
 \begin{equation}
     mom_{\mat{V}, 4}(\vec{w}) = 3 \sigma^4 (\sum_{i=1}^{n} \langle \vec{v}_i, \vec{w}\rangle^4 + \sum_{i \neq j} \langle \vec{v}_i, \vec{w}\rangle^2 \langle \vec{v}_j, \vec{w}\rangle^2)
 \end{equation}
@@ -170,10 +170,15 @@ because $mom_{\mat{V}, 2}(\vec{w}) = \sum_{i=1}^n \langle \vec{v}_i, \vec{w}\ran
 In conclusion, if samples over the secret parallelepiped $\PP[\eta]{V}$ follow a continuous normal distribution, a gradient descent based on the fourth moment described in \cite{NR09}
 is impossible because the fourth moment is constant over the unit sphere of $\bb{R}^n$.
 
-\paragraph{What about a discrete Gaussian distribution?}
-We now do the same computations considering the discrete Gaussian distribution as described in section 2 and \cite{HawkSpec24}. It turns out that this distribution behaves like the Normal distribution, and consequently gradient descent
-is impossible. \\ 
-Consider the Discrete Gaussian Distribution as described in \cite{HawkSpec24} denoted 
+\paragraph{The discrete Gaussian distribution}
+We now do the same computations considering the discrete Gaussian distribution as described in \cite{HawkSpec24}. 
+It turns out that for the parameters used in Hawk, this distribution behaves like its corresponding Normal distribution, and consequently gradient descent
+is infeasible. \\ 
+Consider the discrete Gaussian distribution as described in \cite{HawkSpec24}.
+\[\cdots Show \ definitions \ and \ stuff \ here \cdots\]
 
+Then by computational results, as $\eta$ grows large enough, $\bb{E}[x^2] = \sum_{-\eta}^{\eta} x^2 f_X(x)$ and $\bb{E}[x^4] = \sum_{-\eta}^{\eta} x^4 f_X(x)$ approaches $\sigma^2$ and $3 \sigma^4$ respectively. 
+
+\[\cdots Show \ table \ of \ computations \ here \cdots\]
 % As a countermeasure against these types of attacks, it was proposed in \cite{GPV07} to not use the uniform distribution when creating signatures. Rather, by sampling from a Discrete Gaussian distribution
 % (a discrete analogue to the Normal distribution), signatures do not "leak" any information about the secret parallelepiped, and the geometry of the key remains concealed.
