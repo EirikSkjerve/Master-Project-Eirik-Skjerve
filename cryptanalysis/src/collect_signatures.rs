@@ -24,15 +24,17 @@ fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
 
 pub fn generate_t_signatures(t: usize, n: usize) {
     // create t signatures with hawk degree n
-    // generate a keypair first
     
     assert!(n==256 || n==512 || n==1024);
 
+    // generate a keypair
     let (privkey, pubkey) = hawkkeygen(n);
 
+
+    // compute matrix version of secret key b and b inverse
     let (b, binv) = to_mat(&privkey);
 
-    // b^-1t b^-1
+    // compute g as b^-1t b^-1, covariance matrix of b inverse
     let actual_g = binv.transpose() * binv;
 
     // create t messages
@@ -47,16 +49,18 @@ pub fn generate_t_signatures(t: usize, n: usize) {
     let mut signatures: Vec<Vec<i64>> = Vec::with_capacity(t);
     for i in 0..t {
         // sign each message
+        // now each signature is on the form w = B^-1 * x
         signatures.push(hawksign_total(&privkey, &messages[i], n));
     }
 
+    // convert the signatures into an t times 2n matrix
+    // y contains our public samples distributed over P(B^-1)
     let sig_flat: Vec<i64> = signatures.into_iter().flatten().collect();
     let y = DMatrix::from_row_slice(t,2*n,&sig_flat);
 
     println!("Estimating covariance matrix...");
     let approx_g = estimate_cov_mat(&y);
     mat_dist(&actual_g, &approx_g);
-    // now each signature is on the form w = B^-1 * x
 }
 
 fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64>){

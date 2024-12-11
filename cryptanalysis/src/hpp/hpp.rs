@@ -20,6 +20,7 @@ fn mat_dist(a_mat: &DMatrix<f64>, b_mat: &DMatrix<f64>){
 
     let mut num_diff = 0;
     let mut sum_diff: f64 = 0.0;
+    let num_tot = a_mat.nrows()*a_mat.ncols();
     for i in 0..a_mat.nrows() {
         for j in 0..b_mat.nrows() {
             let a = a_mat[(i, j)];
@@ -33,8 +34,8 @@ fn mat_dist(a_mat: &DMatrix<f64>, b_mat: &DMatrix<f64>){
         }
     }
     
-    let avg_diff = sum_diff/num_diff as f64;
-    println!("Matrices have different elements: {}", num_diff);
+    let avg_diff = sum_diff/num_tot as f64;
+    println!("Matrices have different elements: {} / {num_tot}", num_diff);
     println!("Average difference between elements: {}", avg_diff);
 }
 

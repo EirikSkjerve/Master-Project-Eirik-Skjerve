@@ -423,6 +423,7 @@ pub fn hawksign_total(
             w1 = w1.iter().map(|&x| -x).collect();
         }
 
+        // in this version, return only w, not s=(h-w)/2
         let mut w = w0.clone();
         w.append(&mut w1.clone());
         return w;
