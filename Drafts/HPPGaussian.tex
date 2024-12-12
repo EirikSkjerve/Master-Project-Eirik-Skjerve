@@ -80,9 +80,8 @@ For completeness, by adapting the second part of \textbf{Lemma 2} to our case:
 Thus, we should be able to map our normally distributed samples from the hidden parallelepiped to the hidden hypercube.
 
 \paragraph{Learning a hypercube}
-It is clear that samples uniformly over $\PP[\eta]{C}$ centered at the origin form a hypersphere for which any orthogonal rotation leaves the sphere similar in shape. 
+It is clear that samples uniformly over $\PP[\eta]{C}$ centered at the origin form a hypersphere for which any orthogonal rotation leaves the sphere similar in shape.
 As a consequence, the fourth moment of $\PP[\eta]{C}$ is constant over the unit circle. \\ 
-
 Analogous to \cite{NR09} we compute the 2nd and 4th moment of $\PP[\eta]{V}$ over a vector $\vec{w} \in \bb{R}^n$.
 The \textit{k}-th moment of $\PP[\eta]{V}$ over a vector $\vec{w}$ is defined as $mom_{\mat{V}, k} = \bb{E}[\langle \vec{u}, \vec{w} \rangle ^k]$ where $\vec{u} = \sum_{i=1}^{n} x_i \vec{v}_i$ and $x_i \sim \mathcal{N}_{\eta}(0, \sigma^2)$.
 First we consider $\langle \vec{u}, \vec{w} \rangle = \langle \sum_{i=1}^{n} x_i\vec{v}_i, \vec{w}\rangle = \sum_{i=1}^{n}x_i \langle\vec{v}_i, \vec{w} \rangle$.
@@ -91,10 +90,9 @@ Due to independent random variables, $\bb{E}[x_i x_j] = 0$ when $i \neq j$, so w
 $= \sigma^2 \sum_{i=1}^{n}\langle \vec{v}_i, \vec{w} \rangle^2$ for sufficiently large $\eta$ due to the well known result that $\bb{E}[x^2] = \sigma^2$ for $x \sim \mathcal{N}(0, \sigma^2)$.
 Thus, we end up with:
 \begin{equation}
-mom_{\mat{V}, 2}(\vec{w}) = \sigma^2 \vec{w}\mat{V}^t\mat{V}\vec{w}^t \\
+mom_{\mat{V}, 2}(\vec{w}) = \sigma^2 \vec{w}\mat{V}^t\mat{V}\vec{w}^t
 \end{equation}
 We observe that if $\mat{V} \in \mathcal{O}(\bb{R})$, $mom_{\mat{V}, 2}(\vec{w}) = \sigma^2 \left \Vert \vec{w} \right \Vert^2$ \\
-
 For $k=4$:
 \[
     \bb{E}[(\sum_{i=1}^{n} x_i \langle \vec{v}_i, \vec{w} \rangle)^4] = \bb{E}[\sum_{i=1}^{n}\sum_{j=1}^{n}\sum_{k=1}^{n}\sum_{l=1}^{n}x_i x_j x_k x_l \langle \vec{v}_i, \vec{w} \rangle \langle \vec{v}_j, \vec{w} \rangle \langle \vec{v}_k, \vec{w} \rangle \langle \vec{v}_l, \vec{w} \rangle]
@@ -137,19 +135,45 @@ because $mom_{\mat{V}, 2}(\vec{w}) = \sum_{i=1}^n \langle \vec{v}_i, \vec{w}\ran
 
 In conclusion, if samples over the secret parallelepiped $\PP[\eta]{V}$ follow a continuous normal distribution, a gradient descent based on the fourth moment described in \cite{NR09}
 is impossible because the fourth moment is constant over the unit sphere of $\bb{R}^n$.
-
 \paragraph{The discrete Gaussian distribution}
-We now do the same computations considering the discrete Gaussian distribution as described in \cite{HawkSpec24}. 
-It turns out that for the parameters used in Hawk, this distribution behaves like its corresponding Normal distribution.\\ 
-Consider the discrete Gaussian distribution as described in \cite{HawkSpec24}. \\
-If $X \sim \mathcal{D}_{2 \bb{Z} + c, \sigma}$, we have Supp$(X) = 2 \bb{Z} + c$ where $c \in \{0, 1\}$, and Pr$[X = x] = \frac{\rho_{\sigma}(x)}{\sum_{y \in 2 \bb{Z} + c} \rho_{\sigma}(y)}$
+Consider the discrete Gaussian distribution $\mathcal{D}_{2 \bb{Z} + c, \sigma}$ as described in \cite{HawkSpec24}.
+If $X \sim \mathcal{D}_{2 \bb{Z} + c, \sigma}$, we have Supp$(X) = 2 \bb{Z} + c$ where $c \in \{0, 1\}$. Pr$[X = x] = \frac{\rho_{\sigma}(x)}{\sum_{y \in 2 \bb{Z} + c} \rho_{\sigma}(y)}$
 where $\rho_{\sigma}(x) = e^{-\frac{x^2}{2 \sigma^2}}$. For $c \in \{0, 1 \}$, $\bb{E}[X] = 0$ and $\bb{V}[X] = \sigma^2$ for appropriate choices of $\sigma$.
+Naturally, we have that $\sum_{x \in 2\bb{Z}+0}\frac{\rho_{\sigma}(x)}{\sum_{y \in 2 \bb{Z} + 0} \rho_{\sigma}(y)} = 1$
+and $\sum_{x \in 2\bb{Z}+1}\frac{\rho_{\sigma}(x)}{\sum_{y \in 2 \bb{Z} + 1} \rho_{\sigma}(y)} = 1$
+which implies $\sum_{x \in \bb{Z}}\frac{\rho_{\sigma}(x)}{\sum_{y \in \bb{Z}} \rho_{\sigma}(y)} = 1$. \\
 
-\[\cdots Show \ definitions \ and \ stuff \ here \cdots\]
+We want to prove/disprove that $\bb{E}[X^2] = \sigma^2$ and $\bb{E}[X^4] = 3 \sigma ^4$ or more generally that $3 \bb{E}[x^2]^2 = \bb{E}[X^4]$. 
+If either statement is true, we will be in the case of the normal distribution, i.e. 
+that $mom_{\mat{V}, 4}(\vec{w})$ is constant when $\mat{V} \in \mathcal{O}(\bb{R})$ and $\vec{w}$ is on the unit circle.
 
-Then by computational results, as $\eta$ grows large enough, $\bb{E}[x^2] = \sum_{-\eta}^{\eta} x^2 f_X(x)$ and $\bb{E}[x^4] = \sum_{-\eta}^{\eta} x^4 f_X(x)$ approaches $\sigma^2$ and $3 \sigma^4$ respectively. 
-
-\[\cdots Show \ table \ of \ computations \ here \cdots\]
+% In the following computations we consider the discrete Gaussian distribution without the parameter $c$
+% By computational results, as $\eta$ grows large enough, $\bb{E}[x^2] = \sum_{-\eta}^{\eta} x^2 f_X(x) $ approaches $ \sigma^2$ and 
+% $\bb{E}[x^4] = \sum_{-\eta}^{\eta} x^4 f_X(x) $ approaches $ 3 \sigma^4$. 
+%
+% From numerical computation of $\bb{E}[x^2] = \sum_{-\eta}^{\eta} x^2 f_X(x)$ and $\bb{E}[x^4] = \sum_{-\eta}^{\eta} x^4 f_X(x)$ for three values of $\sigma$ as used in Hawk \cite{HawkSpec24}:
+% \[\cdots Format \ a \ table \ of \ computations \ prettier \cdots\]
+% % $\sigma = 1.01, \sigma^2 = 1.0201$ \\ 
+% % $\sigma = 1.278, \sigma^2 = 1.633284$ \\ 
+% % $\sigma = 1.299, \sigma^2 = 1.687401$ \\ 
+%
+% \begin{center}
+% \begin{tabular}{||c c c c||} 
+%  \hline
+%  $\sigma$ & $\sigma^2$ & $3 \sigma^4$ \\ [0.5ex] 
+%  \hline\hline
+%  1.01 & 1.0201 & 3.12181203 \\ 
+%  \hline
+%  1.278 & 1.633284 & 8.002849873968 \\
+%  \hline
+%  1.299 & 1.687401 & 8.541966404402999 \\ [1ex]
+%  \hline
+% \end{tabular}
+% \end{center}
+%
+% It is easy to verify that for $\eta \geq 6$ the differences 
+% $|\sum_{-\eta}^{\eta} x^2 f_X(x) - \sigma^2|$ and $|\sum_{-\eta}^{\eta} x^4 f_X(x) - 3 \sigma ^2|$ are very close to zero.
+%
 % As a countermeasure against these types of attacks, it was proposed in \cite{GPV07} to not use the uniform distribution when creating signatures. Rather, by sampling from a Discrete Gaussian distribution
 % (a discrete analogue to the Normal distribution), signatures do not "leak" any information about the secret parallelepiped, and the geometry of the key remains concealed.
 
