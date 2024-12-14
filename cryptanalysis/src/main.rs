@@ -6,5 +6,5 @@ use collect_signatures::generate_t_signatures;
 
 fn main() {
     run_hpp_attack();
-    // generate_t_signatures(10000,256);
+    // generate_t_signatures(100000,256);
 }

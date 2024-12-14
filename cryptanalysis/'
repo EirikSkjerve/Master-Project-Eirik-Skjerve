@@ -98,7 +98,7 @@ fn estimate_cov_mat(y: &DMatrix<i64>) -> DMatrix<i64> {
 
     let y_f = y.map(|x| x as f64);
 
-    let g_approx = (1.0/(sigma.powi(2)))*(y_f.transpose() * y_f) / y.nrows() as f64;
+    let g_approx = (1.0/sigma.powi(2))*(y_f.transpose() * y_f) / y.nrows() as f64;
     
     let g_approx = g_approx.map(|x| x.round() as i64);
     g_approx

@@ -13,7 +13,7 @@ use crate::hpp::gradient_descent;
 
 const NUM_SAMPLES: usize = 900000;
 const N: usize = 512;
-const SIGMA: f64 = 2.02;
+const SIGMA: f64 = 1.01;
 
 // gives a measure of the difference between two matrices
 fn mat_dist(a_mat: &DMatrix<f64>, b_mat: &DMatrix<f64>){

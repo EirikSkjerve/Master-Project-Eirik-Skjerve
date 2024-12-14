@@ -23,16 +23,16 @@ if __name__ == "__main__":
     B = np.array(([1,0],[0,1]))
     print(f"B: {B}")
 
-    num_samples = 1000000
+    num_samples = 100000
     mean = 0
-    std_dev = 2
+    std_dev = 1.01
 
     zsn = []
     zsu = []
     for n in range(num_samples):
 
         zsn.append(np.random.normal(mean, std_dev, 2).round())
-        zsu.append(np.random.uniform(-5, 5, 2).round())
+        zsu.append(np.random.uniform(-1, 1, 2).round())
         # zsn.append(np.random.normal(mean, std_dev, 2))
         # zsu.append(np.random.uniform(-5, 5, 2))
 

@@ -7,9 +7,7 @@ use rand::SeedableRng;
 
 use crate::hpp::hpp::get_uni_slice_float;
 
-use std::{
-    io::{stdout, Write}
-};
+use std::io::{stdout, Write};
 
 /// generate some uniformly distributed unit vector with entries in range [-1..1]
 fn gen_u_vec(n: usize, seed: usize) -> Matrix<f64, Dyn, Const<1>, VecStorage<f64, Dyn, Const<1>>> {
