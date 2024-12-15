@@ -7,7 +7,7 @@ use rand::Rng;
 
 use prettytable::{Cell, Row, Table};
 
-pub const NUM_SAMPLES: usize = 100;
+pub const NUM_SAMPLES: usize = 1000;
 
 pub fn test_all() {
     // define table of timings
@@ -68,7 +68,7 @@ pub fn hawkrun(table: &mut Table, n: usize) {
         }
     }
 
-    println!("{} failures", num_fails);
+    // println!("{} failures", num_fails);
 
     // end time for signature verification
     let ver_time_stop = ver_time_start.elapsed();
