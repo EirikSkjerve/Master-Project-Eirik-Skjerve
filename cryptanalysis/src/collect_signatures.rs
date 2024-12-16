@@ -5,7 +5,7 @@ use hawklib::utils::rot_key;
 use rand::Rng;
 use nalgebra::*;
 
-type Matrix = DMatrix<i64>;
+// type Matrix = DMatrix<i64>;
 
 fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
     // return num_bytes random bytes in a Vec<u8>
@@ -50,7 +50,7 @@ pub fn generate_t_signatures(t: usize, n: usize) {
     for i in 0..t {
         // sign each message
         // now each signature is on the form w = B^-1 * x
-        signatures.push(hawksign_total(&privkey, &messages[i], n));
+        signatures.push(hawksign_total(&privkey, &messages[i], n).0);
     }
 
     // convert the signatures into an t times 2n matrix

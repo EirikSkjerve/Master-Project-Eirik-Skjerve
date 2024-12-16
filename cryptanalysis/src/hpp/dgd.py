@@ -29,8 +29,8 @@ def fourth(s, eta, c):
 if __name__ == "__main__":
 
     # sigma
-    s = 1.01
-    eta_range = 20
+    s = 1
+    eta_range = 10
     # c = 0
 
     # diffs_1 = []
@@ -66,6 +66,8 @@ if __name__ == "__main__":
         t2 += fourth(s, eta_range, c)
         # print(f"diff = {diff_2}")
 
+    print(f"\ns^2 = {s**2}")
     print(f"Avg. E[x^2]: {t1/2}")
+    print(f"3*s^4 = {3*s**4}")
     print(f"Avg. E[x^4]: {t2/2}")
     print(f"3E[x^2]^2: {3*(t1/2)**2}")
