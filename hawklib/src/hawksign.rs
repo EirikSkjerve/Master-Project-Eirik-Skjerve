@@ -49,7 +49,7 @@ pub fn symbreak(v: &Vec<i64>) -> bool {
     false
 }
 
-fn sample(s: &[u8], t: Vec<u8>, n: usize) -> Vec<i64> {
+pub fn sample(s: &[u8], t: Vec<u8>, n: usize) -> Vec<i64> {
     // get the correct tables
     let (t0, t1) = match n {
         256 => (hawk256_params::T0, hawk256_params::T1),
@@ -297,12 +297,12 @@ pub fn hawksign_total(
     privkey: &(Vec<u8>, Vec<i64>, Vec<i64>),
     msg: &[u8],
     n: usize,
-) -> Vec<i64> {
+) -> (Vec<i64>, Vec<i64>) {
     //
     // given secret key components and message, compute a signature
     // unlike specifications, return the entire w as signature
     // so that one does not need to use "rebuild" function to get entire w
-    //
+    // also returns the raw x-vector
 
     let (kgseed, bigf, bigg) = privkey;
 
@@ -329,6 +329,7 @@ pub fn hawksign_total(
 
     // fixed size hash digest buffer
     let mut m: [u8; 64] = [0; 64];
+
     // compute digest in m and reset the shaker instance
     shaker.finalize_xof_reset_into(&mut m);
 
@@ -397,7 +398,7 @@ pub fn hawksign_total(
             m.to_vec(),
             kgseed.to_vec(),
             (a + 1).to_ne_bytes().to_vec(),
-            rng.random(40).to_vec(),
+            rng.random(80).to_vec(),
         ]);
 
         // sample vector x = (x0, x1)
@@ -426,7 +427,7 @@ pub fn hawksign_total(
         // in this version, return only w, not s=(h-w)/2
         let mut w = w0.clone();
         w.append(&mut w1.clone());
-        return w;
+        return (w, x);
     }
 }
 
