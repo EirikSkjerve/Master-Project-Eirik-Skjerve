@@ -37,6 +37,8 @@ pub fn estimate_sigma(t: usize, n: usize) {
         messages.push(get_random_bytes(100));
     }
 
+    // TODO maybe not needing to keep everything in memory just for the sigma-estimation
+
     // create collection of t samples corresponding to the above messages
     println!("Generating {t} samples...");
     let mut xsamples: Vec<Vec<i64>> = Vec::with_capacity(t);
@@ -49,4 +51,5 @@ pub fn estimate_sigma(t: usize, n: usize) {
 
     let xsamples_flat: Vec<i64> = xsamples.into_iter().flatten().collect();
     println!("{}", xsamples_flat.len());
+
 }
