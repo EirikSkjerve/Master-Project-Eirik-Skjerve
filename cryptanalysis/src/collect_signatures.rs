@@ -25,15 +25,18 @@ fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
 pub fn generate_t_signatures(t: usize, n: usize) {
     // create t signatures with hawk degree n
 
+    // TODO check that rng seeds are big enough in hawksign w.r.t. number of samples
+
     assert!(n == 256 || n == 512 || n == 1024);
 
     // generate a keypair
-    let (privkey, pubkey) = hawkkeygen(n);
+    let (privkey, _) = hawkkeygen(n);
 
     // compute matrix version of secret key b and b inverse
-    let (b, binv) = to_mat(&privkey);
+    let (_, binv) = to_mat(&privkey);
 
     // compute g as b^-1t b^-1, covariance matrix of b inverse
+    // let actual_g = binv.clone() * binv.transpose();
     let actual_g = binv.transpose() * binv;
 
     // create t messages
@@ -81,17 +84,19 @@ fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64
     // convert them to Nalgebra matrices
     let flatb: Vec<i64> = b.into_iter().flatten().collect();
     let flatbinv: Vec<i64> = binv.into_iter().flatten().collect();
-    let b = DMatrix::from_row_slice(2 * n, 2 * n, &flatb);
-    let binv = DMatrix::from_row_slice(2 * n, 2 * n, &flatbinv);
+    // let b = DMatrix::from_row_slice(2 * n, 2 * n, &flatb);
+    // let binv = DMatrix::from_row_slice(2 * n, 2 * n, &flatbinv);
 
+    let b = DMatrix::from_column_slice(2 * n, 2 * n, &flatb);
+    let binv = DMatrix::from_column_slice(2 * n, 2 * n, &flatbinv);
     (b, binv)
 }
 
 fn estimate_cov_mat(y: &DMatrix<i64>) -> DMatrix<i64> {
     let sigma = match y.ncols() / 2 {
-        256 => 1.01,
-        512 => 1.278,
-        1024 => 1.299,
+        256 => 2.0*1.01,
+        512 => 2.0*1.278,
+        1024 => 2.0*1.299,
         _ => 0.0,
     };
 
