@@ -7,7 +7,7 @@ use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
 // use rand::distributions::{Distribution, Uniform};
-use rand_distr::{Normal, Distribution};
+use rand_distr::{Distribution, Normal};
 
 use crate::hpp::gradient_descent;
 
@@ -16,25 +16,24 @@ const N: usize = 512;
 const SIGMA: f64 = 1.01;
 
 // gives a measure of the difference between two matrices
-fn mat_dist(a_mat: &DMatrix<f64>, b_mat: &DMatrix<f64>){
-
+fn mat_dist(a_mat: &DMatrix<f64>, b_mat: &DMatrix<f64>) {
     let mut num_diff = 0;
     let mut sum_diff: f64 = 0.0;
-    let num_tot = a_mat.nrows()*a_mat.ncols();
+    let num_tot = a_mat.nrows() * a_mat.ncols();
     for i in 0..a_mat.nrows() {
         for j in 0..b_mat.nrows() {
             let a = a_mat[(i, j)];
             let b = b_mat[(i, j)];
 
-            if a!=b {
+            if a != b {
                 // println!("{} != {}", a, b);
                 num_diff += 1;
-                sum_diff += (a-b).abs();
+                sum_diff += (a - b).abs();
             }
         }
     }
-    
-    let avg_diff = sum_diff/num_tot as f64;
+
+    let avg_diff = sum_diff / num_tot as f64;
     println!("Matrices have different elements: {} / {num_tot}", num_diff);
     println!("Average difference between elements: {}", avg_diff);
 }
@@ -108,8 +107,7 @@ fn gen_sec_mat(
     entry_bound: usize,
 ) -> Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>> {
     let mut ctr = 0;
-    loop{
-
+    loop {
         let mut rng_seed = rand::thread_rng();
         let seed: u64 = rng_seed.gen();
 
@@ -117,7 +115,7 @@ fn gen_sec_mat(
 
         ctr += 1;
         // generate slice of uniformly random integers between -entry_bound..entry_bound
-        let uni_slice = get_uni_slice_float(degree*degree,entry_bound, &mut rng);
+        let uni_slice = get_uni_slice_float(degree * degree, entry_bound, &mut rng);
         let uni_slice_f: Vec<f64> = uni_slice.iter().map(|&x| x.round()).collect();
         // to get normally distributed rows in matrix, uncomment below and use norm_slice_f instead
         // of uni_slice_f
@@ -243,7 +241,8 @@ pub fn run_hpp_attack() {
 
     // approximation of Gram Matrix
     // let g_approx_f = (1.0 / ex2) * (pub_y.transpose() * pub_y.clone()) * (1.0 / NUM_SAMPLES as f64);
-    let g_approx_f = (1.0/SIGMA.powi(2))*(pub_y.transpose() * pub_y.clone()) / NUM_SAMPLES as f64;
+    let g_approx_f =
+        (1.0 / SIGMA.powi(2)) * (pub_y.transpose() * pub_y.clone()) / NUM_SAMPLES as f64;
     // round the entries
     let g_approx = g_approx_f.map(|x| x.round());
     // eprintln!("Approximated covariance matrix G: {g_approx}");

@@ -24,8 +24,8 @@ fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
 
 pub fn estimate_sigma(t: usize, n: usize) {
     // create t x-vectors with hawk degree n
-    
-    assert!(n==256 || n==512 || n==1024);
+
+    assert!(n == 256 || n == 512 || n == 1024);
 
     // generate a keypair
     let (privkey, _) = hawkkeygen(n);
@@ -43,13 +43,9 @@ pub fn estimate_sigma(t: usize, n: usize) {
     }
 
     // compute an estimate mu
-    let mut mu: f64 = samples
-        .iter()
-        .flatten()
-        .map(|&x| x as f64)
-        .sum();
+    let mut mu: f64 = samples.iter().flatten().map(|&x| x as f64).sum();
 
-    mu /= (t*2*n) as f64;
+    mu /= (t * 2 * n) as f64;
 
     // compute an estimate of sigma^2 using estimated mu
     let mut var: f64 = samples
@@ -58,7 +54,7 @@ pub fn estimate_sigma(t: usize, n: usize) {
         .map(|&x| (x as f64 - mu).powi(2))
         .sum();
 
-    var /= (t*2*n - 1) as f64;
+    var /= (t * 2 * n - 1) as f64;
 
     let end = start.elapsed();
 

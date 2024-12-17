@@ -70,7 +70,6 @@ pub fn gradient_descent(
 
     // run loop until we have n unique solutions
     while solutions.len() < n {
-
         // create a random unit-vector
         let mut w = gen_u_vec(n, seed);
         seed += 1;
@@ -105,7 +104,6 @@ pub fn gradient_descent(
                     // clear previous output
                     stdout.flush().unwrap();
                     print!("\r{}/{} vectors found!", solutions.len(), n);
-
                 }
                 // since we have found a row, we break the inner loop
                 break;

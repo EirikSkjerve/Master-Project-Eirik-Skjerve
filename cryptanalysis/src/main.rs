@@ -2,9 +2,9 @@ mod collect_signatures;
 mod dgd_estimation;
 mod hpp;
 
-use hpp::hpp::run_hpp_attack;
 use collect_signatures::generate_t_signatures;
 use dgd_estimation::estimate_sigma;
+use hpp::hpp::run_hpp_attack;
 
 fn main() {
     // run_hpp_attack();
