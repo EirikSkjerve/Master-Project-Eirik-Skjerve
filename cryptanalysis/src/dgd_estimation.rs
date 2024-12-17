@@ -2,10 +2,10 @@
 // for the practical implementation of the "Discrete Gaussian Distribution" in Hawk.
 
 use hawklib::hawkkeygen::hawkkeygen;
-use hawklib::hawksign::hawksign_total;
+use hawklib::hawksign::{hawksign_total, hawksign_x_only};
 
 use rand::Rng;
-use nalgebra::*;
+use std::time::Instant;
 
 fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
     // return num_bytes random bytes in a Vec<u8>
@@ -28,28 +28,44 @@ pub fn estimate_sigma(t: usize, n: usize) {
     assert!(n==256 || n==512 || n==1024);
 
     // generate a keypair
-    let (privkey, pubkey) = hawkkeygen(n);
+    let (privkey, _) = hawkkeygen(n);
 
-    // create t messages
-    let mut messages: Vec<Vec<u8>> = Vec::with_capacity(t);
-    println!("Generating {t} messages...");
+    println!("Estimating sigma sampling {t} vectors of length 2*{n}");
+
+    let start = Instant::now();
+
+    let mut samples: Vec<Vec<i64>> = Vec::new();
+
+    // estimating mu
     for _ in 0..t {
-        messages.push(get_random_bytes(100));
+        // sample x-vector of length 2n given a random vector
+        samples.push(hawksign_x_only(&privkey, &get_random_bytes(100), n));
     }
 
-    // TODO maybe not needing to keep everything in memory just for the sigma-estimation
+    // compute an estimate mu
+    let mut mu: f64 = samples
+        .iter()
+        .flatten()
+        .map(|&x| x as f64)
+        .sum();
 
-    // create collection of t samples corresponding to the above messages
-    println!("Generating {t} samples...");
-    let mut xsamples: Vec<Vec<i64>> = Vec::with_capacity(t);
-    for i in 0..t {
-        // hawksign_total returns the raw x-vector as the second element in tuple
-        xsamples.push(hawksign_total(&privkey, &messages[i], n).1);
-    }
+    mu /= (t*2*n) as f64;
 
-    println!("{}, {}", xsamples.len(), xsamples[0].len());
+    // compute an estimate of sigma^2 using estimated mu
+    let mut var: f64 = samples
+        .iter()
+        .flatten()
+        .map(|&x| (x as f64 - mu).powi(2))
+        .sum();
 
-    let xsamples_flat: Vec<i64> = xsamples.into_iter().flatten().collect();
-    println!("{}", xsamples_flat.len());
+    var /= (t*2*n - 1) as f64;
 
+    let end = start.elapsed();
+
+    println!("\nResults of estimating:");
+    println!("Exp[X]: {mu}");
+    println!("Var[X]: {var}");
+    println!("Sigma: {}", var.sqrt());
+
+    println!("\nTime used: {:?}", end);
 }
