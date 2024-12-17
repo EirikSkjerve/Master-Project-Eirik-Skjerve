@@ -71,8 +71,7 @@ pub fn get_uni_slice_float(n: usize, dist_bound: usize, rng: &mut StdRng) -> Vec
 
     use rand::distributions::{Distribution, Uniform};
     // define upper and lower bound for the sampling
-    // let dist = Uniform::from(-(dist_bound as f64)..(dist_bound as f64));
-    let dist = Normal::new(0.0, SIGMA).unwrap();
+    let dist = Uniform::from(-(dist_bound as f64)..(dist_bound as f64));
     // initialize empty vector to store the samples
     let mut rnd_bytes: Vec<f64> = Vec::with_capacity(n);
 
@@ -83,6 +82,25 @@ pub fn get_uni_slice_float(n: usize, dist_bound: usize, rng: &mut StdRng) -> Vec
     rnd_bytes
 }
 
+/// returns n f64 floats uniformly distributed on -dist_bound..dist_bound
+/// requires a pre-seeded StdRng instance
+pub fn get_norm_slice_float(n: usize, rng: &mut StdRng) -> Vec<f64> {
+    // inputs:
+    //  - n: number of samples to produce
+    //  - dist_bound: the range to sample in
+    //  - rng: a pre-seeded StdRng instance
+
+    // define upper and lower bound for the sampling
+    let dist = Normal::new(0.0, SIGMA).unwrap();
+    // initialize empty vector to store the samples
+    let mut rnd_bytes: Vec<f64> = Vec::with_capacity(n);
+
+    // sample n times and return the vector
+    for _ in 0..n {
+        rnd_bytes.push(dist.sample(rng));
+    }
+    rnd_bytes
+}
 /// generate a secret full rank, square [degree x degree] matrix V
 /// with entries uniformly distributed on -entry_bound..entry_bound
 fn gen_sec_mat(
@@ -99,12 +117,12 @@ fn gen_sec_mat(
 
         ctr += 1;
         // generate slice of uniformly random integers between -entry_bound..entry_bound
-        let uni_slice = get_uni_slice_int(degree * degree, entry_bound, 42+ctr);
-        // convert the integers to floats for later calculation
-        let uni_slice_f: Vec<f64> = uni_slice.iter().map(|&x| x as f64).collect();
-
         let uni_slice = get_uni_slice_float(degree*degree,entry_bound, &mut rng);
         let uni_slice_f: Vec<f64> = uni_slice.iter().map(|&x| x.round()).collect();
+        // to get normally distributed rows in matrix, uncomment below and use norm_slice_f instead
+        // of uni_slice_f
+        // let norm_slice = get_norm_slice_float(degree*degree, entry_bound, &mut rng);
+        // let norm_slice_f: Vec<f64> = uni_slice.iter().map(|&x| x.round()).collect();
 
         // create a matrix from this slice
         let sec_v = DMatrix::from_column_slice(degree, degree, &uni_slice_f);
