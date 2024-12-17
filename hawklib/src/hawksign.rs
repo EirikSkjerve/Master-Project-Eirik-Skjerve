@@ -437,11 +437,9 @@ pub fn hawksign_x_only(
     msg: &[u8],
     n: usize,
 ) -> Vec<i64> {
-    //
-    // given secret key components and message, compute a signature
-    // unlike specifications, return the entire w as signature
-    // so that one does not need to use "rebuild" function to get entire w
-    // also returns the raw x-vector
+
+    // returns a sampled x without computing the signature itself
+    // for distribution estimation purposes
 
     let (kgseed, bigf, bigg) = privkey;
 
