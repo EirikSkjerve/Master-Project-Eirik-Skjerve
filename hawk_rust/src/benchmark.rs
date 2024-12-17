@@ -10,6 +10,9 @@ use prettytable::{Cell, Row, Table};
 pub const NUM_SAMPLES: usize = 1000;
 
 pub fn test_all() {
+    
+    println!("Running tests...");
+
     // define table of timings
     let mut table = Table::new();
     table.add_row(Row::new(vec![
@@ -68,6 +71,7 @@ pub fn hawkrun(table: &mut Table, n: usize) {
         }
     }
 
+    if num_fails != 0 { println!("{} failure(s)", num_fails)}
     // println!("{} failures", num_fails);
 
     // end time for signature verification
