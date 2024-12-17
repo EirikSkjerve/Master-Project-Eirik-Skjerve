@@ -448,14 +448,14 @@ pub fn hawksign_x_only(
     assert!(n == 256 || n == 512 || n == 1024);
 
     // get the right parameters
-    let (lensalt, sigmaverify) = match n {
-        256 => (hawk256_params::LENSALT, hawk256_params::SIGMAVERIFY),
-        512 => (hawk512_params::LENSALT, hawk512_params::SIGMAVERIFY),
-        _ => (hawk1024_params::LENSALT, hawk1024_params::SIGMAVERIFY),
+    let lensalt = match n {
+        256 => hawk256_params::LENSALT,
+        512 => hawk512_params::LENSALT,
+        _ => hawk1024_params::LENSALT,
     };
 
     // create new rng
-    let mut rng = RngContext::new(&get_random_bytes(10));
+    let mut rng = RngContext::new(&get_random_bytes(100));
 
     // regenerate part of secret key
     let (f, g) = gen_f_g(&kgseed, n);
@@ -480,73 +480,68 @@ pub fn hawksign_x_only(
     let bigf_mod2: Vec<i64> = poly_mod2(&bigf);
     let bigg_mod2: Vec<i64> = poly_mod2(&bigg);
 
-    // start a loop that terminates when a valid signature is created
-    loop {
-        a += 2;
+    // we don't need a loop here since we will return x immediately
 
-        // compute salt
-        shaker.update(&m);
-        shaker.update(&kgseed);
-        shaker.update(&a.to_ne_bytes());
-        shaker.update(&rng.random(14));
+    a += 2;
 
-        // create salt buffer with length from parameter
-        let mut salt: Vec<u8> = vec![0; lensalt];
-        // create salt digest
-        shaker.finalize_xof_reset_into(&mut salt);
+    // compute salt
+    shaker.update(&m);
+    shaker.update(&kgseed);
+    shaker.update(&a.to_ne_bytes());
+    shaker.update(&rng.random(14));
 
-        // create buffer for vector h whose length depends on degree n
-        let mut h: Vec<u8> = vec![0; n / 4];
+    // create salt buffer with length from parameter
+    let mut salt: Vec<u8> = vec![0; lensalt];
+    // create salt digest
+    shaker.finalize_xof_reset_into(&mut salt);
 
-        // digest h is digest of message+salt
-        shaker.update(&m);
-        shaker.update(&salt);
+    // create buffer for vector h whose length depends on degree n
+    let mut h: Vec<u8> = vec![0; n / 4];
 
-        // compute digest
-        shaker.finalize_xof_reset_into(&mut h);
+    // digest h is digest of message+salt
+    shaker.update(&m);
+    shaker.update(&salt);
 
-        // convert digest h to usable polynomials
-        let (h0, h1) = (
-            &bytes_to_poly(&h[0..n / 8], n),
-            &bytes_to_poly(&h[n / 8..n / 4], n),
-        );
+    // compute digest
+    shaker.finalize_xof_reset_into(&mut h);
 
-        // compute target vector t as B*h mod 2
-        let t0 = poly_add(
-            &poly_mult_ntt(&h0, &f, p),
-            &poly_mult_ntt(&h1, &bigf_mod2, p),
-        );
+    // convert digest h to usable polynomials
+    let (h0, h1) = (
+        &bytes_to_poly(&h[0..n / 8], n),
+        &bytes_to_poly(&h[n / 8..n / 4], n),
+    );
 
-        let t1 = poly_add(
-            &poly_mult_ntt(&h0, &g, p),
-            &poly_mult_ntt(&h1, &bigg_mod2, p),
-        );
+    // compute target vector t as B*h mod 2
+    let t0 = poly_add(
+        &poly_mult_ntt(&h0, &f, p),
+        &poly_mult_ntt(&h1, &bigf_mod2, p),
+    );
 
-        // join t0 and t1 together as Vec<u8>
-        let t = concat_bytes(&vec![
-            poly_mod2(&t0).iter().map(|&x| x as u8).collect(),
-            poly_mod2(&t1).iter().map(|&x| x as u8).collect(),
-        ]);
+    let t1 = poly_add(
+        &poly_mult_ntt(&h0, &g, p),
+        &poly_mult_ntt(&h1, &bigg_mod2, p),
+    );
 
-        // create seed for sampling of vector x
-        // M || kgseed || a+1 || rnd(320)
-        // here 320 bits <=> 80 bytes
-        let s = concat_bytes(&vec![
-            m.to_vec(),
-            kgseed.to_vec(),
-            (a + 1).to_ne_bytes().to_vec(),
-            rng.random(80).to_vec(),
-        ]);
+    // join t0 and t1 together as Vec<u8>
+    let t = concat_bytes(&vec![
+        poly_mod2(&t0).iter().map(|&x| x as u8).collect(),
+        poly_mod2(&t1).iter().map(|&x| x as u8).collect(),
+    ]);
 
-        // sample vector x = (x0, x1)
-        let x = sample(&s, t, n);
+    // create seed for sampling of vector x
+    // M || kgseed || a+1 || rnd(320)
+    // here 320 bits <=> 80 bytes
+    let s = concat_bytes(&vec![
+        m.to_vec(),
+        kgseed.to_vec(),
+        (a + 1).to_ne_bytes().to_vec(),
+        rng.random(80).to_vec(),
+    ]);
 
-        // check norm of vector x is not too high
-        // bounded by 8n*(sigma^2)
-        if (l2norm(&x) as f64) > (8 * n) as f64 * sigmaverify.powi(2) {
-            continue;
-        }
+    // sample vector x = (x0, x1)
+    let x = sample(&s, t, n);
 
-        return x;
-    }
+    // immediately return x; we only want data about the distribution, not the signatures for
+    // this
+    return x;
 }
