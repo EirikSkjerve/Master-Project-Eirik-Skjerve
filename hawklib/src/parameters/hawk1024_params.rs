@@ -9,7 +9,7 @@
 // pub const N: usize = 1024;
 // pub const QS: u128 = 1 << 64;
 //
-// pub const SIGMASIGN: f64 = 1.299;
+pub const SIGMASIGN: f64 = 1.299;
 pub const SIGMAVERIFY: f64 = 1.571;
 pub const SIGMAKRSEC: f64 = 1.974;
 
