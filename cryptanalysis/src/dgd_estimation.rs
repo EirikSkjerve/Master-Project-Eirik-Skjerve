@@ -13,7 +13,8 @@ use std::path::Path;
 use prettytable::{Cell, Row, Table, Attr, color};
 
 pub fn estimate_sigma_mem_all(t: usize, store_file: bool){
-    let ns = vec![256, 512, 1024];
+    // let ns = vec![256, 512, 1024];
+    let ns = vec![256];
 
     let precision = 8;
 
@@ -21,12 +22,12 @@ pub fn estimate_sigma_mem_all(t: usize, store_file: bool){
     let mut table = Table::new();
 
     table.add_row(row![
-                  i->"deg", 
-                  i-> "num.\nsamples", 
+                  i->"Deg", 
+                  i-> "Num\nVectors", 
                   i->"Mu", 
-                  i->"Sigma^2", 
+                  i->"Var", 
                   i->"Sigma", 
-                  i->"Th. Sigma", 
+                  i->"Th. \nSigma", 
                   i->"Diff.",
                   i->"Time (s)",
     ]);
@@ -42,13 +43,12 @@ pub fn estimate_sigma_mem_all(t: usize, store_file: bool){
 
         // run the estimation
         let (mu, sig, time) = estimate_sigma_mem(t, n);
-        println!("Sigma for degree {} finished in {:?}", n, time);
 
         // write results to table
         table.add_row(
             row![
             FG->n.to_string(),
-            FW->(t/n).to_string(),
+            FW->(t).to_string(),
             FM->format!("{:.1$}", mu, precision), 
             FR->format!("{:.1$}", sig, precision),
             Fw->format!("{:.1$}", sig.sqrt(), precision),
@@ -66,6 +66,7 @@ pub fn estimate_sigma_mem_all(t: usize, store_file: bool){
         let pathname_base = String::from("sigma_table"); 
         let mut pathname = String::from("sigma_table_0");
         let mut ctr = 1;
+
         loop {
             if Path::new(&format!("{}.csv", pathname)).is_file() {
                 // println!("{}.csv already exists!", pathname);
@@ -75,6 +76,7 @@ pub fn estimate_sigma_mem_all(t: usize, store_file: bool){
             }
             break;
         }
+
         let out = File::create(&format!("{}.csv", pathname)).unwrap();
         table.to_csv(out).unwrap();
         println!("Created file at {}.csv", pathname);
@@ -90,23 +92,25 @@ pub fn estimate_sigma_mem(t: usize, n: usize) -> (f64, f64, Duration){
     // returns (Exp[x], Var[X], time used)
     //
 
-
-    assert!(n == 256 || n == 512 || n == 1024);
-
-
-    let no_retry = false;
-
     // generate a keypair
     let (privkey, _) = hawkkeygen(n);
 
-    println!("Estimating sigma sampling {t} vectors of length 2*{n}");
+    assert!(n == 256 || n == 512 || n == 1024);
+
+    // bool determining if sampling of x should retry if a sampled x is not "valid"
+    // this has an effect on the measurement of the practical distribution
+    let no_retry = false;
+
+
+    println!("\nEstimating sigma by sampling {} vectors of length 2*{n}", t);
 
     // measure time for mu
     let start = Instant::now();
 
     // estimating mu
     let mut mu: f64 = 0.0;
-    for _ in 0..(t/n) {
+    for _ in 0..t {
+
         // sample x-vector of length 2n given a random vector
         let temp: i64 = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry)
             .iter()
@@ -117,6 +121,7 @@ pub fn estimate_sigma_mem(t: usize, n: usize) -> (f64, f64, Duration){
     // estimating var
     let mut var: f64 = 0.0;
     for _ in 0..t {
+
         // sample x-vector of length 2n given a random vector
         let temp: f64 = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry)
             .iter()
@@ -127,9 +132,10 @@ pub fn estimate_sigma_mem(t: usize, n: usize) -> (f64, f64, Duration){
 
     let end = start.elapsed();
 
+    println!("Sigma for degree {} finished in {:?}", n, end);
+    // return data on the following form:
     (mu, var, end)
 
-    // return data on the following form:
 
 }
 

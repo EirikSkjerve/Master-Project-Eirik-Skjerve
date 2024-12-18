@@ -14,5 +14,5 @@ use prettytable::{Cell, Row, Table};
 fn main() {
     // run_hpp_attack();
     // generate_t_signatures(90000,256);
-    estimate_sigma_mem_all(10000, true);
+    estimate_sigma_mem_all(1000, true);
 }
