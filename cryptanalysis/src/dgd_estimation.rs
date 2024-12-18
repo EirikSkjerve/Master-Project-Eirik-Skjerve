@@ -8,6 +8,7 @@ use hawklib::parameters::{hawk1024_params, hawk256_params, hawk512_params};
 use rand::Rng;
 use std::time::{Instant, Duration};
 use std::fs::File;
+use std::path::Path;
 
 use prettytable::{Cell, Row, Table, Attr, color};
 
@@ -32,6 +33,7 @@ pub fn estimate_sigma_mem_all(t: usize, store_file: bool){
 
         // run the estimation
         let (mu, sig, time) = estimate_sigma_mem(t, n);
+        println!("Sigma for degree {} finished in {:?}", n, time);
 
         // write results to table
         table.add_row(
@@ -46,12 +48,26 @@ pub fn estimate_sigma_mem_all(t: usize, store_file: bool){
     }
     table.printstd();
 
+    // store file
     if store_file {
-        let out = File::create("table_csv.csv").unwrap();
-        table.to_csv(out).unwrap();
-        println!("Created file at table_csv.csv");
-    }
 
+        // making sure a file is never written over
+        let pathname_base = String::from("sigma_table"); 
+        let mut pathname = String::from("sigma_table_0");
+        let mut ctr = 1;
+        loop {
+            if Path::new(&format!("{}.csv", pathname)).is_file() {
+                println!("{}.csv already exists!", pathname);
+                pathname = format!("{}_{}", pathname_base, ctr);
+                ctr += 1;
+                continue;
+            }
+            break;
+        }
+        let out = File::create(&format!("{}.csv", pathname)).unwrap();
+        table.to_csv(out).unwrap();
+        println!("Created file at {}.csv", pathname);
+    }
 }
 
 pub fn estimate_sigma_mem(t: usize, n: usize) -> (f64, f64, Duration){
