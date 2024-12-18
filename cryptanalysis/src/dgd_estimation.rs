@@ -7,24 +7,19 @@ use hawklib::parameters::{hawk1024_params, hawk256_params, hawk512_params};
 
 use rand::Rng;
 use std::time::{Instant, Duration};
+use std::fs::File;
 
-use prettytable::{Cell, Row, Table};
+use prettytable::{Cell, Row, Table, Attr, color};
 
-pub fn estimate_sigma_mem_all(t: usize) {
+pub fn estimate_sigma_mem_all(t: usize, store_file: bool){
     let ns = vec![256, 512, 1024];
 
     let precision = 5;
 
     // define table of estimations
     let mut table = Table::new();
-    table.add_row(Row::new(vec![
-        Cell::new(&"deg"),
-        Cell::new(&"Mu"),
-        Cell::new(&"Sigma^2"),
-        Cell::new(&"Sigma"),
-        Cell::new(&"Th. Sigma"),
-        Cell::new(&"Time"),
-    ]));
+
+    table.add_row(row![i->"deg", i->"Mu", i->"Sigma^2", i->"Sigma", i->"Th. Sigma", i->"Time (s)"]);
 
     for n in ns {
 
@@ -39,16 +34,23 @@ pub fn estimate_sigma_mem_all(t: usize) {
         let (mu, sig, time) = estimate_sigma_mem(t, n);
 
         // write results to table
-        table.add_row(Row::new(vec![
-            Cell::new(&n.to_string()),
-            Cell::new(&format!("{:.1$}", mu, precision)),
-            Cell::new(&format!("{:.1$}", sig, precision)),
-            Cell::new(&format!("{:.1$}", sig.sqrt(), precision)),
-            Cell::new(&format!("{}", 2.0*sigmasign)),
-            Cell::new(&format!("{:.1$} s", time.as_secs_f64().to_string(), precision)),
-        ]));
+        table.add_row(
+            row![
+            FG->n.to_string(),
+            FM->format!("{:.1$}", mu, precision), 
+            Fr->format!("{:.1$}", sig, precision),
+            Fw->format!("{:.1$}", sig.sqrt(), precision),
+            Fc->format!("{}", 2.0*sigmasign),
+            Fy->format!("{:.1$}", time.as_secs_f64().to_string(), precision)
+            ]);
     }
     table.printstd();
+
+    if store_file {
+        let out = File::create("table_csv.csv").unwrap();
+        table.to_csv(out).unwrap();
+        println!("Created file at table_csv.csv");
+    }
 
 }
 
