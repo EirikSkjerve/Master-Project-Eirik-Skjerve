@@ -15,4 +15,4 @@ each degree 256, 512, and 1024
 
 ### Roadmap
 - I have implemented Hawk in the [Rust](https://www.rust-lang.org/) programming language.
-- I wish later to implement a cryptanalytic attack based on [Learning a Parallelepiped](https://cims.nyu.edu/~regev/papers/gghattack.pdf) to attempt to recover (parts of) a secret key given enough signatures.
+- I am currently working on implementing a cryptanalytic attack based on [Learning a Parallelepiped](https://cims.nyu.edu/~regev/papers/gghattack.pdf) to attempt to recover (parts of) a secret key given enough signatures.
