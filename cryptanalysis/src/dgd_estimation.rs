@@ -15,12 +15,21 @@ use prettytable::{Cell, Row, Table, Attr, color};
 pub fn estimate_sigma_mem_all(t: usize, store_file: bool){
     let ns = vec![256, 512, 1024];
 
-    let precision = 5;
+    let precision = 8;
 
     // define table of estimations
     let mut table = Table::new();
 
-    table.add_row(row![i->"deg", i->"Mu", i->"Sigma^2", i->"Sigma", i->"Th. Sigma", i->"Time (s)"]);
+    table.add_row(row![
+                  i->"deg", 
+                  i-> "num.\nsamples", 
+                  i->"Mu", 
+                  i->"Sigma^2", 
+                  i->"Sigma", 
+                  i->"Th. Sigma", 
+                  i->"Diff.",
+                  i->"Time (s)",
+    ]);
 
     for n in ns {
 
@@ -39,11 +48,13 @@ pub fn estimate_sigma_mem_all(t: usize, store_file: bool){
         table.add_row(
             row![
             FG->n.to_string(),
+            FW->(t/n).to_string(),
             FM->format!("{:.1$}", mu, precision), 
-            Fr->format!("{:.1$}", sig, precision),
+            FR->format!("{:.1$}", sig, precision),
             Fw->format!("{:.1$}", sig.sqrt(), precision),
             Fc->format!("{}", 2.0*sigmasign),
-            Fy->format!("{:.1$}", time.as_secs_f64().to_string(), precision)
+            Fy->format!("{:.1$}", (sig.sqrt() - 2.0*sigmasign).abs(), precision),
+            Fw->format!("{:.1$}", time.as_secs_f64().to_string(), precision)
             ]);
     }
     table.printstd();
@@ -57,7 +68,7 @@ pub fn estimate_sigma_mem_all(t: usize, store_file: bool){
         let mut ctr = 1;
         loop {
             if Path::new(&format!("{}.csv", pathname)).is_file() {
-                println!("{}.csv already exists!", pathname);
+                // println!("{}.csv already exists!", pathname);
                 pathname = format!("{}_{}", pathname_base, ctr);
                 ctr += 1;
                 continue;
@@ -95,7 +106,7 @@ pub fn estimate_sigma_mem(t: usize, n: usize) -> (f64, f64, Duration){
 
     // estimating mu
     let mut mu: f64 = 0.0;
-    for _ in 0..t {
+    for _ in 0..(t/n) {
         // sample x-vector of length 2n given a random vector
         let temp: i64 = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry)
             .iter()
