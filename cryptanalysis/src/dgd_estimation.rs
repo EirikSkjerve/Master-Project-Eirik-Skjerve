@@ -6,15 +6,16 @@ use hawklib::hawksign::{hawksign_total, hawksign_x_only};
 use hawklib::parameters::{hawk1024_params, hawk256_params, hawk512_params};
 
 use rand::Rng;
-use std::time::{Instant, Duration};
 use std::fs::File;
 use std::path::Path;
+use std::time::{Duration, Instant};
+use std::io::{stdout, Write};
 
-use prettytable::{Cell, Row, Table, Attr, color};
+use prettytable::{color, Attr, Cell, Row, Table};
 
-pub fn estimate_sigma_mem_all(t: usize, store_file: bool){
-    // let ns = vec![256, 512, 1024];
-    let ns = vec![256];
+pub fn estimate_sigma_mem_all(t: usize, store_file: bool) {
+    let ns = vec![256, 512, 1024];
+    // let ns = vec![256];
 
     let precision = 8;
 
@@ -22,18 +23,20 @@ pub fn estimate_sigma_mem_all(t: usize, store_file: bool){
     let mut table = Table::new();
 
     table.add_row(row![
-                  i->"Deg", 
-                  i-> "Num\nVectors", 
-                  i->"Mu", 
-                  i->"Var", 
-                  i->"Sigma", 
-                  i->"Th. \nSigma", 
+                  i->"Deg",
+                  i-> "Num\nVectors",
+                  i->"Mu",
+                  i->"Var",
+                  i->"Sigma",
+                  i->"Th. \nSigma",
+                  i->"Diff.",
+                  i->"Kur",
+                  i->"3 Var ^2",
                   i->"Diff.",
                   i->"Time (s)",
     ]);
 
     for n in ns {
-
         // get the right parameters. These are just for comparison
         let sigmasign = match n {
             256 => hawk256_params::SIGMASIGN,
@@ -42,28 +45,29 @@ pub fn estimate_sigma_mem_all(t: usize, store_file: bool){
         };
 
         // run the estimation
-        let (mu, sig, time) = estimate_sigma_mem(t, n);
+        let (mu, var, kur, time) = estimate_sigma_mem(t, n);
 
         // write results to table
-        table.add_row(
-            row![
-            FG->n.to_string(),
-            FW->(t).to_string(),
-            FM->format!("{:.1$}", mu, precision), 
-            FR->format!("{:.1$}", sig, precision),
-            Fw->format!("{:.1$}", sig.sqrt(), precision),
-            Fc->format!("{}", 2.0*sigmasign),
-            Fy->format!("{:.1$}", (sig.sqrt() - 2.0*sigmasign).abs(), precision),
-            Fw->format!("{:.1$}", time.as_secs_f64().to_string(), precision)
-            ]);
+        table.add_row(row![
+        FG->n.to_string(),
+        FW->(t).to_string(),
+        FM->format!("{:.1$}", mu, precision),
+        FR->format!("{:.1$}", var, precision),
+        Fw->format!("{:.1$}", var.sqrt(), precision),
+        Fc->format!("{}", 2.0*sigmasign),
+        Fy->format!("{:.1$}", (var.sqrt() - 2.0*sigmasign).abs(), precision),
+        FR->format!("{:.1$}", kur, precision),
+        Fc->format!("{:.1$}", 3.0*var.powi(2), precision),
+        Fy->format!("{:.1$}", (kur- 3.0*var.powi(2)).abs(), precision),
+        Fw->format!("{:.1$}", time.as_secs_f64().to_string(), precision)
+        ]);
     }
     table.printstd();
 
     // store file
     if store_file {
-
         // making sure a file is never written over
-        let pathname_base = String::from("sigma_table"); 
+        let pathname_base = String::from("sigma_table");
         let mut pathname = String::from("sigma_table_0");
         let mut ctr = 1;
 
@@ -83,7 +87,7 @@ pub fn estimate_sigma_mem_all(t: usize, store_file: bool){
     }
 }
 
-pub fn estimate_sigma_mem(t: usize, n: usize) -> (f64, f64, Duration){
+pub fn estimate_sigma_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
     // create t x-vectors with hawk degree n
     // this function will not store any intermediate samples and therefore will not need a lot of
     // memory. Drawback is that t x-vectors have to be generated twice; once for mu and once for
@@ -97,46 +101,58 @@ pub fn estimate_sigma_mem(t: usize, n: usize) -> (f64, f64, Duration){
 
     assert!(n == 256 || n == 512 || n == 1024);
 
+    // for nice printouts
+    let mut stdout = stdout();
+
     // bool determining if sampling of x should retry if a sampled x is not "valid"
     // this has an effect on the measurement of the practical distribution
     let no_retry = false;
 
-
-    println!("\nEstimating sigma by sampling {} vectors of length 2*{n}", t);
+    println!(
+        "\nEstimating sigma by sampling {} vectors of length 2*{n}",
+        t
+    );
 
     // measure time for mu
     let start = Instant::now();
 
     // estimating mu
     let mut mu: f64 = 0.0;
-    for _ in 0..t {
+    for i in 0..t {
+
+        // stdout.flush().unwrap();
+        // print!("\r{} %", (((i+1) as f64 / t as f64) * 100.0).abs());
 
         // sample x-vector of length 2n given a random vector
         let temp: i64 = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry)
             .iter()
             .sum();
-        mu += temp as f64 /(t*2*n) as f64;
+        mu += temp as f64 / (t * 2 * n) as f64;
     }
 
     // estimating var
     let mut var: f64 = 0.0;
-    for _ in 0..t {
+    let mut kur: f64 = 0.0;
+
+    for i in 0..t {
+
+        // stdout.flush().unwrap();
+        // print!();
 
         // sample x-vector of length 2n given a random vector
-        let temp: f64 = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry)
-            .iter()
-            .map(|&x| (x as f64 - mu).powi(2))
-            .sum();
-        var += temp / (t*2*n) as f64;
+        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry);
+        let tempvar: f64 = temp.iter().map(|&x| (x as f64 - mu).powi(2)).sum();
+        let tempkur: f64 = temp.iter().map(|&x| (x as f64 - mu).powi(4)).sum();
+
+        var += tempvar / (t * 2 * n) as f64;
+        kur += tempkur / (t * 2 * n) as f64;
     }
 
     let end = start.elapsed();
 
     println!("Sigma for degree {} finished in {:?}", n, end);
     // return data on the following form:
-    (mu, var, end)
-
-
+    (mu, var, kur, end)
 }
 
 pub fn estimate_sigma_time(t: usize, n: usize) {
@@ -162,7 +178,12 @@ pub fn estimate_sigma_time(t: usize, n: usize) {
     // estimating mu
     for _ in 0..t {
         // sample x-vector of length 2n given a random vector
-        samples.push(hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry));
+        samples.push(hawksign_x_only(
+            &privkey,
+            &get_random_bytes(100),
+            n,
+            no_retry,
+        ));
     }
 
     let mut end = start.elapsed();
@@ -195,7 +216,6 @@ pub fn estimate_sigma_time(t: usize, n: usize) {
     println!("Exp[X]: {mu}");
     println!("Var[X]: {var}");
     println!("Sigma: {}", var.sqrt());
-
 }
 
 fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
