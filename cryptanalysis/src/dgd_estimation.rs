@@ -13,7 +13,7 @@ use std::io::{stdout, Write};
 
 use prettytable::{color, Attr, Cell, Row, Table};
 
-pub fn estimate_sigma_mem_all(t: usize, store_file: bool) {
+pub fn estimate_mem_all(t: usize, store_file: bool) {
     let ns = vec![256, 512, 1024];
     // let ns = vec![256];
 
@@ -26,13 +26,14 @@ pub fn estimate_sigma_mem_all(t: usize, store_file: bool) {
                   i->"Deg",
                   i-> "Num\nVectors",
                   i->"Mu",
-                  i->"Var",
-                  i->"Sigma",
+                  i->"Var (Exp(X^2))",
+                  i->"Sigma (Std. Dev)",
                   i->"Th. \nSigma",
                   i->"Diff.",
-                  i->"Kur",
+                  i->"Kur (Exp(X^4))",
                   i->"3 Var ^2",
                   i->"Diff.",
+                  i->"Th. \nKur",
                   i->"Time (s)",
     ]);
 
@@ -45,7 +46,7 @@ pub fn estimate_sigma_mem_all(t: usize, store_file: bool) {
         };
 
         // run the estimation
-        let (mu, var, kur, time) = estimate_sigma_mem(t, n);
+        let (mu, var, kur, time) = estimate_mem(t, n);
 
         // write results to table
         table.add_row(row![
@@ -59,6 +60,7 @@ pub fn estimate_sigma_mem_all(t: usize, store_file: bool) {
         FR->format!("{:.1$}", kur, precision),
         Fc->format!("{:.1$}", 3.0*var.powi(2), precision),
         Fy->format!("{:.1$}", (kur- 3.0*var.powi(2)).abs(), precision),
+        FM->format!("{:.1$}", (3.0*((2.0*sigmasign).powi(4))).abs(), precision),
         Fw->format!("{:.1$}", time.as_secs_f64().to_string(), precision)
         ]);
     }
@@ -87,7 +89,7 @@ pub fn estimate_sigma_mem_all(t: usize, store_file: bool) {
     }
 }
 
-pub fn estimate_sigma_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
+pub fn estimate_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
     // create t x-vectors with hawk degree n
     // this function will not store any intermediate samples and therefore will not need a lot of
     // memory. Drawback is that t x-vectors have to be generated twice; once for mu and once for
@@ -116,12 +118,14 @@ pub fn estimate_sigma_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
     // measure time for mu
     let start = Instant::now();
 
+    println!("");
+
     // estimating mu
     let mut mu: f64 = 0.0;
     for i in 0..t {
 
-        // stdout.flush().unwrap();
-        // print!("\r{} %", (((i+1) as f64 / t as f64) * 100.0).abs());
+        stdout.flush().unwrap();
+        print!("\r{} %", (((i+1) as f64 / t as f64) * 100.0).abs() as u8);
 
         // sample x-vector of length 2n given a random vector
         let temp: i64 = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry)
@@ -130,14 +134,16 @@ pub fn estimate_sigma_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
         mu += temp as f64 / (t * 2 * n) as f64;
     }
 
-    // estimating var
+    println!("");
+
+    // estimating var and kur
     let mut var: f64 = 0.0;
     let mut kur: f64 = 0.0;
 
     for i in 0..t {
 
-        // stdout.flush().unwrap();
-        // print!();
+        stdout.flush().unwrap();
+        print!("\r{} %", (((i+1) as f64 / t as f64) * 100.0).abs() as u8);
 
         // sample x-vector of length 2n given a random vector
         let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry);
@@ -150,72 +156,9 @@ pub fn estimate_sigma_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
 
     let end = start.elapsed();
 
-    println!("Sigma for degree {} finished in {:?}", n, end);
+    println!("\nSigma for degree {} finished in {:?}", n, end);
     // return data on the following form:
     (mu, var, kur, end)
-}
-
-pub fn estimate_sigma_time(t: usize, n: usize) {
-    // create t x-vectors with hawk degree n
-    // this function will keep the t samples in memory and reuse them for the estimation of mu and
-    // sigma
-    // Drawback is that there will be an upper limit to how many samples can be kept in memory at
-    // given time.
-
-    let no_retry = false;
-
-    assert!(n == 256 || n == 512 || n == 1024);
-
-    // generate a keypair
-    let (privkey, _) = hawkkeygen(n);
-
-    println!("Estimating sigma sampling {t} vectors of length 2*{n}");
-
-    let start = Instant::now();
-
-    let mut samples: Vec<Vec<i64>> = Vec::new();
-    println!("Generating samples...");
-    // estimating mu
-    for _ in 0..t {
-        // sample x-vector of length 2n given a random vector
-        samples.push(hawksign_x_only(
-            &privkey,
-            &get_random_bytes(100),
-            n,
-            no_retry,
-        ));
-    }
-
-    let mut end = start.elapsed();
-    println!("\nTime used: {:?}\n", end);
-
-    let start = Instant::now();
-    println!("Estimating mu...");
-    // compute an estimate mu
-    let mut mu: f64 = samples.iter().flatten().map(|&x| x as f64).sum();
-    mu /= (t * 2 * n) as f64;
-
-    end = start.elapsed();
-    println!("Time used: {:?}\n", end);
-
-    let start = Instant::now();
-    println!("Estimating var...");
-    // compute an estimate of sigma^2 using estimated mu
-    let mut var: f64 = samples
-        .iter()
-        .flatten()
-        .map(|&x| (x as f64 - mu).powi(2))
-        .sum();
-
-    var /= (t * 2 * n - 1) as f64;
-
-    end = start.elapsed();
-    println!("Time used: {:?}\n", end);
-
-    println!("\nResults of estimating:");
-    println!("Exp[X]: {mu}");
-    println!("Var[X]: {var}");
-    println!("Sigma: {}", var.sqrt());
 }
 
 fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
