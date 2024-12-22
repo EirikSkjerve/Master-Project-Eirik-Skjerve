@@ -58,7 +58,11 @@ pub fn generate_t_signatures(t: usize, n: usize) {
         // sign each message
         // now each signature is on the form w = B^-1 * x
         // convert to Vec<i16> to save a lot of memory
-        let sig: Vec<i16> = hawksign_total(&privkey, &messages[i], n).iter().map(|&x| x as i16).collect();
+        let sig: Vec<i16> = hawksign_total(&privkey, &messages[i], n)
+            .0
+            .iter()
+            .map(|&x| x as i16)
+            .collect();
         signatures.push(sig);
     }
 

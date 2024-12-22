@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 
 use prettytable::{color, Attr, Cell, Row, Table};
 
-pub fn estimate_mem_all(t: usize, store_file: bool) {
+pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
     let ns = vec![256, 512, 1024];
     // let ns = vec![256];
 
@@ -27,41 +27,35 @@ pub fn estimate_mem_all(t: usize, store_file: bool) {
                   i-> "Num\nVectors",
                   i->"Mu",
                   i->"Var (Exp(X^2))",
-                  i->"Sigma (Std. Dev)",
-                  i->"Th. \nSigma",
-                  i->"Diff.",
-                  i->"Kur (Exp(X^4))",
-                  i->"3 Var ^2",
-                  i->"Diff.",
-                  i->"Th. \nKur",
-                  i->"Time (s)",
+                  i->"Exp((x/sigma)^2)",
+                  i->"Exp((x/sigma)^4)",
+                  i->"Diff",
+                  i->"Diff from 3",
+                  i->"Time",
     ]);
 
     for n in ns {
         // get the right parameters. These are just for comparison
-        let sigmasign = match n {
-            256 => hawk256_params::SIGMASIGN,
-            512 => hawk512_params::SIGMASIGN,
-            _ => hawk1024_params::SIGMASIGN,
+        let (f, sigmasign) = match n {
+            256 => (1, hawk256_params::SIGMASIGN),
+            512 => (2, hawk512_params::SIGMASIGN),
+            _ => (4, hawk1024_params::SIGMASIGN),
         };
 
         // run the estimation
-        let (mu, var, kur, time) = estimate_mem(t, n);
+        let (mu, var, normvar, normkur, time) = estimate_mem_norm(t / f, n);
 
         // write results to table
         table.add_row(row![
         FG->n.to_string(),
-        FW->(t).to_string(),
+        FW->(t/f).to_string(),
         FM->format!("{:.1$}", mu, precision),
-        FR->format!("{:.1$}", var, precision),
-        Fw->format!("{:.1$}", var.sqrt(), precision),
-        Fc->format!("{}", 2.0*sigmasign),
-        Fy->format!("{:.1$}", (var.sqrt() - 2.0*sigmasign).abs(), precision),
-        FR->format!("{:.1$}", kur, precision),
-        Fc->format!("{:.1$}", 3.0*var.powi(2), precision),
-        Fy->format!("{:.1$}", (kur- 3.0*var.powi(2)).abs(), precision),
-        FM->format!("{:.1$}", (3.0*((2.0*sigmasign).powi(4))).abs(), precision),
-        Fw->format!("{:.1$}", time.as_secs_f64().to_string(), precision)
+        FB->format!("{:.1$}", var, precision),
+        Fy->format!("{:.1$}", normvar, precision),
+        FR->format!("{:.1$}", normkur, precision),
+        FC->format!("{:.1$}", (3.0*normvar - normkur).abs(), precision),
+        Fc->format!("{:.1$}", (3.0 - normkur).abs(), precision),
+        Fw->format!("{:?}", time)
         ]);
     }
     table.printstd();
@@ -89,7 +83,7 @@ pub fn estimate_mem_all(t: usize, store_file: bool) {
     }
 }
 
-pub fn estimate_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
+pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
     // create t x-vectors with hawk degree n
     // this function will not store any intermediate samples and therefore will not need a lot of
     // memory. Drawback is that t x-vectors have to be generated twice; once for mu and once for
@@ -111,7 +105,7 @@ pub fn estimate_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
     let no_retry = false;
 
     println!(
-        "\nEstimating sigma by sampling {} vectors of length 2*{n}",
+        "\nEstimating values by sampling {} vectors of length 2*{n}",
         t
     );
 
@@ -121,42 +115,81 @@ pub fn estimate_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
     println!("");
 
     // estimating mu
+    println!("Estimating mu...  ");
     let mut mu: f64 = 0.0;
     for i in 0..t {
-        stdout.flush().unwrap();
-        print!("\r{} %", (((i + 1) as f64 / t as f64) * 100.0).abs() as u8);
 
         // sample x-vector of length 2n given a random vector
         let temp: i64 = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry)
             .iter()
             .sum();
         mu += temp as f64 / (t * 2 * n) as f64;
+
+         // Calculate and display progress
+        if i % (t / 100) == 0 || i == t - 1 {
+            let progress = (i as f64 / t as f64) * 100.0;
+            print!("\rProgress: {:.0}%", progress);
+            std::io::Write::flush(&mut std::io::stdout()).unwrap();
+        }
     }
+
+    // estimating sigma
+    println!("\nEstimating sigma...  ");
+    let mut var: f64 = 0.0;
+    for i in 0..t {
+
+        // sample x-vectors of length 2n given random "message"
+        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry);
+        let tempvar: f64 = temp.iter().map(|&x| (x as f64 - mu).powi(2)).sum();
+        var += tempvar / (t * 2 * n) as f64;
+
+         // Calculate and display progress
+        if i % (t / 100) == 0 || i == t - 1 {
+            let progress = (i as f64 / t as f64) * 100.0;
+            print!("\rProgress: {:.0}%", progress);
+            std::io::Write::flush(&mut std::io::stdout()).unwrap();
+        }
+    }
+
+    let sigma = var.sqrt();
 
     println!("");
 
-    // estimating var and kur
-    let mut var: f64 = 0.0;
-    let mut kur: f64 = 0.0;
-
+    // estimate normalized var and normalized kur
+    println!("\nEstimating normalized var and kur");
+    let (mut normvar, mut normkur): (f64, f64) = (0.0, 0.0);
     for i in 0..t {
-        stdout.flush().unwrap();
-        print!("\r{} %", (((i + 1) as f64 / t as f64) * 100.0).abs() as u8);
 
-        // sample x-vector of length 2n given a random vector
         let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry);
-        let tempvar: f64 = temp.iter().map(|&x| (x as f64 - mu).powi(2)).sum();
-        let tempkur: f64 = temp.iter().map(|&x| (x as f64 - mu).powi(4)).sum();
 
-        var += tempvar / (t * 2 * n) as f64;
-        kur += tempkur / (t * 2 * n) as f64;
+        let (tempvar, tempkur): (f64, f64) = temp
+            .iter()
+            .map(|&x| {
+                let normalized = (x as f64) / sigma - mu;
+                let squared = normalized.powi(2);
+                let fourth = normalized.powi(4);
+                (squared, fourth)
+            })
+            .fold((0.0, 0.0), |(sum_var, sum_kur), (squared, fourth)| {
+                (sum_var + squared, sum_kur + fourth)
+            });
+
+        normvar += tempvar / (t * 2 * n) as f64;
+        normkur += tempkur / (t * 2 * n) as f64;
+
+         // Calculate and display progress
+        if i % (t / 100) == 0 || i == t - 1 {
+            let progress = (i as f64 / t as f64) * 100.0;
+            print!("\rProgress: {:.0}%", progress);
+            std::io::Write::flush(&mut std::io::stdout()).unwrap();
+        }
     }
 
     let end = start.elapsed();
 
-    println!("\nSigma for degree {} finished in {:?}", n, end);
+    println!("\nEstimation for degree {} finished in {:?}", n, end);
     // return data on the following form:
-    (mu, var, kur, end)
+    (mu, var, normvar, normkur, end)
 }
 
 fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
