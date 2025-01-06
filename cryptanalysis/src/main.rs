@@ -20,8 +20,8 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 fn main() {
     // run_hpp_attack();
-    // collect_signatures(5000000, 256);
-    covariance_matrix_estimation(5000000,256);
+    collect_signatures(7500000, 256);
+    covariance_matrix_estimation(7500000,256);
     // estimate_mem_all(500000, true);
     // estimate_mem_norm_all(3000000, false);
     println!("Max memory usage total in this run: {} GB", PEAK_ALLOC.peak_usage_as_gb());

@@ -149,7 +149,7 @@ fn estimate_cov_mat(y: &DMatrix<i16>) -> DMatrix<i16> {
     println!("max in y: {}", y.max());
     let y = y.map(|x| x as f32);
     println!("Current mem usage after converting y to f32: {} MB", PEAK_ALLOC.current_usage_as_mb());
-    let g = (1.0 / sigma.powi(2))*y.transpose()*&y / nrows;
+    let g = (y.transpose()/sigma.powi(2))*(&y / nrows);
     std::mem::drop(y);
     println!("Current mem usage after computing yt_y: {} MB", PEAK_ALLOC.current_usage_as_mb());
     println!("max in yt_y: {}", g.max());
