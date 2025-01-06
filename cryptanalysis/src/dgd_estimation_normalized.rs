@@ -15,7 +15,7 @@ use prettytable::{color, Attr, Cell, Row, Table};
 
 pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
     let ns = vec![256, 512, 1024];
-    // let ns = vec![256];
+    // let ns = vec![512];
 
     let precision = 8;
 
@@ -26,11 +26,11 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
                   i->"Deg",
                   i-> "Num\nVectors",
                   i->"Mu",
-                  i->"Var (Exp(X^2))",
-                  i->"Exp((x/sigma)^2)",
-                  i->"Exp((x/sigma)^4)",
-                  i->"Diff",
-                  i->"Diff from 3",
+                  i->"Var\n(Exp(X^2))",
+                  i->"Sigma",
+                  i->"Norm.\nvar",
+                  i->"Mu4",
+                  i->"|3-Mu4|",
                   i->"Time",
     ]);
 
@@ -49,12 +49,12 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
         table.add_row(row![
         FG->n.to_string(),
         FW->(t/f).to_string(),
-        FM->format!("{:.1$}", mu, precision),
+        FM->format!("{}", mu),
         FB->format!("{:.1$}", var, precision),
-        Fy->format!("{:.1$}", normvar, precision),
+        Fc->format!("{:.1$}", var.sqrt(), precision),
+        Fy->format!("1"),
         FR->format!("{:.1$}", normkur, precision),
-        FC->format!("{:.1$}", (3.0*normvar - normkur).abs(), precision),
-        Fc->format!("{:.1$}", (3.0 - normkur).abs(), precision),
+        Fy->format!("{:.1$}", (3.0 - normkur).abs(), precision),
         Fw->format!("{:?}", time)
         ]);
     }
@@ -117,21 +117,24 @@ pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
     // estimating mu
     println!("Estimating mu...  ");
     let mut mu: f64 = 0.0;
-    for i in 0..t {
 
-        // sample x-vector of length 2n given a random vector
-        let temp: i64 = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry)
-            .iter()
-            .sum();
-        mu += temp as f64 / (t * 2 * n) as f64;
+    // uncomment this for estimated mu aswell
 
-         // Calculate and display progress
-        if i % (t / 100) == 0 || i == t - 1 {
-            let progress = (i as f64 / t as f64) * 100.0;
-            print!("\rProgress: {:.0}%", progress);
-            std::io::Write::flush(&mut std::io::stdout()).unwrap();
-        }
-    }
+    // for i in 0..t {
+    //
+    //     // sample x-vector of length 2n given a random vector
+    //     let temp: i64 = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry)
+    //         .iter()
+    //         .sum();
+    //     mu += temp as f64 / (t * 2 * n) as f64;
+    //
+    //      // Calculate and display progress
+    //     if i % (t / 100) == 0 || i == t - 1 {
+    //         let progress = (i as f64 / t as f64) * 100.0;
+    //         print!("\rProgress: {:.0}%", progress);
+    //         std::io::Write::flush(&mut std::io::stdout()).unwrap();
+    //     }
+    // }
 
     // estimating sigma
     println!("\nEstimating sigma...  ");
