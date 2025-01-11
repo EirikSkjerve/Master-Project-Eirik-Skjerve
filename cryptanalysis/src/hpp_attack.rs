@@ -26,6 +26,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 
     // get the correct key for later comparison
     let (b, binv) = get_secret_key(t, n);
+    // correct G
     let cg = (&binv.transpose() * &binv).map(|x| x as f64);
 
     // STEP 0: Generate samples
@@ -154,7 +155,6 @@ fn estimate_covariance_matrix(samples: &DMatrix<i32>) -> DMatrix<f64> {
     // TODO check if this approach is faster
     // let g: DMatrix<f64> = (samples.transpose()/sigma.powi(2))*(&samples / nrows).map(|x| x.round());
 
-    // return G
     g
 }
 

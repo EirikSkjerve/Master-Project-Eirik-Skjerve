@@ -21,7 +21,7 @@ use peak_alloc::PeakAlloc;
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 fn main() {
-    let t = 500000;
+    let t = 700000;
     let n = 256;
     // run_hpp_attack();
     // covariance_matrix_estimation(7500000,256);
