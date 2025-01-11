@@ -297,7 +297,7 @@ pub fn hawksign_total(
     privkey: &(Vec<u8>, Vec<i64>, Vec<i64>),
     msg: &[u8],
     n: usize,
-) -> (Vec<i64>, Vec<i64>) {
+) -> Vec<i64> {
     //
     // given secret key components and message, compute a signature
     // unlike specifications, return the entire w as signature
@@ -427,7 +427,7 @@ pub fn hawksign_total(
         // in this version, return only w, not s=(h-w)/2
         let mut w = w0.clone();
         w.append(&mut w1.clone());
-        return (w, x);
+        return w;
     }
 }
 
