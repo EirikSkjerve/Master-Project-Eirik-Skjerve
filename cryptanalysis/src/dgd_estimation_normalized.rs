@@ -14,8 +14,8 @@ use std::time::{Duration, Instant};
 use prettytable::{color, Attr, Cell, Row, Table};
 
 pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
-    let ns = vec![256, 512, 1024];
-    // let ns = vec![512];
+    // let ns = vec![256, 512, 1024];
+    let ns = vec![512];
 
     let precision = 8;
 
@@ -27,7 +27,7 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
                   i-> "Num\nVectors",
                   i->"Mu",
                   i->"Var\n(Exp(X^2))",
-                  i->"Sigma",
+                  i->"Est. Sigma",
                   i->"Norm.\nvar",
                   i->"Mu4",
                   i->"|3-Mu4|",
@@ -52,7 +52,7 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
         FM->format!("{}", mu),
         FB->format!("{:.1$}", var, precision),
         Fc->format!("{:.1$}", var.sqrt(), precision),
-        Fy->format!("1"),
+        Fy->format!("{}", normvar),
         FR->format!("{:.1$}", normkur, precision),
         Fy->format!("{:.1$}", (3.0 - normkur).abs(), precision),
         Fw->format!("{:?}", time)
@@ -102,7 +102,7 @@ pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
 
     // bool determining if sampling of x should retry if a sampled x is not "valid"
     // this has an effect on the measurement of the practical distribution
-    let no_retry = false;
+    let no_retry = true;
 
     println!(
         "\nEstimating values by sampling {} vectors of length 2*{n}",
@@ -112,41 +112,25 @@ pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
     // measure time for mu
     let start = Instant::now();
 
-    println!("");
-
     // estimating mu
-    println!("Estimating mu...  ");
+    println!("Using mu=0");
     let mut mu: f64 = 0.0;
-
-    // uncomment this for estimated mu aswell
-
-    // for i in 0..t {
-    //
-    //     // sample x-vector of length 2n given a random vector
-    //     let temp: i64 = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry)
-    //         .iter()
-    //         .sum();
-    //     mu += temp as f64 / (t * 2 * n) as f64;
-    //
-    //      // Calculate and display progress
-    //     if i % (t / 100) == 0 || i == t - 1 {
-    //         let progress = (i as f64 / t as f64) * 100.0;
-    //         print!("\rProgress: {:.0}%", progress);
-    //         std::io::Write::flush(&mut std::io::stdout()).unwrap();
-    //     }
-    // }
 
     // estimating sigma
     println!("\nEstimating sigma...  ");
     let mut var: f64 = 0.0;
+    let mut seedlen = (t/u8::MAX as usize).max(1);
+    let mut seed: Vec<u8> = vec![0;seedlen];
     for i in 0..t {
-
+        seed[i % seedlen] += 1;
+        seed[i % seedlen] %= (u8::MAX);
         // sample x-vectors of length 2n given random "message"
-        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry);
-        let tempvar: f64 = temp.iter().map(|&x| (x as f64 - mu).powi(2)).sum();
+        let temp: Vec<i64> = hawksign_x_only(&privkey, &seed, n, no_retry);
+        // println!("{:?}", temp);
+        let tempvar: f64 = temp.iter().map(|&x| (x as f64).powi(2)).sum();
         var += tempvar / (t * 2 * n) as f64;
 
-         // Calculate and display progress
+        // Calculate and display progress
         if i % (t / 100) == 0 || i == t - 1 {
             let progress = (i as f64 / t as f64) * 100.0;
             print!("\rProgress: {:.0}%", progress);
@@ -154,6 +138,7 @@ pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
         }
     }
 
+    // since variance is sigma squared
     let sigma = var.sqrt();
 
     println!("");
@@ -161,10 +146,15 @@ pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
     // estimate normalized var and normalized kur
     println!("\nEstimating normalized var and kur");
     let (mut normvar, mut normkur): (f64, f64) = (0.0, 0.0);
+    let seedlen = (t/u8::MAX as usize).max(1);
+    let mut seed: Vec<u8> = vec![0;seedlen];
     for i in 0..t {
+        seed[i % seedlen] += 1;
+        seed[i % seedlen] %= (u8::MAX);
 
-        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry);
+        let temp: Vec<i64> = hawksign_x_only(&privkey, &seed, n, no_retry);
 
+        // println!("{:?}", temp);
         let (tempvar, tempkur): (f64, f64) = temp
             .iter()
             .map(|&x| {
@@ -177,6 +167,11 @@ pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
                 (sum_var + squared, sum_kur + fourth)
             });
 
+        // let tempkur: f64 = temp
+        //     .iter()
+        //     .map(|&x| (x as f64/sigma).powi(4) )
+        //     .sum();
+        //
         normvar += tempvar / (t * 2 * n) as f64;
         normkur += tempkur / (t * 2 * n) as f64;
 

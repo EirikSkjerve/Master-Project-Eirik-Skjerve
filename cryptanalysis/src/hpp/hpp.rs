@@ -11,8 +11,8 @@ use rand_distr::{Distribution, Normal};
 
 use crate::hpp::gradient_descent;
 
-const NUM_SAMPLES: usize = 900000;
-const N: usize = 512;
+const NUM_SAMPLES: usize = 500000;
+const N: usize = 128;
 const SIGMA: f64 = 1.01;
 
 // gives a measure of the difference between two matrices
@@ -248,7 +248,6 @@ pub fn run_hpp_attack() {
     // eprintln!("Approximated covariance matrix G: {g_approx}");
 
     mat_dist(&vtv, &g_approx);
-    return;
 
     // compute inverse of g
     let g_approx_inverse = g_approx

@@ -53,7 +53,7 @@ pub fn collect_signatures(t: usize, n: usize) {
         // now each signature is on the form w = B^-1 * x
         // convert to Vec<i16> to save a lot of memory
         let sig: Vec<i16> = hawksign_total(&privkey, &messages[i], n)
-            .0
+            
             .iter()
             .map(|&x| x as i16)
             .collect();
@@ -154,24 +154,9 @@ fn estimate_cov_mat(y: &DMatrix<i16>) -> DMatrix<i16> {
     println!("Current mem usage after computing yt_y: {} MB", PEAK_ALLOC.current_usage_as_mb());
     println!("max in yt_y: {}", g.max());
     // now yt_y is nxn and will not take as much memory
-    // let g_f = (1.0 / sigma.powi(2)) * yt_y.map(|x| x as f64 ) / nrows;
-    // println!("max in g approx: {}", g_f.max());
-    // round the result and convert back to i16
-    // let g_r = g_f.map(|x| x.round() as i16);
-    // return final result
     let g_r = g.map(|x| x.round() as i16);
+    // return final result
     g_r
-
-    // let y_f = y.map(|x| x as f32);
-    //
-    // // we don't need y in memory any more
-    // std::mem::drop(y);
-    // println!("Current mem usage after converting y to floats: {} MB", PEAK_ALLOC.current_usage_as_mb());
-    //
-    // let g_approx = (1.0 / sigma.powi(2)) * y_f.transpose() * y_f / nrows;
-    // println!("max in g approx: {}", g_approx.max());
-    // let g_approx = g_approx.map(|x| x.round() as i16);
-    // g_approx
 }
 
 // gives a measure of the difference between two matrices
