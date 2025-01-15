@@ -2,13 +2,13 @@ use hawklib::hawkkeygen::{gen_f_g, hawkkeygen};
 use hawklib::hawksign::hawksign_total;
 use hawklib::utils::rot_key;
 
-use crate::file_utils::{write_vectors_to_file, read_vectors_from_file};
+use crate::file_utils::{read_vectors_from_file, write_vectors_to_file};
 
 use nalgebra::*;
 use rand::Rng;
 use std::io::{stdout, Write};
-use std::time::{Duration, Instant};
 use std::mem;
+use std::time::{Duration, Instant};
 
 use peak_alloc::PeakAlloc;
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
@@ -30,7 +30,7 @@ fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
 
 pub fn collect_signatures(t: usize, n: usize) {
     // create t signatures with hawk degree n and store them in file
-    
+
     let filename = format!("{t}vectors_deg{n}");
 
     let mut stdout = stdout();
@@ -53,7 +53,6 @@ pub fn collect_signatures(t: usize, n: usize) {
         // now each signature is on the form w = B^-1 * x
         // convert to Vec<i16> to save a lot of memory
         let sig: Vec<i16> = hawksign_total(&privkey, &messages[i], n)
-            
             .iter()
             .map(|&x| x as i16)
             .collect();
@@ -69,7 +68,6 @@ pub fn collect_signatures(t: usize, n: usize) {
 
     write_vectors_to_file(signatures, privkey, &filename);
     println!("\nWritten signatures to {}", filename);
-
 }
 
 pub fn covariance_matrix_estimation(t: usize, n: usize) {
@@ -84,8 +82,8 @@ pub fn covariance_matrix_estimation(t: usize, n: usize) {
     let mut stdout = stdout();
 
     // read from precomputed file
-    let (signatures, privkey) = read_vectors_from_file(&format!("{t}vectors_deg{n}"))
-        .expect("Could not read file");
+    let (signatures, privkey) =
+        read_vectors_from_file(&format!("{t}vectors_deg{n}")).expect("Could not read file");
 
     // compute matrix version of secret key b and b inverse
     let (_, binv) = to_mat(&privkey);
@@ -103,7 +101,10 @@ pub fn covariance_matrix_estimation(t: usize, n: usize) {
     // drop the flattened signatures for memory saving purposes
     std::mem::drop(sig_flat);
 
-    println!("Current mem usage after creating DMatrix: {} MB", PEAK_ALLOC.current_usage_as_mb());
+    println!(
+        "Current mem usage after creating DMatrix: {} MB",
+        PEAK_ALLOC.current_usage_as_mb()
+    );
 
     println!("Estimating covariance matrix...");
     let approx_g = estimate_cov_mat(&y);
@@ -143,15 +144,21 @@ fn estimate_cov_mat(y: &DMatrix<i16>) -> DMatrix<i16> {
         1024 => 2.0 * 1.299,
         _ => 0.0,
     };
-    
+
     let nrows: f32 = y.nrows() as f32;
     // first compute yt_y of i16 matrices to save as much memory as possible
     println!("max in y: {}", y.max());
     let y = y.map(|x| x as f32);
-    println!("Current mem usage after converting y to f32: {} MB", PEAK_ALLOC.current_usage_as_mb());
-    let g = (y.transpose()/sigma.powi(2))*(&y / nrows);
+    println!(
+        "Current mem usage after converting y to f32: {} MB",
+        PEAK_ALLOC.current_usage_as_mb()
+    );
+    let g = (y.transpose() / sigma.powi(2)) * (&y / nrows);
     std::mem::drop(y);
-    println!("Current mem usage after computing yt_y: {} MB", PEAK_ALLOC.current_usage_as_mb());
+    println!(
+        "Current mem usage after computing yt_y: {} MB",
+        PEAK_ALLOC.current_usage_as_mb()
+    );
     println!("max in yt_y: {}", g.max());
     // now yt_y is nxn and will not take as much memory
     let g_r = g.map(|x| x.round() as i16);
@@ -161,7 +168,6 @@ fn estimate_cov_mat(y: &DMatrix<i16>) -> DMatrix<i16> {
 
 // gives a measure of the difference between two matrices
 fn mat_dist(a_mat: &DMatrix<i16>, b_mat: &DMatrix<i16>) {
-
     let mut num_diff = 0;
     let mut sum_diff: i64 = 0;
     for i in 0..a_mat.nrows() {
@@ -180,5 +186,4 @@ fn mat_dist(a_mat: &DMatrix<i16>, b_mat: &DMatrix<i16>) {
     let avg_diff = sum_diff as f64 / (a_mat.nrows() * a_mat.ncols()) as f64;
     println!("Matrices have different elements: {}", num_diff);
     println!("Average difference between elements: {}", avg_diff);
-
 }

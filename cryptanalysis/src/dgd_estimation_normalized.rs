@@ -14,8 +14,9 @@ use std::time::{Duration, Instant};
 use prettytable::{color, Attr, Cell, Row, Table};
 
 pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
-    // let ns = vec![256, 512, 1024];
-    let ns = vec![512];
+    let ns = vec![256, 512, 1024];
+    // let ns = vec![512];
+    // let ns = vec![256];
 
     let precision = 8;
 
@@ -30,7 +31,7 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
                   i->"Est. Sigma",
                   i->"Norm.\nvar",
                   i->"Mu4",
-                  i->"|3-Mu4|",
+                  i->"3-Mu4",
                   i->"Time",
     ]);
 
@@ -54,7 +55,7 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
         Fc->format!("{:.1$}", var.sqrt(), precision),
         Fy->format!("{}", normvar),
         FR->format!("{:.1$}", normkur, precision),
-        Fy->format!("{:.1$}", (3.0 - normkur).abs(), precision),
+        Fy->format!("{:.1$}", (3.0 - normkur), precision),
         Fw->format!("{:?}", time)
         ]);
     }
@@ -86,10 +87,10 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
 pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
     // create t x-vectors with hawk degree n
     // this function will not store any intermediate samples and therefore will not need a lot of
-    // memory. Drawback is that t x-vectors have to be generated twice; once for mu and once for
-    // var
+    // memory. Drawback is that t x-vectors have to be generated thrice; once for mu, once for
+    // var and once for normalized kurtosis
     //
-    // returns (Exp[x], Var[X], time used)
+    // returns (Exp[x], Var[X], normalized Var[X], normalized Kur[x], time used)
     //
 
     // generate a keypair
@@ -119,14 +120,13 @@ pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
     // estimating sigma
     println!("\nEstimating sigma...  ");
     let mut var: f64 = 0.0;
-    let mut seedlen = (t/u8::MAX as usize).max(1);
-    let mut seed: Vec<u8> = vec![0;seedlen];
+    let mut seedlen = (t / u8::MAX as usize).max(1);
+    let mut seed: Vec<u8> = vec![0; seedlen];
     for i in 0..t {
-        seed[i % seedlen] += 1;
+        seed[i % seedlen] += (i & u8::MAX as usize) as u8;
         seed[i % seedlen] %= (u8::MAX);
         // sample x-vectors of length 2n given random "message"
         let temp: Vec<i64> = hawksign_x_only(&privkey, &seed, n, no_retry);
-        // println!("{:?}", temp);
         let tempvar: f64 = temp.iter().map(|&x| (x as f64).powi(2)).sum();
         var += tempvar / (t * 2 * n) as f64;
 
@@ -146,8 +146,8 @@ pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
     // estimate normalized var and normalized kur
     println!("\nEstimating normalized var and kur");
     let (mut normvar, mut normkur): (f64, f64) = (0.0, 0.0);
-    let seedlen = (t/u8::MAX as usize).max(1);
-    let mut seed: Vec<u8> = vec![0;seedlen];
+    let seedlen = (t / u8::MAX as usize).max(1);
+    let mut seed: Vec<u8> = vec![0; seedlen];
     for i in 0..t {
         seed[i % seedlen] += 1;
         seed[i % seedlen] %= (u8::MAX);
@@ -175,7 +175,7 @@ pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
         normvar += tempvar / (t * 2 * n) as f64;
         normkur += tempkur / (t * 2 * n) as f64;
 
-         // Calculate and display progress
+        // Calculate and display progress
         if i % (t / 100) == 0 || i == t - 1 {
             let progress = (i as f64 / t as f64) * 100.0;
             print!("\rProgress: {:.0}%", progress);
