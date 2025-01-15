@@ -12,6 +12,7 @@ use std::io::{Write, stdout};
 use peak_alloc::PeakAlloc;
 
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
+static TOLERANCE: f64 = 1e-10;
 
 pub fn run_hpp_attack(t: usize, n: usize) {
     // runs the HPP attack against Hawk
@@ -27,13 +28,26 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 
     // get the correct key for later comparison
     let (b, binv) = get_secret_key(t, n);
-    // correct G
-    let cg = (&binv.transpose() * &binv).map(|x| x as f64);
 
+    // eprintln!("{}", &b * &binv);
+
+    // eprintln!("{}", binv.column(256));
+    // correct G
+    let cg = (&binv * &binv.transpose()).map(|x| x as f64);
+
+    // Perform Singular Value Decomposition
+    let svd = SVD::new(cg.clone(), true, true);
+
+    // Compute the rank by counting singular values above the tolerance
+    let rank = svd.singular_values.iter().filter(|&&x| x > TOLERANCE).count();
+
+    println!("Rank of BtB: {}", rank);
+    // eprintln!("{}", binv.column(0));
     println!("Running HPP attack with {t} samples against Hawk{n}");
 
     // STEP 0: Generate samples
     // We need to generate a lot of samples to run the attack on
+    // samples is a tx2n matrix
     let samples = generate_samples(t, n);
     println!("Samples collected...");
 
@@ -52,15 +66,17 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // We use the Nalgebra crate for representations of matrices and for procedures such
     // as Cholesky decomposition
     // CURRENTLY ONLY USING THE CORRECT G INSTEAD OF ESTIMATE
-    let (u, linv) = hypercube_transformation(samples, cg);
+    let (u, linv) = hypercube_transformation(samples, cg, &binv);
     println!("Samples transformed...");
 
     // STEP 3: Gradient Descent:
     // The final step is to do gradient descent on our (converted) samples to minimize the
     // fourth moment, and consequently reveal a row/column from +/- B
     println!("Doing gradient descent...");
-    if let Some(sol) = gradient_descent_maximize(u, 0.1) {
-        let res = (linv * sol).map(|x| x.round() as i16);
+    if let Some(sol) = gradient_descent_minimize(u, 0.5) {
+        let res = (linv * sol).map(|x| x.round() as i32);
+        // eprintln!("Result: {res}");
+        println!("Is res in key? \n{}", vec_in_key(&res, &binv));
     }
 }
 
@@ -72,7 +88,7 @@ fn get_secret_key(t: usize, degree: usize) -> (DMatrix<i32>, DMatrix<i32>) {
     let (_, pkey) = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).expect(&format!(
         "Could not find file with length {t} and degree {degree}"
     ));
-
+    // println!("F: {:?} \nG: {:?}", pkey.1, pkey.2);
     // get the matrix form of b inverse
     let (b, binv) = to_mat(&pkey);
 
@@ -100,8 +116,8 @@ fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64
     let flatb: Vec<i64> = b.into_iter().flatten().collect();
     let flatbinv: Vec<i64> = binv.into_iter().flatten().collect();
 
-    let b = DMatrix::from_column_slice(2 * n, 2 * n, &flatb);
-    let binv = DMatrix::from_column_slice(2 * n, 2 * n, &flatbinv);
+    let b = DMatrix::from_row_slice(2 * n, 2 * n, &flatb);
+    let binv = DMatrix::from_row_slice(2 * n, 2 * n, &flatbinv);
     (b, binv)
 }
 
@@ -165,6 +181,7 @@ fn estimate_covariance_matrix(samples: &DMatrix<i32>) -> DMatrix<f64> {
 fn hypercube_transformation(
     samples: DMatrix<i32>,
     g: DMatrix<f64>,
+    skey: &DMatrix<i32>
 ) -> (DMatrix<f64>, DMatrix<f64>) {
     // given samples and estimate of covariance matrix, return transformed
     // samples from hidden parallelepiped onto hidden hypercube for easier
@@ -173,10 +190,8 @@ fn hypercube_transformation(
 
     // take inverse of G
     let ginv = g.try_inverse().expect("Couldn't take inverse :(");
-    println!("g inverse computed");
     // compute L = Cholesky decomposition of g inverse
     let l = Cholesky::new(ginv).expect("Couldn't do Cholesky decomposition of ginv :(");
-    println!("L computed");
 
     // compute inverse of L
     let linv = l
@@ -185,20 +200,17 @@ fn hypercube_transformation(
         .try_inverse()
         .expect("Couldn't take inverse of l");
 
-    println!("L inverse computed");
-
-    println!(
-        "Usage before mapping samples to f64: {} mb",
-        PEAK_ALLOC.current_usage_as_mb()
-    );
-
     // make a copy of samples converted to f64 to be able to multiply them with L
-    let mut samples_f64: DMatrix<f64> = samples.map(|x| x as f64);
-    println!(
-        "Usage after mapping samples to f64: {} mb",
-        PEAK_ALLOC.current_usage_as_mb()
-    );
-    samples_f64 *= l.l();
+    let samples_f64: DMatrix<f64> = samples.map(|x| x as f64) * l.l();
+
+    // let c = skey.map(|x| x as f64)*l.l();
+    let c = l.l().transpose() * skey.map(|x| x as f64);
+    if is_orthogonal(&c) {
+        println!("C is orthogonal!");
+    } else {
+        println!("C is not orthogonal...");
+    }
+
     (samples_f64, linv)
 }
 
@@ -221,7 +233,6 @@ fn gradient_descent_minimize(samples: DMatrix<f64>, delta: f64) -> Option<DVecto
         w_new = &w_new / w_new.norm();
         // 5.1: if 4th moment of w_new is greater than 4th moment of w, we have "overshot" and return w
         if mom4(&w_new, &samples) >= mom4(&w, &samples) {
-            eprintln!("Result: {w:.0}");
             println!("Returned in {num_iter} iterations!");
             return Some(w);
         }
@@ -244,19 +255,29 @@ fn gradient_descent_maximize(samples: DMatrix<f64>, delta: f64) -> Option<DVecto
     // 1: choose w uniformly from unit sphere of R^n
     let mut w = get_rand_w(n, &mut rng);
     // 2: compute approx. gradient of nabla_mom_4
+    let mut prevnorm = 0.0;
     loop {
-        print!("\rIterations: {num_iter}");
-        std::io::Write::flush(&mut std::io::stdout()).unwrap();
+        // print!("\rIterations: {num_iter}");
+        // std::io::Write::flush(&mut std::io::stdout()).unwrap();
         num_iter += 1;
         let g = grad_mom4(&w, &samples);
+        let curnorm = g.norm();
+        // println!("\n|g|={}", curnorm);
+        // eprintln!("g: {g:.2}");
         // 3: compute w_new = w-delta*g
-        let mut w_new = &w - (delta * g);
+        let mut w_new = &w + (delta * g);
         // 4: normalize w_new
         w_new = &w_new / w_new.norm();
-        // 5.1: if 4th moment of w_new is greater than 4th moment of w, we have "overshot" and return w
+
+        // println!("mom4(w_new)={}", mom4(&w_new, &samples));
+        // println!("mom4(w)={}", mom4(&w, &samples));
+
+        if (curnorm-prevnorm).abs() < 1.0 {
+            return Some(w)
+        }
+
+        // 5.1: if 4th moment of w_new is smaller than 4th moment of w, we have "overshot" and return w
         if mom4(&w_new, &samples) <= mom4(&w, &samples) {
-            // println!("Result: {:?}", w.map(|x| x.round()));
-            eprintln!("Result: {w:.0}");
             std::io::Write::flush(&mut std::io::stdout()).unwrap();
             println!("\nReturned in {num_iter} iterations!");
             return Some(w);
@@ -264,10 +285,21 @@ fn gradient_descent_maximize(samples: DMatrix<f64>, delta: f64) -> Option<DVecto
         // 5.2: otherwise set w to be w_new and goto 2
         else {
             w = w_new;
+            prevnorm = curnorm;
         }
     }
     // if a solution cannot be found
     None
+}
+
+fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
+    // Check if the vector exists as a row in the matrix
+    let as_row = key.row_iter().any(|row| row == vec.transpose());
+
+    // Check if the vector exists as a column in the matrix
+    let as_column = key.column_iter().any(|col| col == *vec);
+
+    as_row || as_column
 }
 
 fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
@@ -320,4 +352,18 @@ fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
     // power of 3 to each entry
     let uw3u: DVector<f64> = (4.0 * (uw3.transpose() * samples) / samples.nrows() as f64).transpose();
     uw3u
+}
+
+fn is_orthogonal(matrix: &DMatrix<f64>) -> bool {
+    let identity = DMatrix::identity(matrix.ncols(), matrix.ncols());
+    let qt_q = matrix.transpose() * matrix;
+    let diff = (&qt_q - identity).norm();
+    eprintln!("{qt_q:.1}");
+    println!("Diff: {diff}");
+    diff < TOLERANCE
+}
+
+fn is_orthonormal(matrix: &DMatrix<f64>) -> bool {
+    is_orthogonal(matrix) &&
+    matrix.column_iter().all(|col| (col.norm() - 1.0).abs() < TOLERANCE)
 }

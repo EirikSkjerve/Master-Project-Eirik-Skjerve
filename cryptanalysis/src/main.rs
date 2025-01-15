@@ -21,7 +21,7 @@ use prettytable::{Cell, Row, Table};
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 fn main() {
-    let t = 3000000;
+    let t = 1500000;
     let n = 256;
     // run_hpp_attack();
     // covariance_matrix_estimation(7500000,256);
