@@ -26,7 +26,7 @@ fn main() {
     // run_hpp_attack();
     // covariance_matrix_estimation(7500000,256);
     // estimate_mem_all(500000, true);
-    // estimate_mem_norm_all(4000000, true);
+    // estimate_mem_norm_all(40000, true);
 
     // collect_signatures(t, n);
     run_hpp_attack(t, n);

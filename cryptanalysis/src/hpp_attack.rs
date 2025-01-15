@@ -40,6 +40,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // STEP 1: estimate covariance matrix. This step requires a lot of samples,
     // so hopefully we can employ some sort of trick like the HPP against NTRU to reduce
     // number of signatures needed
+
     // let g = estimate_covariance_matrix(&samples);
     // println!("Covariance matrix estimated...");
 

@@ -31,7 +31,7 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
                   i->"Est. Sigma",
                   i->"Norm.\nvar",
                   i->"Mu4",
-                  i->"3-Mu4",
+                  i->"Mu4-3",
                   i->"Time",
     ]);
 
@@ -55,7 +55,7 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
         Fc->format!("{:.1$}", var.sqrt(), precision),
         Fy->format!("{}", normvar),
         FR->format!("{:.1$}", normkur, precision),
-        Fy->format!("{:.1$}", (3.0 - normkur), precision),
+        Fy->format!("{:.1$}", (normkur - 3.0), precision),
         Fw->format!("{:?}", time)
         ]);
     }
