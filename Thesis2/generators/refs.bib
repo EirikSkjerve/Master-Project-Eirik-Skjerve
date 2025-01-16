@@ -1,0 +1,42 @@
+@techreport{HawkSpec24,
+    author = {Joppe W. Bos, Olivier Bronchain, Léo Ducas, Serge Fehr, Yu-Hsuan Huang, Thomas Pornin, Eamonn W. Postlethwaite, Thomas Prest, Ludo N. Pulles and Wessel van Woerden},
+    title = {HAWK},
+    year = {2024},
+    month = {September},
+    url = {https://hawk-sign.info/},
+    institution = {NXP Semiconductors, Centrum Wiskunde \& Informatica, Mathematical Institute at Leiden University, NCC Group, PQShield, Institut de Mathématiques de Bordeaux},
+}
+
+@misc{NR09,
+    author = {Phong Q. Nguyen and Oded Regev},
+    title = {Learning a parallelepiped: Cryptanalysis of GGH and NTRU signatures},
+    booktitle = {Journal of Cryptology 22 (2009)},
+    version = {no. 2},
+    pages = {139--160},
+    year = {2009}
+
+}
+
+@techreport{NTRUSign03,
+    author = {Jeffrey Hoffstein, Nick Howgrave-Graham, Jill Pipher, Joseph H. Silverman, William Whyte},
+    title = {NTRUSign: Digital Signatures Using the NTRU Lattice},
+    year = {2003},
+    institution = {NTRU Cryptosystems}
+}
+
+@inproceedings{Zonotope12,
+author = {Ducas, L\'{e}o and Nguyen, Phong Q.},
+title = {Learning a zonotope and more: cryptanalysis of NTRUSign countermeasures},
+year = {2012},
+isbn = {9783642349607},
+publisher = {Springer-Verlag},
+address = {Berlin, Heidelberg},
+url = {https://doi.org/10.1007/978-3-642-34961-4_27},
+doi = {10.1007/978-3-642-34961-4_27},
+abstract = {NTRUSign is the most practical lattice signature scheme. Its basic version was broken by Nguyen and Regev in 2006: one can efficiently recover the secret key from about 400 signatures. However, countermeasures have been proposed to repair the scheme, such as the perturbation used in NTRUSign standardization proposals, and the deformation proposed by Hu et al. at IEEE Trans. Inform. Theory in 2008. These two countermeasures were claimed to prevent the NR attack. Surprisingly, we show that these two claims are incorrect by revisiting the NR gradient-descent attack: the attack is more powerful than previously expected, and actually breaks both countermeasures in practice, e.g. 8,000 signatures suffice to break NTRUSign-251 with one perturbation as submitted to IEEE P1363 in 2003. More precisely, we explain why the Nguyen-Regev algorithm for learning a parallelepiped is heuristically able to learn more complex objects, such as zonotopes and deformed parallelepipeds.},
+booktitle = {Proceedings of the 18th International Conference on The Theory and Application of Cryptology and Information Security},
+pages = {433–450},
+numpages = {18},
+location = {Beijing, China},
+series = {ASIACRYPT'12}
+}
