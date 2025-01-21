@@ -7,12 +7,14 @@ mod dgd_estimation_normalized;
 mod file_utils;
 mod hpp;
 mod hpp_attack;
+mod hpp_simulation;
 
 use collect_signatures::{collect_signatures, covariance_matrix_estimation};
 use dgd_estimation::{estimate_mem, estimate_mem_all};
 use dgd_estimation_normalized::estimate_mem_norm_all;
 // use hpp::hpp::run_hpp_attack;
 use hpp_attack::run_hpp_attack;
+use hpp_simulation::run_hpp_sim;
 
 use peak_alloc::PeakAlloc;
 use prettytable::{Cell, Row, Table};
@@ -21,15 +23,18 @@ use prettytable::{Cell, Row, Table};
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 fn main() {
-    let t = 750000;
+    // let t = 500000;
+    // let n = 16;
+    let t = 300000;
     let n = 512;
-    // run_hpp_attack();
-    collect_signatures(t, n);
-    covariance_matrix_estimation(t, n);
+
+    // collect_signatures(t, n);
+    // covariance_matrix_estimation(t, n);
     // estimate_mem_all(500000, true);
     // estimate_mem_norm_all(40000, true);
 
-    // run_hpp_attack(t, n);
+    run_hpp_attack(t, n);
+    // run_hpp_sim(t, n);
 
     println!(
         "Max memory usage total in this run: {} GB",

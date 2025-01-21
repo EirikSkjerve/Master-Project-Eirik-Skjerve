@@ -2,18 +2,19 @@ use crate::file_utils::read_vectors_from_file;
 use nalgebra::*;
 
 use hawklib::hawkkeygen::gen_f_g;
+use hawklib::ntru_solve::ntrusolve;
 use hawklib::utils::rot_key;
 
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
-use std::io::{Write, stdout};
+use std::io::{stdout, Write};
 
 use peak_alloc::PeakAlloc;
 
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
-static TOLERANCE: f64 = 1e-10;
-static DELTA: f64 = 0.005;
+static TOLERANCE: f64 = 1e-5;
+static DELTA: f64 = 0.1;
 
 pub fn run_hpp_attack(t: usize, n: usize) {
     // runs the HPP attack against Hawk
@@ -29,21 +30,32 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 
     // get the correct key for later comparison
     let (b, binv) = get_secret_key(t, n);
-
+    assert_eq!(&b.map(|x| x as f64).try_inverse().unwrap().map(|x| x.round()), &binv.map(|x| x as f64));
+    let q = get_public_key(t, n).unwrap().map(|x| x as f64);
     // eprintln!("{}", &b * &binv);
 
     // eprintln!("{}", binv.column(256));
     // correct G
     let cg = (&binv * &binv.transpose()).map(|x| x as f64);
 
+    let btb = (&b.transpose() * &b);
+
+    let ginv = cg.map(|x| x as f64).try_inverse().unwrap().map(|x| x.round());
+    assert_eq!(ginv, btb.map(|x| x as f64));
+
+    let diff = (&q-&btb.map(|x| x as f64)).map(|x| x as f64).norm();
+    // println!("Diff: {}", diff);
+    assert_eq!(q, btb.map(|x| x as f64));
+
     // Perform Singular Value Decomposition
-    let svd = SVD::new(cg.clone(), true, true);
+    // let svd = SVD::new(cg.clone(), true, true);
 
     // Compute the rank by counting singular values above the tolerance
-    let rank = svd.singular_values.iter().filter(|&&x| x > TOLERANCE).count();
+    // let rank = svd.singular_values.iter().filter(|&&x| x > TOLERANCE).count();
 
-    println!("Rank of BtB: {}", rank);
+    // println!("Rank of BtB: {}", rank);
     // eprintln!("{}", binv.column(0));
+
     println!("Running HPP attack with {t} samples against Hawk{n}");
 
     // STEP 0: Generate samples
@@ -58,7 +70,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 
     // let cg = estimate_covariance_matrix(&samples);
     // println!("Covariance matrix estimated...");
-
+    //
     // STEP 2: conversion from hidden parallelepiped to hidden hypercube.
     // in this step we need a covariance matrix estimation from step 1. The better
     // the estimation in step two, the better conversion estimation we can do here.
@@ -67,7 +79,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // We use the Nalgebra crate for representations of matrices and for procedures such
     // as Cholesky decomposition
     // CURRENTLY ONLY USING THE CORRECT G INSTEAD OF ESTIMATE
-    let (u, linv) = hypercube_transformation(samples, cg, &binv);
+    let (u, linv) = hypercube_transformation(samples, q, &binv);
     println!("Samples transformed...");
 
     // STEP 3: Gradient Descent:
@@ -93,7 +105,7 @@ fn get_secret_key(t: usize, degree: usize) -> (DMatrix<i32>, DMatrix<i32>) {
     // provided there is only one file
 
     // get the private key
-    let (_, pkey) = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).expect(&format!(
+    let (_, pkey, _) = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).expect(&format!(
         "Could not find file with length {t} and degree {degree}"
     ));
     // println!("F: {:?} \nG: {:?}", pkey.1, pkey.2);
@@ -101,6 +113,20 @@ fn get_secret_key(t: usize, degree: usize) -> (DMatrix<i32>, DMatrix<i32>) {
     let (b, binv) = to_mat(&pkey);
 
     (b.map(|x| x as i32), binv.map(|x| x as i32))
+}
+
+fn get_public_key(t: usize, degree: usize) -> Option<DMatrix<i64>> {
+    let (_, _, (q00, q01)) = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).expect(
+        &format!("Could not find file with length {t} and degree {degree}"),
+    );
+
+    if let Some((q10, q11)) = ntrusolve(&q00, &q01) {
+        let q = rot_key(&q00, &q10, &q01, &q11);
+        let flatq: Vec<i64> = q.into_iter().flatten().collect();
+        let q_mat = DMatrix::from_row_slice(2 * degree, 2 * degree, &flatq);
+        return Some(q_mat);
+    }
+    None
 }
 
 fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64>) {
@@ -135,7 +161,7 @@ fn generate_samples(t: usize, degree: usize) -> DMatrix<i32> {
     // TODO: Otherwise, create the samples in place
 
     // read from precomputed file
-    let (signatures, _) = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).expect(
+    let (signatures, _, _) = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).expect(
         &format!("Could not find file with length {t} and degree {degree}"),
     );
     // TODO create new samples if file does not exist
@@ -173,23 +199,24 @@ fn estimate_covariance_matrix(samples: &DMatrix<i32>) -> DMatrix<f64> {
     let nrows: f64 = samples.nrows() as f64;
 
     // convert the samples to f64 so we can do division on them later
-    // let samples = samples.map(|x| x as i32);
+    let samples = samples.map(|x| x as f64);
 
     // compute yty and convert to f64 after computation is done
-    let yty: DMatrix<f64> = (samples.transpose() * samples).map(|x| x as f64);
-    // divide each entry by (sigma^2 * num_samples) to scale properly, and round the result
-    let g: DMatrix<f64> = (yty / (sigma.powi(2) * nrows)).map(|x| x.round());
+    // let yty: DMatrix<f64> = (samples.transpose() * samples).map(|x| x as f64);
+    // // divide each entry by (sigma^2 * num_samples) to scale properly, and round the result
+    // let g: DMatrix<f64> = (yty / (sigma.powi(2) * nrows)).map(|x| x.round());
 
     // TODO check if this approach is faster
-    // let g: DMatrix<f64> = (samples.transpose()/sigma.powi(2))*(&samples / nrows).map(|x| x.round());
+    let g: DMatrix<f64> =
+        (samples.transpose() / sigma.powi(2)) * (&samples / nrows).map(|x| x.round());
 
     g
 }
 
 fn hypercube_transformation(
     samples: DMatrix<i32>,
-    g: DMatrix<f64>,
-    skey: &DMatrix<i32>
+    q: DMatrix<f64>,
+    skey: &DMatrix<i32>,
 ) -> (DMatrix<f64>, DMatrix<f64>) {
     // given samples and estimate of covariance matrix, return transformed
     // samples from hidden parallelepiped onto hidden hypercube for easier
@@ -197,9 +224,10 @@ fn hypercube_transformation(
     // Also returns the l inverse so we don't have to recompute it later
 
     // take inverse of G
-    let ginv = g.try_inverse().expect("Couldn't take inverse :(");
+    // let ginv = g.try_inverse().expect("Couldn't take inverse :(");
+    // now we have Q which is exactly equal to g inverse
     // compute L = Cholesky decomposition of g inverse
-    let l = Cholesky::new(ginv).expect("Couldn't do Cholesky decomposition of ginv :(");
+    let l = Cholesky::new(q).expect("Couldn't do Cholesky decomposition of ginv :(");
 
     // compute inverse of L
     let linv = l
@@ -211,13 +239,8 @@ fn hypercube_transformation(
     // make a copy of samples converted to f64 to be able to multiply them with L
     let samples_f64: DMatrix<f64> = samples.map(|x| x as f64) * l.l();
 
-    // let c = skey.map(|x| x as f64)*l.l();
-    let c = l.l().transpose() * skey.map(|x| x as f64);
-    if is_orthogonal(&c) {
-        println!("C is orthogonal!");
-    } else {
-        println!("C is not orthogonal...");
-    }
+    // let c = l.l().transpose() * skey.map(|x| x as f64);
+    // let cct = &c * &c.transpose();
 
     (samples_f64, linv)
 }
@@ -254,7 +277,7 @@ fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> 
 }
 
 fn gradient_ascent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
-    // performs gradient descent on hypercube by maximizing 4th moment 
+    // performs gradient descent on hypercube by maximizing 4th moment
 
     let n = samples.ncols();
     let mut rng = StdRng::seed_from_u64(34872114);
@@ -350,15 +373,12 @@ fn mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> f64 {
 fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
     // estimate gradient of 4th moment given samples and vector w
     // compute 4(<u, w>^3 * u)
-    // let uw = (samples * w).map(|x| x.powi(3));
-    // let temp2 = &temp.transpose() * samples;
-    // let res = temp2.sum() * 4.0 / w.len() as f64;
-    // res
 
     // dot product
     let uw3: DVector<f64> = (samples * w).map(|x| x.powi(3));
     // power of 3 to each entry
-    let uw3u: DVector<f64> = (4.0 * (uw3.transpose() * samples) / samples.nrows() as f64).transpose();
+    let uw3u: DVector<f64> =
+        (4.0 * (uw3.transpose() * samples) / samples.nrows() as f64).transpose();
     uw3u
 }
 
@@ -372,6 +392,8 @@ fn is_orthogonal(matrix: &DMatrix<f64>) -> bool {
 }
 
 fn is_orthonormal(matrix: &DMatrix<f64>) -> bool {
-    is_orthogonal(matrix) &&
-    matrix.column_iter().all(|col| (col.norm() - 1.0).abs() < TOLERANCE)
+    is_orthogonal(matrix)
+        && matrix
+            .column_iter()
+            .all(|col| (col.norm() - 1.0).abs() < TOLERANCE)
 }
