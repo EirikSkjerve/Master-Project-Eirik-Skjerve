@@ -62,7 +62,7 @@ Since $\mat{V}$ is orthonormal and if $\vec{w}$ is on the unit sphere, we have
 \[= (\mu_4 - 3)\sum_{i=1}^{n}\langle \vec{v}_i, \vec{w} \rangle^4 + 3 \Vert \vec{w} \Vert ^4\]
 
 By collecting and analyzing samples from $\dgdi$ and estimate $\mu_4$ we can do gradient descent as in the original attack if $\lvert \mu_4 - 3 \rvert \neq 0$.
-If $\mu_4 - 3 > 0$ we need to minimize the term $(\mu_4 - 3) \sum_{i=1}^{n} \langle \vec{v}_i, \vec{w} \rangle$. If $\mu_4 - 3 < 0$, we need to maximize the same term to minimize the total expression.
+If $\mu_4 - 3 > 0$ we need to minimize the term $(\mu_4 - 3) \sum_{i=1}^{n} \langle \vec{v}_i, \vec{w} \rangle ^4$. If $\mu_4 - 3 < 0$, we need to maximize the same term to minimize the total expression for the 4th moment.
 \bibliographystyle{plain}  % Choose your desired style (plain, IEEE, etc.)
 \bibliography{refs}        % This references the refs.bib file
 \end{document}
