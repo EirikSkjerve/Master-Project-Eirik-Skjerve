@@ -21,15 +21,15 @@ use prettytable::{Cell, Row, Table};
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 fn main() {
-    let t = 1500000;
-    let n = 256;
+    let t = 750000;
+    let n = 512;
     // run_hpp_attack();
-    // covariance_matrix_estimation(7500000,256);
+    collect_signatures(t, n);
+    covariance_matrix_estimation(t, n);
     // estimate_mem_all(500000, true);
     // estimate_mem_norm_all(40000, true);
 
-    // collect_signatures(t, n);
-    run_hpp_attack(t, n);
+    // run_hpp_attack(t, n);
 
     println!(
         "Max memory usage total in this run: {} GB",
