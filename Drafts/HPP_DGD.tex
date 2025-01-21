@@ -13,7 +13,8 @@
 \DeclareRobustCommand{\VAN}[3]{#2}
 \usepackage{amssymb} 
 \usepackage{cite}
-
+\usepackage[english]{babel}
+\usepackage{parskip}
 %\usepackage{setspace}               		% Together with \doublespacing below allows for doublespacing of the document
 
 \oddsidemargin=-0.5cm                 	% These three commands create the margins required for class
@@ -37,29 +38,30 @@
 \author{Eirik D. Skjerve}
 \maketitle
 \section{\textit{Learning a parallelepiped} attack against the Discrete Gaussian Distribution in Hawk}
-We consider the Discrete Gaussian Distribution as described in \cite{HawkSpec24}. Available we have an implementation of the sampling method used in the Hawk scheme,
-using precomputed cumulative distribution tables to emulate samples from the theoretical distribution. Using this implementation we can sample an arbitrary number of sample points, which we will use in this attack. \\ \hfill \break
+We consider the Discrete Gaussian Distribution as described in \cite{HawkSpec24}. Available we have an implementation of the sampling method used in the Hawk scheme, 
+using precomputed cumulative distribution tables to emulate samples from the theoretical distribution. 
+Using this implementation we can collect an arbitrary number of sample points, which we will use in this attack.
 
 Let $\dgd$ denote the theoretical discrete Gaussian distribution as described in Hawk spec-paper \cite{HawkSpec24}.
 Let $\dgdi$ denote the distribution of samples from the practical implementation using tables,
-and let $\mu, \sigma ^2$ be the expectation and variance respectively of $\dgdi$. We can estimate these values simply by collection many samples from the implementation.
-Say we sample $n$ points as $X = \{x_1, x_2,..., x_n\}$. First we estimate $\hat{\mu}$ = $\frac{1}{n}\sum_{i=1}^{n} x_i$ and $\hat{\sigma}^2 = \frac{1}{n}\sum_{i=1}^{n}(x_i - \hat{\mu})^2$.
-It is possible that we should just use $\hat{\mu} = 0$. Then we normalize the samples by computing 
-$Z = \{z_1, z_2,..., z_n\} = \{\frac{x_1}{\hat{\sigma}}, \frac{x_2}{\hat{\sigma}},..., \frac{x_n}{\hat{\sigma}}\} $ such that $\bb{V}(z_i) = 1$. This makes further computations easier to work with. \\ \hfill \break
+and let $\mu, \sigma ^2$ be the expectation and variance respectively of $\dgdi$. We can estimate these values simply by collecting many samples from the implementation.
+Say we sample $k$ points as $X = \{x_1, x_2,..., x_k\}$. First we estimate $\hat{\mu}$ = $\frac{1}{k}\sum_{i=1}^{k} x_i$ and $\hat{\sigma}^2 = \frac{1}{k}\sum_{i=1}^{k}(x_i - \hat{\mu})^2$.
+It is possible that we should just use $\hat{\mu} = 0$. Then we normalize the samples by taking
+$Z = \{z_1, z_2,..., z_k\} = \{\frac{x_1}{\hat{\sigma}}, \frac{x_2}{\hat{\sigma}},..., \frac{x_k}{\hat{\sigma}}\} $ such that $\bb{V}(z_i) = 1$. This makes further computations easier to work with.
 
-Now, like in the original \textit{Learning a parallelepiped} attack, let $\mat{V}$ be a secret $n \times n$ orthonormal matrix (this is after transforming hidden parallelepiped to hidden hypercube),
-and that we observe many signatures on the form $\vec{v} = \mat{V}\vec{z}$ where $z_i \sim \dgdi$ and $\bb{V}(z_i) = 1$.
+Now, like in the original \textit{Learning a parallelepiped} attack \cite{NR09}, let $\mat{C}$ be a secret $n \times n$ orthonormal matrix (this is after transforming the hidden parallelepiped to a hidden hypercube),
+and assume we observe signatures on the form $\vec{c} = \mat{C}\vec{z}$ where $z_i \sim \dgdi$ and $\bb{V}(z_i) = 1$.
 
-We compute the 2nd and 4th moment of $\PP{V}$ over a vector $\vec{w} \in \bb{R}^n$ as $\bb{E}[\langle \vec{u}, \vec{w} \rangle ^k]$ for $k=2,4$ where $\vec{u} = \sum_{i=1}^{n}z_i \vec{v}_i.$ 
+We compute the 2nd and 4th moment of $\PP{C}$ over a vector $\vec{w} \in \bb{R}^n$ as $\bb{E}[\langle \vec{u}, \vec{w} \rangle ^k]$ for $k=2,4$ where $\vec{u} = \sum_{i=1}^{n}z_i \vec{c}_i.$ 
 \begin{itemize}
-    \item $\bb{E}[\langle \vec{u}, \vec{w} \rangle ^2] = \bb{E}[(\sum_{i=1}^{n} z_i \langle \vec{v}_i, \vec{w} \rangle )^2] = \sum_{i=1}^{n}\bb{E}[z_i^2]\langle \vec{v}_i, \vec{w} \rangle^2 = \Vert \vec{w} \Vert ^2$
-    \item $\bb{E}[\dot{v}{w} ^4] = \sum_{i=1}^{n}\bb{E}[z_i ^4] \langle \vec{v}_i, \vec{w} \rangle  + 3\sum_{i \neq j} \bb{E}[z_i^2 z_j^2] \langle \vec{v}_i, \vec{w} \rangle ^2 \langle \vec{v}_j \vec{w} \rangle^2$ \\
-        $= \mu_4 \sum_{i=1}^{n} \langle \vec{v}_i, \vec{w} \rangle + 3\sum_{i \neq j} \langle \vec{v}_i, \vec{w} \rangle ^2 \langle \vec{v}_j \vec{w} \rangle^2$
-        due to independent variables and $\bb{V}[z_i] = 1$, where $\mu_4 = \bb{E}[z_i ^4]$.
+    \item $\bb{E}[\langle \vec{u}, \vec{w} \rangle ^2] = \bb{E}[(\sum_{i=1}^{n} z_i \langle \vec{c}_i, \vec{w} \rangle )^2] = \sum_{i=1}^{n}\bb{E}[z_i^2]\langle \vec{c}_i, \vec{w} \rangle^2 = \Vert \vec{w} \Vert ^2$
+    \item $\bb{E}[\dot{u}{w} ^4] = \sum_{i=1}^{n}\bb{E}[z_i ^4] \langle \vec{c}_i, \vec{w} \rangle  + 3\sum_{i \neq j} \bb{E}[z_i^2 z_j^2] \langle \vec{c}_i, \vec{w} \rangle ^2 \langle \vec{c}_j \vec{w} \rangle^2$ \\
+        $= \mu_4 \sum_{i=1}^{n} \langle \vec{c}_i, \vec{w} \rangle + 3\sum_{i \neq j} \langle \vec{c}_i, \vec{w} \rangle ^2 \langle \vec{c}_j \vec{w} \rangle^2$
+        due to independent variables and $\bb{E}[z_i ^2] = \bb{V}[z_i] = 1$, where $\mu_4 = \bb{E}[z_i ^4]$.
 \end{itemize}
-Since $\mat{V}$ is orthonormal and if $\vec{w}$ is on the unit sphere, we have 
-\[\bb{E}[\dot{v}{w} ^4] = \mu_4 \sum_{i=1}^{n} \langle \vec{v}_i, \vec{w} \rangle ^4 + 3(\sum_{i=1}^{n} \langle \vec{v}_i, \vec{w} \rangle^2 \sum_{j=1}^{n} \langle \vec{v}_j, \vec{w} \rangle^2 - \sum_{i=1}^{n} \langle \vec{v}_i, \vec{w} \rangle ^4)\]
-\[= (\mu_4 - 3)\sum_{i=1}^{n}\langle \vec{v}_i, \vec{w} \rangle^4 + 3 \Vert \vec{w} \Vert ^4\]
+Since $\mat{C}$ is orthonormal and if $\vec{w}$ is on the unit sphere, we have 
+\[\bb{E}[\dot{u}{w} ^4] = \mu_4 \sum_{i=1}^{n} \langle \vec{c}_i, \vec{w} \rangle ^4 + 3(\sum_{i=1}^{n} \langle \vec{c}_i, \vec{w} \rangle^2 \sum_{j=1}^{n} \langle \vec{c}_j, \vec{w} \rangle^2 - \sum_{i=1}^{n} \langle \vec{c}_i, \vec{w} \rangle ^4)\]
+\[= (\mu_4 - 3)\sum_{i=1}^{n}\langle \vec{c}_i, \vec{w} \rangle^4 + 3 \Vert \vec{w} \Vert ^4\]
 
 By collecting and analyzing samples from $\dgdi$ and estimate $\mu_4$ we can do gradient descent as in the original attack if $\lvert \mu_4 - 3 \rvert \neq 0$.
 If $\mu_4 - 3 > 0$ we need to minimize the term $(\mu_4 - 3) \sum_{i=1}^{n} \langle \vec{v}_i, \vec{w} \rangle ^4$. If $\mu_4 - 3 < 0$, we need to maximize the same term to minimize the total expression for the 4th moment.

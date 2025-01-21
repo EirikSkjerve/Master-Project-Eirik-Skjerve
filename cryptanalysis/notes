@@ -1,0 +1,15 @@
+1) HPP should return the direction(s) of columns of B^-1
+But is this enough to uniquely define the secret?
+
+2) Is Q = B*B equivalent to BtB? Also, we need B^-1 t B in that case
+
+3) Need to show what the gradient of the fourth moment is
+
+4) Need somehow show that +/- a column of B^-1 is local or 
+global maxima/minima (hopefully)
+
+5) Is it such that all samples after hypercube transformation is 
+inside the [-1, 1] hypercube as rationals? I don't think so...
+
+6) Should the vector w in gradient descent be / not be on the 
+unit circle based on the results of above?<3

@@ -13,6 +13,7 @@ use peak_alloc::PeakAlloc;
 
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 static TOLERANCE: f64 = 1e-10;
+static DELTA: f64 = 0.005;
 
 pub fn run_hpp_attack(t: usize, n: usize) {
     // runs the HPP attack against Hawk
@@ -55,7 +56,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // so hopefully we can employ some sort of trick like the HPP against NTRU to reduce
     // number of signatures needed
 
-    // let g = estimate_covariance_matrix(&samples);
+    // let cg = estimate_covariance_matrix(&samples);
     // println!("Covariance matrix estimated...");
 
     // STEP 2: conversion from hidden parallelepiped to hidden hypercube.
@@ -73,9 +74,16 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // The final step is to do gradient descent on our (converted) samples to minimize the
     // fourth moment, and consequently reveal a row/column from +/- B
     println!("Doing gradient descent...");
-    if let Some(sol) = gradient_descent_minimize(u, 0.5) {
-        let res = (linv * sol).map(|x| x.round() as i32);
-        // eprintln!("Result: {res}");
+    if let Some(sol) = gradient_descent(&u, DELTA) {
+        let res = (&linv * &sol).map(|x| x.round() as i32);
+        eprintln!("Result: {res}");
+        println!("Is res in key? \n{} \n", vec_in_key(&res, &binv));
+    }
+
+    println!("Doing gradient ascent...");
+    if let Some(sol) = gradient_descent(&u, DELTA) {
+        let res = (&linv * &sol).map(|x| x.round() as i32);
+        eprintln!("Result: {res}");
         println!("Is res in key? \n{}", vec_in_key(&res, &binv));
     }
 }
@@ -214,11 +222,11 @@ fn hypercube_transformation(
     (samples_f64, linv)
 }
 
-fn gradient_descent_minimize(samples: DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
+fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
     // performs gradient descent on hypercube samples
 
     let n = samples.ncols();
-    let mut rng = StdRng::seed_from_u64(34632394);
+    let mut rng = StdRng::seed_from_u64(332394);
     let mut num_iter = 0;
     // 1: choose w uniformly from unit sphere of R^n
     let mut w = get_rand_w(n, &mut rng);
@@ -245,11 +253,11 @@ fn gradient_descent_minimize(samples: DMatrix<f64>, delta: f64) -> Option<DVecto
     None
 }
 
-fn gradient_descent_maximize(samples: DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
+fn gradient_ascent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
     // performs gradient descent on hypercube by maximizing 4th moment 
 
     let n = samples.ncols();
-    let mut rng = StdRng::seed_from_u64(34632114);
+    let mut rng = StdRng::seed_from_u64(34872114);
     let mut num_iter = 0;
     let mut stdout = stdout();
     // 1: choose w uniformly from unit sphere of R^n
@@ -272,9 +280,9 @@ fn gradient_descent_maximize(samples: DMatrix<f64>, delta: f64) -> Option<DVecto
         // println!("mom4(w_new)={}", mom4(&w_new, &samples));
         // println!("mom4(w)={}", mom4(&w, &samples));
 
-        if (curnorm-prevnorm).abs() < 1.0 {
-            return Some(w)
-        }
+        // if (curnorm-prevnorm).abs() < 1.0 {
+        //     return Some(w)
+        // }
 
         // 5.1: if 4th moment of w_new is smaller than 4th moment of w, we have "overshot" and return w
         if mom4(&w_new, &samples) <= mom4(&w, &samples) {
@@ -358,7 +366,7 @@ fn is_orthogonal(matrix: &DMatrix<f64>) -> bool {
     let identity = DMatrix::identity(matrix.ncols(), matrix.ncols());
     let qt_q = matrix.transpose() * matrix;
     let diff = (&qt_q - identity).norm();
-    eprintln!("{qt_q:.1}");
+    // eprintln!("{qt_q:.1}");
     println!("Diff: {diff}");
     diff < TOLERANCE
 }
