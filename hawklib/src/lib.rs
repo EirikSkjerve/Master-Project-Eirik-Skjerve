@@ -3,7 +3,6 @@ mod fft_constants;
 mod ntt;
 mod ntt_constants;
 
-mod ntru_solve;
 mod rngcontext;
 mod verifyutils;
 
@@ -14,3 +13,6 @@ pub mod hawkverify;
 
 pub mod parameters;
 pub mod utils;
+
+// this is only public for the simulations for HPP
+pub mod ntru_solve;
