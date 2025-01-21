@@ -30,23 +30,9 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 
     // get the correct key for later comparison
     let (b, binv) = get_secret_key(t, n);
-    assert_eq!(&b.map(|x| x as f64).try_inverse().unwrap().map(|x| x.round()), &binv.map(|x| x as f64));
+
+    // get the public key Q
     let q = get_public_key(t, n).unwrap().map(|x| x as f64);
-    // eprintln!("{}", &b * &binv);
-
-    // eprintln!("{}", binv.column(256));
-    // correct G
-    let cg = (&binv * &binv.transpose()).map(|x| x as f64);
-
-    let btb = (&b.transpose() * &b);
-
-    let ginv = cg.map(|x| x as f64).try_inverse().unwrap().map(|x| x.round());
-    assert_eq!(ginv, btb.map(|x| x as f64));
-
-    let diff = (&q-&btb.map(|x| x as f64)).map(|x| x as f64).norm();
-    // println!("Diff: {}", diff);
-    assert_eq!(q, btb.map(|x| x as f64));
-
 
     println!("Running HPP attack with {t} samples against Hawk{n}");
 
@@ -56,19 +42,13 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     let samples = generate_samples(t, n);
     println!("Samples collected...");
 
-    // STEP 1: estimate covariance matrix. This step is automatically given by public key Q 
+    // STEP 1: estimate covariance matrix. This step is automatically given by public key Q
 
-    // let cg = estimate_covariance_matrix(&samples);
-    // println!("Covariance matrix estimated...");
-    //
     // STEP 2: conversion from hidden parallelepiped to hidden hypercube.
     // in this step we need a covariance matrix estimation from step 1. The better
     // the estimation in step two, the better conversion estimation we can do here.
     // Given matrix G, we want to compute L s.t. L^t L = G^-1, and thereafter
     // multiply our signature samples on the right with this L
-    // We use the Nalgebra crate for representations of matrices and for procedures such
-    // as Cholesky decomposition
-    // CURRENTLY ONLY USING THE CORRECT G INSTEAD OF ESTIMATE
     let (u, linv) = hypercube_transformation(samples, q, &binv);
     println!("Samples transformed...");
 
@@ -77,9 +57,6 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // fourth moment, and consequently reveal a row/column from +/- B
     println!("Doing gradient descent...");
     if let Some(sol) = gradient_descent(&u, DELTA) {
-        println!("HERE");
-        println!("linv: {}x{}", linv.nrows(), linv.ncols());
-        println!("sol: {}x{}", sol.nrows(), sol.ncols());
         let res = (&linv * &sol).map(|x| x.round() as i32);
         println!("Is res in key? \n{} \n", vec_in_key(&res, &binv));
 
@@ -88,16 +65,6 @@ pub fn run_hpp_attack(t: usize, n: usize) {
         let comparison = DMatrix::from_columns(&[res.as_slice().into(), col0, coln]);
         eprintln!("Comparison: {comparison}");
     }
-
-    // println!("Doing gradient ascent...");
-    // if let Some(sol) = gradient_ascent(&u, DELTA) {
-    //     println!("HERE");
-    //     println!("linv: {}x{}", linv.nrows(), linv.ncols());
-    //     println!("sol: {}x{}", sol.nrows(), sol.ncols());
-    //     let res = (&linv * &sol).map(|x| x.round() as i32);
-    //     eprintln!("Result: {res}");
-    //     println!("Is res in key? \n{} \n", vec_in_key(&res, &binv));
-    // }
 }
 
 fn get_secret_key(t: usize, degree: usize) -> (DMatrix<i32>, DMatrix<i32>) {
@@ -116,10 +83,12 @@ fn get_secret_key(t: usize, degree: usize) -> (DMatrix<i32>, DMatrix<i32>) {
 }
 
 fn get_public_key(t: usize, degree: usize) -> Option<DMatrix<i64>> {
+    // get the public key
     let (_, _, (q00, q01)) = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).expect(
         &format!("Could not find file with length {t} and degree {degree}"),
     );
 
+    // use ntrusolve to get q01 and q11, and convert it into a DMatrix
     if let Some((q10, q11)) = ntrusolve(&q00, &q01) {
         let q = rot_key(&q00, &q10, &q01, &q11);
         let flatq: Vec<i64> = q.into_iter().flatten().collect();
@@ -195,11 +164,8 @@ fn hypercube_transformation(
     // analysis later
     // Also returns the l inverse so we don't have to recompute it later
 
-    // take inverse of G
-    // let ginv = g.try_inverse().expect("Couldn't take inverse :(");
-    // now we have Q which is exactly equal to g inverse
-    // compute L = Cholesky decomposition of g inverse
-    let l = Cholesky::new(q).expect("Couldn't do Cholesky decomposition of ginv :(");
+    // compute L = Cholesky decomposition of Q
+    let l = Cholesky::new(q).expect("Couldn't do Cholesky decomposition of ginv");
 
     // compute inverse of Lt for later transformation back to parallelepiped
     let linv = l
@@ -209,13 +175,10 @@ fn hypercube_transformation(
         .try_inverse()
         .expect("Couldn't take inverse of l");
 
-    // make a copy of samples converted to f64 to be able to multiply them with L
-    let samples_f64: DMatrix<f64> = l.l().transpose() * samples.map(|x| x as f64);
+    // multiply samples with L
+    let samples_converted: DMatrix<f64> = l.l().transpose() * samples.map(|x| x as f64);
 
-    // let c = l.l().transpose() * skey.map(|x| x as f64);
-    // let cct = &c * &c.transpose();
-
-    (samples_f64, linv)
+    (samples_converted, linv)
 }
 
 fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
@@ -231,7 +194,6 @@ fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> 
 
     // 2: compute approx. gradient of nabla_mom_4
     loop {
-
         num_iter += 1;
         print!("\rIteration: {}", num_iter);
         std::io::Write::flush(&mut std::io::stdout()).unwrap();
@@ -243,7 +205,7 @@ fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> 
         w_new = &w_new / w_new.norm();
         // 5.1: if 4th moment of w_new is greater than 4th moment of w, we have "overshot" and return w
         if mom4(&w_new, &samples) >= mom4(&w, &samples) {
-            println!("Returned in {num_iter} iterations!");
+            println!("\n\nReturned in {num_iter} iterations!");
             return Some(w);
         }
         // 5.2: otherwise set w to be w_new and goto 2
@@ -300,13 +262,13 @@ fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
     // Check if the vector exists as a column in the matrix
     let as_column = key.column_iter().any(|col| col == *vec);
 
-    // Check if the vector exists as a row in the matrix
-    let as_row = key.row_iter().any(|row| -row == vec.transpose());
+    // Check if the negative vector exists as a row in the matrix
+    let as_row_neg = key.row_iter().any(|row| -row == vec.transpose());
 
-    // Check if the vector exists as a column in the matrix
-    let as_column = key.column_iter().any(|col| -col == *vec);
+    // Check if the negative vector exists as a column in the matrix
+    let as_column_neg = key.column_iter().any(|col| -col == *vec);
 
-    as_row || as_column
+    as_row || as_column || as_row_neg || as_column_neg
 }
 
 fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
@@ -353,8 +315,7 @@ fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
     // dot product
     let uw3: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(3));
     // power of 3 to each entry
-    let uw3u: DVector<f64> =
-        (4.0 * (samples * uw3) / samples.nrows() as f64);
+    let uw3u: DVector<f64> = (4.0 * (samples * uw3) / samples.nrows() as f64);
     uw3u
 }
 
@@ -362,8 +323,6 @@ fn is_orthogonal(matrix: &DMatrix<f64>) -> bool {
     let identity = DMatrix::identity(matrix.ncols(), matrix.ncols());
     let qt_q = matrix.transpose() * matrix;
     let diff = (&qt_q - identity).norm();
-    // eprintln!("{qt_q:.1}");
-    println!("Diff: {diff}");
     diff < TOLERANCE
 }
 
