@@ -14,7 +14,7 @@ use peak_alloc::PeakAlloc;
 
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 static TOLERANCE: f64 = 1e-5;
-static DELTA: f64 = 0.1;
+static DELTA: f64 = 0.7;
 
 pub fn run_hpp_attack(t: usize, n: usize) {
     // runs the HPP attack against Hawk
@@ -47,14 +47,6 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // println!("Diff: {}", diff);
     assert_eq!(q, btb.map(|x| x as f64));
 
-    // Perform Singular Value Decomposition
-    // let svd = SVD::new(cg.clone(), true, true);
-
-    // Compute the rank by counting singular values above the tolerance
-    // let rank = svd.singular_values.iter().filter(|&&x| x > TOLERANCE).count();
-
-    // println!("Rank of BtB: {}", rank);
-    // eprintln!("{}", binv.column(0));
 
     println!("Running HPP attack with {t} samples against Hawk{n}");
 
@@ -64,9 +56,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     let samples = generate_samples(t, n);
     println!("Samples collected...");
 
-    // STEP 1: estimate covariance matrix. This step requires a lot of samples,
-    // so hopefully we can employ some sort of trick like the HPP against NTRU to reduce
-    // number of signatures needed
+    // STEP 1: estimate covariance matrix. This step is automatically given by public key Q 
 
     // let cg = estimate_covariance_matrix(&samples);
     // println!("Covariance matrix estimated...");
@@ -91,15 +81,22 @@ pub fn run_hpp_attack(t: usize, n: usize) {
         println!("linv: {}x{}", linv.nrows(), linv.ncols());
         println!("sol: {}x{}", sol.nrows(), sol.ncols());
         let res = (&linv * &sol).map(|x| x.round() as i32);
-        eprintln!("Result: {res}");
         println!("Is res in key? \n{} \n", vec_in_key(&res, &binv));
+
+        let col0 = binv.column(0);
+        let coln = binv.column(n);
+        let comparison = DMatrix::from_columns(&[res.as_slice().into(), col0, coln]);
+        eprintln!("Comparison: {comparison}");
     }
 
     // println!("Doing gradient ascent...");
-    // if let Some(sol) = gradient_descent(&u, DELTA) {
+    // if let Some(sol) = gradient_ascent(&u, DELTA) {
+    //     println!("HERE");
+    //     println!("linv: {}x{}", linv.nrows(), linv.ncols());
+    //     println!("sol: {}x{}", sol.nrows(), sol.ncols());
     //     let res = (&linv * &sol).map(|x| x.round() as i32);
     //     eprintln!("Result: {res}");
-    //     println!("Is res in key? \n{}", vec_in_key(&res, &binv));
+    //     println!("Is res in key? \n{} \n", vec_in_key(&res, &binv));
     // }
 }
 
@@ -229,19 +226,22 @@ fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> 
     let mut num_iter = 0;
     // 1: choose w uniformly from unit sphere of R^n
     let mut w = get_rand_w(n, &mut rng);
-    println!("w is {} x {}", w.nrows(), w.ncols());
+
+    let mut stdout = stdout();
 
     // 2: compute approx. gradient of nabla_mom_4
     loop {
+
         num_iter += 1;
+        print!("\rIteration: {}", num_iter);
+        std::io::Write::flush(&mut std::io::stdout()).unwrap();
+
         let g = grad_mom4(&w, &samples);
-        println!("g is {} x {}", g.nrows(), g.ncols());
         // 3: compute w_new = w-delta*g
         let mut w_new = &w - (delta * g);
         // 4: normalize w_new
         w_new = &w_new / w_new.norm();
         // 5.1: if 4th moment of w_new is greater than 4th moment of w, we have "overshot" and return w
-        println!("Computiong mom4...");
         if mom4(&w_new, &samples) >= mom4(&w, &samples) {
             println!("Returned in {num_iter} iterations!");
             return Some(w);
@@ -256,46 +256,37 @@ fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> 
 }
 
 fn gradient_ascent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
-    // performs gradient descent on hypercube by maximizing 4th moment
+    // performs gradient descent on hypercube samples
 
-    let n = samples.ncols();
-    let mut rng = StdRng::seed_from_u64(34872114);
+    let n = samples.nrows();
+    let mut rng = StdRng::seed_from_u64(133294);
     let mut num_iter = 0;
-    let mut stdout = stdout();
     // 1: choose w uniformly from unit sphere of R^n
     let mut w = get_rand_w(n, &mut rng);
+
+    let mut stdout = stdout();
+
     // 2: compute approx. gradient of nabla_mom_4
-    let mut prevnorm = 0.0;
     loop {
-        // print!("\rIterations: {num_iter}");
-        // std::io::Write::flush(&mut std::io::stdout()).unwrap();
         num_iter += 1;
+
+        num_iter += 1;
+        print!("\rIteration: {}", num_iter);
+        std::io::Write::flush(&mut std::io::stdout()).unwrap();
+
         let g = grad_mom4(&w, &samples);
-        let curnorm = g.norm();
-        // println!("\n|g|={}", curnorm);
-        // eprintln!("g: {g:.2}");
         // 3: compute w_new = w-delta*g
         let mut w_new = &w + (delta * g);
         // 4: normalize w_new
         w_new = &w_new / w_new.norm();
-
-        // println!("mom4(w_new)={}", mom4(&w_new, &samples));
-        // println!("mom4(w)={}", mom4(&w, &samples));
-
-        // if (curnorm-prevnorm).abs() < 1.0 {
-        //     return Some(w)
-        // }
-
-        // 5.1: if 4th moment of w_new is smaller than 4th moment of w, we have "overshot" and return w
+        // 5.1: if 4th moment of w_new is greater than 4th moment of w, we have "overshot" and return w
         if mom4(&w_new, &samples) <= mom4(&w, &samples) {
-            std::io::Write::flush(&mut std::io::stdout()).unwrap();
-            println!("\nReturned in {num_iter} iterations!");
+            println!("Returned in {num_iter} iterations!");
             return Some(w);
         }
         // 5.2: otherwise set w to be w_new and goto 2
         else {
             w = w_new;
-            prevnorm = curnorm;
         }
     }
     // if a solution cannot be found
@@ -308,6 +299,12 @@ fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
 
     // Check if the vector exists as a column in the matrix
     let as_column = key.column_iter().any(|col| col == *vec);
+
+    // Check if the vector exists as a row in the matrix
+    let as_row = key.row_iter().any(|row| -row == vec.transpose());
+
+    // Check if the vector exists as a column in the matrix
+    let as_column = key.column_iter().any(|col| -col == *vec);
 
     as_row || as_column
 }
@@ -354,14 +351,10 @@ fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
     // compute 4(<u, w>^3 * u)
 
     // dot product
-    println!("u: {}x{}", samples.nrows(), samples.ncols());
-    println!("w: {}x{}", w.nrows(), w.ncols());
     let uw3: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(3));
-    println!("uw3 computed as {} x {}", uw3.nrows(), uw3.ncols());
     // power of 3 to each entry
     let uw3u: DVector<f64> =
         (4.0 * (samples * uw3) / samples.nrows() as f64);
-    println!("uw3u computed");
     uw3u
 }
 
