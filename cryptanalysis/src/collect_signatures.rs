@@ -36,7 +36,7 @@ pub fn collect_signatures(t: usize, n: usize) {
     let mut stdout = stdout();
 
     // generate a keypair
-    let (privkey, _) = hawkkeygen(n);
+    let (privkey, pubkey) = hawkkeygen(n);
 
     // create t messages
     let mut messages: Vec<Vec<u8>> = Vec::with_capacity(t);
@@ -66,7 +66,7 @@ pub fn collect_signatures(t: usize, n: usize) {
         }
     }
 
-    write_vectors_to_file(signatures, privkey, &filename);
+    write_vectors_to_file(signatures, privkey, pubkey, &filename);
     println!("\nWritten signatures to {}", filename);
 }
 
@@ -82,7 +82,7 @@ pub fn covariance_matrix_estimation(t: usize, n: usize) {
     let mut stdout = stdout();
 
     // read from precomputed file
-    let (signatures, privkey) =
+    let (signatures, privkey, pubkey) =
         read_vectors_from_file(&format!("{t}vectors_deg{n}")).expect("Could not read file");
 
     // compute matrix version of secret key b and b inverse
