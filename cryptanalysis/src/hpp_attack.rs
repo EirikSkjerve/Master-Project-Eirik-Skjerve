@@ -87,17 +87,20 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // fourth moment, and consequently reveal a row/column from +/- B
     println!("Doing gradient descent...");
     if let Some(sol) = gradient_descent(&u, DELTA) {
+        println!("HERE");
+        println!("linv: {}x{}", linv.nrows(), linv.ncols());
+        println!("sol: {}x{}", sol.nrows(), sol.ncols());
         let res = (&linv * &sol).map(|x| x.round() as i32);
         eprintln!("Result: {res}");
         println!("Is res in key? \n{} \n", vec_in_key(&res, &binv));
     }
 
-    println!("Doing gradient ascent...");
-    if let Some(sol) = gradient_descent(&u, DELTA) {
-        let res = (&linv * &sol).map(|x| x.round() as i32);
-        eprintln!("Result: {res}");
-        println!("Is res in key? \n{}", vec_in_key(&res, &binv));
-    }
+    // println!("Doing gradient ascent...");
+    // if let Some(sol) = gradient_descent(&u, DELTA) {
+    //     let res = (&linv * &sol).map(|x| x.round() as i32);
+    //     eprintln!("Result: {res}");
+    //     println!("Is res in key? \n{}", vec_in_key(&res, &binv));
+    // }
 }
 
 fn get_secret_key(t: usize, degree: usize) -> (DMatrix<i32>, DMatrix<i32>) {
@@ -169,48 +172,20 @@ fn generate_samples(t: usize, degree: usize) -> DMatrix<i32> {
     // convert the vectors into a nalgebra matrix
 
     // get dimensions
-    let rows = signatures.len();
-    let cols = signatures[0].len();
+    let rows = signatures[0].len();
+    let cols = signatures.len();
+
     // flatten the signature samples
     let sig_flat: Vec<i16> = signatures.into_iter().flatten().collect();
 
     // construct nalgebra matrix from this
-    let signature_matrix = DMatrix::from_row_slice(rows, cols, &sig_flat);
+    let signature_matrix = DMatrix::from_column_slice(rows, cols, &sig_flat);
 
     // convert to i32
     let signature_matrix = signature_matrix.map(|x| x as i32);
 
     // return the nalgebra matrix
     signature_matrix
-}
-
-fn estimate_covariance_matrix(samples: &DMatrix<i32>) -> DMatrix<f64> {
-    // estimate covariance matrix BtB given samples
-
-    // which scalar depends on Hawk degree and std.dev of distribution
-    let sigma = match samples.ncols() / 2 {
-        256 => 2.00205824, // experimentally, from samples vs 2 * 1.01 theorethically
-        512 => 2.0 * 1.278,
-        1024 => 2.0 * 1.299,
-        _ => 0.0,
-    };
-
-    // store number of samples
-    let nrows: f64 = samples.nrows() as f64;
-
-    // convert the samples to f64 so we can do division on them later
-    let samples = samples.map(|x| x as f64);
-
-    // compute yty and convert to f64 after computation is done
-    // let yty: DMatrix<f64> = (samples.transpose() * samples).map(|x| x as f64);
-    // // divide each entry by (sigma^2 * num_samples) to scale properly, and round the result
-    // let g: DMatrix<f64> = (yty / (sigma.powi(2) * nrows)).map(|x| x.round());
-
-    // TODO check if this approach is faster
-    let g: DMatrix<f64> =
-        (samples.transpose() / sigma.powi(2)) * (&samples / nrows).map(|x| x.round());
-
-    g
 }
 
 fn hypercube_transformation(
@@ -229,15 +204,16 @@ fn hypercube_transformation(
     // compute L = Cholesky decomposition of g inverse
     let l = Cholesky::new(q).expect("Couldn't do Cholesky decomposition of ginv :(");
 
-    // compute inverse of L
+    // compute inverse of Lt for later transformation back to parallelepiped
     let linv = l
         .l()
+        .transpose()
         .clone()
         .try_inverse()
         .expect("Couldn't take inverse of l");
 
     // make a copy of samples converted to f64 to be able to multiply them with L
-    let samples_f64: DMatrix<f64> = samples.map(|x| x as f64) * l.l();
+    let samples_f64: DMatrix<f64> = l.l().transpose() * samples.map(|x| x as f64);
 
     // let c = l.l().transpose() * skey.map(|x| x as f64);
     // let cct = &c * &c.transpose();
@@ -248,21 +224,24 @@ fn hypercube_transformation(
 fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
     // performs gradient descent on hypercube samples
 
-    let n = samples.ncols();
+    let n = samples.nrows();
     let mut rng = StdRng::seed_from_u64(332394);
     let mut num_iter = 0;
     // 1: choose w uniformly from unit sphere of R^n
     let mut w = get_rand_w(n, &mut rng);
+    println!("w is {} x {}", w.nrows(), w.ncols());
 
     // 2: compute approx. gradient of nabla_mom_4
     loop {
         num_iter += 1;
         let g = grad_mom4(&w, &samples);
+        println!("g is {} x {}", g.nrows(), g.ncols());
         // 3: compute w_new = w-delta*g
         let mut w_new = &w - (delta * g);
         // 4: normalize w_new
         w_new = &w_new / w_new.norm();
         // 5.1: if 4th moment of w_new is greater than 4th moment of w, we have "overshot" and return w
+        println!("Computiong mom4...");
         if mom4(&w_new, &samples) >= mom4(&w, &samples) {
             println!("Returned in {num_iter} iterations!");
             return Some(w);
@@ -364,7 +343,7 @@ fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
 fn mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> f64 {
     // estimate 4th moment given samples and vector w
     // compute <u,w>^4
-    let temp: DVector<f64> = (samples * w).map(|x| x.powi(4));
+    let temp: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(4));
     // compute mean of above, and return result
     let res = temp.sum() / w.len() as f64;
     res
@@ -375,10 +354,14 @@ fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
     // compute 4(<u, w>^3 * u)
 
     // dot product
-    let uw3: DVector<f64> = (samples * w).map(|x| x.powi(3));
+    println!("u: {}x{}", samples.nrows(), samples.ncols());
+    println!("w: {}x{}", w.nrows(), w.ncols());
+    let uw3: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(3));
+    println!("uw3 computed as {} x {}", uw3.nrows(), uw3.ncols());
     // power of 3 to each entry
     let uw3u: DVector<f64> =
-        (4.0 * (uw3.transpose() * samples) / samples.nrows() as f64).transpose();
+        (4.0 * (samples * uw3) / samples.nrows() as f64);
+    println!("uw3u computed");
     uw3u
 }
 

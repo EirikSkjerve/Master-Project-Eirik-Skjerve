@@ -25,13 +25,13 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 fn main() {
     // let t = 500000;
     // let n = 16;
-    let t = 300000;
-    let n = 512;
+    let t = 20000;
+    let n = 256;
 
-    // collect_signatures(t, n);
+    collect_signatures(t, n);
     // covariance_matrix_estimation(t, n);
     // estimate_mem_all(500000, true);
-    // estimate_mem_norm_all(40000, true);
+    // estimate_mem_norm_all(100000, true);
 
     run_hpp_attack(t, n);
     // run_hpp_sim(t, n);
