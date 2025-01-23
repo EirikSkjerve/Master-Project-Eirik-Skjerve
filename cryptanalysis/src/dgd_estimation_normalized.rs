@@ -6,10 +6,14 @@ use hawklib::hawksign::{hawksign_total, hawksign_x_only};
 use hawklib::parameters::{hawk1024_params, hawk256_params, hawk512_params};
 
 use rand::Rng;
+
 use std::fs::File;
 use std::io::{stdout, Write};
 use std::path::Path;
 use std::time::{Duration, Instant};
+use std::sync::{Arc, Mutex};
+
+use rayon::prelude::*;
 
 use prettytable::{color, Attr, Cell, Row, Table};
 
@@ -35,6 +39,8 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
                   i->"Time",
     ]);
 
+    println!("Estimating values for Hawk using {t} samples");
+    let start = Instant::now();
     for n in ns {
         // get the right parameters. These are just for comparison
         let (f, sigmasign) = match n {
@@ -43,9 +49,10 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
             _ => (4, hawk1024_params::SIGMASIGN),
         };
 
-        // run the estimation
-        let (mu, var, normvar, normkur, time) = estimate_mem_norm(t / f, n);
-
+        // run the estimation, either sequentially or in parallel
+        let (mu, var, normvar, normkur, time) = estimate_mem_norm_par(t, n);
+        // let (mu, var, normvar, normkur, time) = estimate_mem_norm(t, n);
+        println!("Estimation done for degree {n}");
         // write results to table
         table.add_row(row![
         FG->n.to_string(),
@@ -60,6 +67,8 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
         ]);
     }
     table.printstd();
+    let end = start.elapsed();
+    println!("Total time used: {:?}", end);
 
     // store file
     if store_file {
@@ -83,6 +92,57 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
         println!("Created file at {}.csv", pathname);
     }
 }
+
+pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duration){
+
+    let (privkey, _) = hawkkeygen(n);
+    let start = Instant::now();
+
+    let mut mu: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
+    let mut var: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
+
+    (0..t).into_par_iter().for_each(|i|{
+        let rand_bytes = get_random_bytes(20);
+
+        let temp: Vec<i64> = hawksign_x_only(&privkey, &rand_bytes, n, true);
+        let tempvar: f64 = temp.iter().map(|&x| (x as f64).powi(2)).sum();
+        *var.lock().unwrap() += tempvar/(t*2*n) as f64; 
+    });
+    let sigma = var.lock().unwrap().sqrt();
+
+    let mut normvar: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
+    let mut normkur: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
+
+    (0..t).into_par_iter().for_each(|_| {
+
+        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(20), n, true);
+
+        // println!("{:?}", temp);
+        let (tempvar, tempkur): (f64, f64) = temp
+            .iter()
+            .map(|&x| {
+                let normalized = (x as f64) / sigma;
+                let squared = normalized.powi(2);
+                let fourth = normalized.powi(4);
+                (squared, fourth)
+            })
+            .fold((0.0, 0.0), |(sum_var, sum_kur), (squared, fourth)| {
+                (sum_var + squared, sum_kur + fourth)
+            });
+
+        *normvar.lock().unwrap() += tempvar / (t * 2 * n) as f64;
+        *normkur.lock().unwrap() += tempkur / (t * 2 * n) as f64;
+    });
+
+    let end = start.elapsed();
+
+    let res_mu = *mu.lock().unwrap();
+    let res_var = *var.lock().unwrap();
+    let res_normvar = *normvar.lock().unwrap();
+    let res_normkur = *normkur.lock().unwrap();
+    (res_mu, res_var, res_normvar, res_normkur, end)
+}
+    
 
 pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
     // create t x-vectors with hawk degree n
@@ -122,6 +182,7 @@ pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
     let mut var: f64 = 0.0;
     let mut seedlen = (t / u8::MAX as usize).max(1);
     let mut seed: Vec<u8> = vec![0; seedlen];
+
     for i in 0..t {
         seed[i % seedlen] += (i & u8::MAX as usize) as u8;
         seed[i % seedlen] %= (u8::MAX);
