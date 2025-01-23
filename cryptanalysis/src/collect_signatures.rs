@@ -9,6 +9,10 @@ use rand::Rng;
 use std::io::{stdout, Write};
 use std::mem;
 use std::time::{Duration, Instant};
+use std::sync::{Arc, Mutex};
+
+use rayon::prelude::*;
+use indicatif::{ProgressBar, ProgressStyle};
 
 use peak_alloc::PeakAlloc;
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
@@ -30,6 +34,8 @@ fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
 
 pub fn collect_signatures(t: usize, n: usize) {
     // create t signatures with hawk degree n and store them in file
+
+    println!("Collecting {t} signatures of Hawk degree {n}");
 
     let filename = format!("{t}vectors_deg{n}");
 
@@ -68,6 +74,46 @@ pub fn collect_signatures(t: usize, n: usize) {
 
     write_vectors_to_file(signatures, privkey, pubkey, &filename);
     println!("\nWritten signatures to {}", filename);
+}
+
+pub fn collect_signatures_par(t: usize, n: usize) {
+    let filename = format!("{t}vectors_deg{n}");
+
+    // generate a keypair
+    let (privkey, pubkey) = hawkkeygen(n);
+
+    println!("Generating {t} signatures...");
+
+    let mut signatures: Arc<Mutex<Vec<Vec<i16>>>> = Arc::new(Mutex::new(Vec::with_capacity(t)));
+    // let mut stdout = Arc::new(Mutex::new(stdout()));
+    let pb = ProgressBar::new(t as u64);
+
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({per_sec})")
+            .unwrap()
+            .progress_chars("#>-"),
+    );
+
+    (0..t).into_par_iter().for_each(|i| {
+        let sig: Vec<i16> = hawksign_total(&privkey, &get_random_bytes(100), n)
+            .iter()
+            .map(|&x| x as i16)
+            .collect();
+
+        signatures.lock().unwrap().push(sig);
+        pb.inc(1);
+        
+    });
+
+    pb.finish_with_message("Completed");
+
+    let signatures_unpacked = Arc::try_unwrap(signatures)
+        .expect("Could not unpack the signatures")
+        .into_inner()
+        .unwrap();
+
+    write_vectors_to_file(signatures_unpacked.to_vec(), privkey, pubkey, &filename);
 }
 
 pub fn covariance_matrix_estimation(t: usize, n: usize) {
