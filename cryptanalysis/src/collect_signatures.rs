@@ -39,18 +39,17 @@ pub fn collect_signatures(t: usize, n: usize) {
 
     let filename = format!("{t}vectors_deg{n}");
 
-    let mut stdout = stdout();
-
     // generate a keypair
     let (privkey, pubkey) = hawkkeygen(n);
 
-    // create t messages
-    let mut messages: Vec<Vec<u8>> = Vec::with_capacity(t);
-    println!("Generating {t} messages...");
-    for _ in 0..t {
-        messages.push(get_random_bytes(100));
-    }
+    let pb = ProgressBar::new(t as u64);
 
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({per_sec})")
+            .unwrap()
+            .progress_chars("#>-"),
+    );
     // create collection of t signatures corresponding to the above messages
     println!("Generating {t} signatures...");
     let mut signatures: Vec<Vec<i16>> = Vec::with_capacity(t);
@@ -58,20 +57,16 @@ pub fn collect_signatures(t: usize, n: usize) {
         // sign each message
         // now each signature is on the form w = B^-1 * x
         // convert to Vec<i16> to save a lot of memory
-        let sig: Vec<i16> = hawksign_total(&privkey, &messages[i], n)
+        let sig: Vec<i16> = hawksign_total(&privkey, &get_random_bytes(100), n)
             .iter()
             .map(|&x| x as i16)
             .collect();
         signatures.push(sig);
 
-        // Calculate and display progress
-        if i % (t / 100) == 0 || i == t - 1 {
-            let progress = (i as f64 / t as f64) * 100.0;
-            print!("\rProgress: {:.0}%", progress);
-            std::io::Write::flush(&mut std::io::stdout()).unwrap();
-        }
+        pb.inc(1);
     }
 
+    pb.finish_with_message("Completed");
     write_vectors_to_file(signatures, privkey, pubkey, &filename);
     println!("\nWritten signatures to {}", filename);
 }
@@ -114,6 +109,7 @@ pub fn collect_signatures_par(t: usize, n: usize) {
         .unwrap();
 
     write_vectors_to_file(signatures_unpacked.to_vec(), privkey, pubkey, &filename);
+    println!("\nWritten signatures to {}", filename);
 }
 
 pub fn covariance_matrix_estimation(t: usize, n: usize) {
