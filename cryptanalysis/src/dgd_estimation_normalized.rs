@@ -73,11 +73,11 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
 
     // store file
     if store_file {
-        // making sure a file is never written over
         let pathname_base = String::from("sigma_table");
         let mut pathname = String::from("sigma_table_0");
         let mut ctr = 1;
 
+        // making sure a file is never written over, and iteratively construct new unique file name
         loop {
             if Path::new(&format!("{}.csv", pathname)).is_file() {
                 // println!("{}.csv already exists!", pathname);
@@ -95,15 +95,17 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
 }
 
 pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
+
     let (privkey, _) = hawkkeygen(n);
     let start = Instant::now();
 
     // let mut mu: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
     let mu = 0.0;
+    // thread safe variable
     let mut var: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
 
+    // make progressbar with style
     let pb = ProgressBar::new(t as u64);
-
     pb.set_style(
         ProgressStyle::default_bar()
             .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({per_sec})")
@@ -111,18 +113,22 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
             .progress_chars("#>-"),
     );
 
+    // sample x-vectors in parallel
     (0..t).into_par_iter().for_each(|i| {
         let rand_bytes = get_random_bytes(20);
 
         let temp: Vec<i64> = hawksign_x_only(&privkey, &rand_bytes, n, true);
         let tempvar: f64 = temp.iter().map(|&x| (x as f64).powi(2)).sum();
+        // divide to get the mean
         *var.lock().unwrap() += tempvar / (t * 2 * n) as f64;
+        // increment progress bar
         pb.inc(1);
     });
 
     pb.finish_with_message("Mu estimation completed");
-    let pb = ProgressBar::new(t as u64);
 
+    // remake progressbar
+    let pb = ProgressBar::new(t as u64);
     pb.set_style(
         ProgressStyle::default_bar()
             .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({per_sec})")
@@ -132,9 +138,11 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
 
     let sigma = var.lock().unwrap().sqrt();
 
+    // thread-safe variables
     let mut normvar: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
     let mut normkur: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
 
+    // sample x-vectors in parallel
     (0..t).into_par_iter().for_each(|_| {
         let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(20), n, true);
 
@@ -151,8 +159,10 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
                 (sum_var + squared, sum_kur + fourth)
             });
 
+        // divide to get the mean
         *normvar.lock().unwrap() += tempvar / (t * 2 * n) as f64;
         *normkur.lock().unwrap() += tempkur / (t * 2 * n) as f64;
+        // increment progress bar
         pb.inc(1);
     });
 
@@ -160,6 +170,7 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
 
     let end = start.elapsed();
 
+    // unpack the thread-safe variables into normal variables to return them
     // let res_mu = *mu.lock().unwrap();
     let res_var = *var.lock().unwrap();
     let res_normvar = *normvar.lock().unwrap();
