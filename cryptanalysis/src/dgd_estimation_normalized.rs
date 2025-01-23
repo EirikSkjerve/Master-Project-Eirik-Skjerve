@@ -10,9 +10,10 @@ use rand::Rng;
 use std::fs::File;
 use std::io::{stdout, Write};
 use std::path::Path;
-use std::time::{Duration, Instant};
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
+use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 
 use prettytable::{color, Attr, Cell, Row, Table};
@@ -56,7 +57,7 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
         // write results to table
         table.add_row(row![
         FG->n.to_string(),
-        FW->(t/f).to_string(),
+        FW->(t).to_string(),
         FM->format!("{}", mu),
         FB->format!("{:.1$}", var, precision),
         Fc->format!("{:.1$}", var.sqrt(), precision),
@@ -93,28 +94,48 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
     }
 }
 
-pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duration){
-
+pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
     let (privkey, _) = hawkkeygen(n);
     let start = Instant::now();
 
-    let mut mu: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
+    // let mut mu: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
+    let mu = 0.0;
     let mut var: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
 
-    (0..t).into_par_iter().for_each(|i|{
+    let pb = ProgressBar::new(t as u64);
+
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({per_sec})")
+            .unwrap()
+            .progress_chars("#>-"),
+    );
+
+    (0..t).into_par_iter().for_each(|i| {
         let rand_bytes = get_random_bytes(20);
 
         let temp: Vec<i64> = hawksign_x_only(&privkey, &rand_bytes, n, true);
         let tempvar: f64 = temp.iter().map(|&x| (x as f64).powi(2)).sum();
-        *var.lock().unwrap() += tempvar/(t*2*n) as f64; 
+        *var.lock().unwrap() += tempvar / (t * 2 * n) as f64;
+        pb.inc(1);
     });
+
+    pb.finish_with_message("Mu estimation completed");
+    let pb = ProgressBar::new(t as u64);
+
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({per_sec})")
+            .unwrap()
+            .progress_chars("#>-"),
+    );
+
     let sigma = var.lock().unwrap().sqrt();
 
     let mut normvar: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
     let mut normkur: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
 
     (0..t).into_par_iter().for_each(|_| {
-
         let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(20), n, true);
 
         // println!("{:?}", temp);
@@ -132,17 +153,19 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
 
         *normvar.lock().unwrap() += tempvar / (t * 2 * n) as f64;
         *normkur.lock().unwrap() += tempkur / (t * 2 * n) as f64;
+        pb.inc(1);
     });
+
+    pb.finish_with_message("Kurtosis estimation completed");
 
     let end = start.elapsed();
 
-    let res_mu = *mu.lock().unwrap();
+    // let res_mu = *mu.lock().unwrap();
     let res_var = *var.lock().unwrap();
     let res_normvar = *normvar.lock().unwrap();
     let res_normkur = *normkur.lock().unwrap();
-    (res_mu, res_var, res_normvar, res_normkur, end)
+    (mu, res_var, res_normvar, res_normkur, end)
 }
-    
 
 pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
     // create t x-vectors with hawk degree n
