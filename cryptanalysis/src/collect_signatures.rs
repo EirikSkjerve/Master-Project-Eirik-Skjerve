@@ -8,11 +8,11 @@ use nalgebra::*;
 use rand::Rng;
 use std::io::{stdout, Write};
 use std::mem;
-use std::time::{Duration, Instant};
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
-use rayon::prelude::*;
 use indicatif::{ProgressBar, ProgressStyle};
+use rayon::prelude::*;
 
 use peak_alloc::PeakAlloc;
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
@@ -98,7 +98,6 @@ pub fn collect_signatures_par(t: usize, n: usize) {
 
         signatures.lock().unwrap().push(sig);
         pb.inc(1);
-        
     });
 
     pb.finish_with_message("Completed");
