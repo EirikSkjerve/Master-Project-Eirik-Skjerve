@@ -9,7 +9,7 @@ mod hpp;
 mod hpp_attack;
 mod hpp_simulation;
 
-use collect_signatures::{collect_signatures, covariance_matrix_estimation};
+use collect_signatures::{collect_signatures, collect_signatures_par, covariance_matrix_estimation};
 use dgd_estimation::{estimate_mem, estimate_mem_all};
 use dgd_estimation_normalized::estimate_mem_norm_all;
 
@@ -35,10 +35,10 @@ fn main() {
     // let t = 1400000;
     // let n = 256;
 
-    // collect_signatures(t, n);
+    collect_signatures_par(t, n);
     // covariance_matrix_estimation(t, n);
     // estimate_mem_all(500000, true);
-    estimate_mem_norm_all(100000, false);
+    // estimate_mem_norm_all(100000, false);
 
     // run_hpp_attack(t, n);
     // run_hpp_sim(t, n);
