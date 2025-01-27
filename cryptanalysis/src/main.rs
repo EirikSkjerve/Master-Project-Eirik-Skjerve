@@ -9,7 +9,9 @@ mod hpp;
 mod hpp_attack;
 mod hpp_simulation;
 
-use collect_signatures::{collect_signatures, collect_signatures_par, covariance_matrix_estimation};
+use collect_signatures::{
+    collect_signatures, collect_signatures_par, covariance_matrix_estimation,
+};
 use dgd_estimation::{estimate_mem, estimate_mem_all};
 use dgd_estimation_normalized::estimate_mem_norm_all;
 
@@ -25,9 +27,10 @@ use std::env;
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 fn main() {
-
     let args: Vec<String> = env::args().collect();
-    let t: usize = args[1].parse().expect("Invalid input for number of samples");
+    let t: usize = args[1]
+        .parse()
+        .expect("Invalid input for number of samples");
     let n: usize = args[2].parse().expect("Invalid input for Hawk degree");
 
     // let t = 500000;
@@ -35,12 +38,12 @@ fn main() {
     // let t = 1400000;
     // let n = 256;
 
-    collect_signatures_par(t, n);
     // covariance_matrix_estimation(t, n);
     // estimate_mem_all(500000, true);
-    // estimate_mem_norm_all(100000, false);
+    // estimate_mem_norm_all(t, false);
 
-    // run_hpp_attack(t, n);
+    // collect_signatures_par(t, n);
+    run_hpp_attack(t, n);
     // run_hpp_sim(t, n);
 
     println!(

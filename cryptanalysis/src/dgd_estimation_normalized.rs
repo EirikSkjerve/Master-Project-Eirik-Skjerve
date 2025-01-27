@@ -95,7 +95,6 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
 }
 
 pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
-
     let (privkey, _) = hawkkeygen(n);
     let start = Instant::now();
 

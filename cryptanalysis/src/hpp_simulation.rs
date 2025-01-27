@@ -8,6 +8,7 @@ use hawklib::ntru_solve::ntrusolve;
 
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
+use rand::prelude::*;
 
 use rand_distr::{Distribution, Normal, Uniform};
 
@@ -17,8 +18,8 @@ use peak_alloc::PeakAlloc;
 
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 static TOLERANCE: f64 = 1e-12;
-static DELTA: f64 = 0.01;
-static SIGMA: f64 = 2.0;
+static DELTA: f64 = 0.001;
+static SIGMA: f64 = 1.5;
 
 pub fn run_hpp_sim(t: usize, n: usize) {
     // runs the HPP attack against Hawk
@@ -33,12 +34,16 @@ pub fn run_hpp_sim(t: usize, n: usize) {
     // and directly return the entire signature w which we use to deduce information about B
 
     let (b, binv) = create_secret_matrix(n).unwrap();
+    // let (b, binv) = create_secret_matrix_plain(n).unwrap();
     let b = b.map(|x| x as f64);
     let binv = binv.map(|x| x as f64);
 
+    eprintln!("b: {b}");
+    eprintln!("b_inv: {binv}");
+
     println!("Running HPP attack with {t} samples against Hawk{n}");
 
-    let q = &binv * &binv.transpose();
+    let q = &b.transpose() * &b;
     // eprintln!("{cg}");
 
     // STEP 0: Generate samples
@@ -47,30 +52,17 @@ pub fn run_hpp_sim(t: usize, n: usize) {
 
     let mut samples_rows: Vec<RowDVector<f64>> = Vec::new();
     for i in 0..t {
-        let mut rng = StdRng::seed_from_u64(1003 + i as u64);
-        // let x = DVector::from_vec(get_norm_slice_float(2 * n, &mut rng));
-        let x = DVector::from_vec(get_uniform_slice_float(2*n, &mut rng));
+        let mut rng = StdRng::seed_from_u64(13 + (i*22) as u64);
+        let x = DVector::from_vec(get_norm_slice_float(2 * n, &mut rng));
+        // let x = DVector::from_vec(get_uniform_slice_float(2*n, &mut rng));
+        // eprintln!("x: {x}");
         let y: DVector<f64> = &binv * x;
         samples_rows.push(y.transpose());
     }
 
     let samples = DMatrix::<f64>::from_rows(&samples_rows).transpose();
-    println!(
-        "Samples is a {} by {} matrix.",
-        samples.nrows(),
-        samples.ncols()
-    );
 
     // STEP 1: estimate covariance matrix. We use Q=BtB for this
-
-    // STEP 2: conversion from hidden parallelepiped to hidden hypercube.
-    // in this step we need a covariance matrix estimation from step 1. The better
-    // the estimation in step two, the better conversion estimation we can do here.
-    // Given matrix G, we want to compute L s.t. L^t L = G^-1, and thereafter
-    // multiply our signature samples on the right with this L
-    // We use the Nalgebra crate for representations of matrices and for procedures such
-    // as Cholesky decomposition
-    // CURRENTLY ONLY USING THE CORRECT G INSTEAD OF ESTIMATE
 
     let (u, linv) = hypercube_transformation(samples, q, &binv);
     println!("Samples transformed...");
@@ -83,6 +75,10 @@ pub fn run_hpp_sim(t: usize, n: usize) {
         let res = (&linv * &sol).map(|x| x.round() as i32);
         println!("Is res in key? \n{} \n", vec_in_key(&res, &binv.map(|x| x.round() as i32)));
         eprintln!("Res: {res}");
+        println!("Norm of res: {}", res.map(|x| x as f64).norm());
+        println!("Norm of col0: {}", binv.column(0).norm());
+        println!("Norm of coln: {}", binv.column(n).norm());
+        measure_res(&res, &binv);
     }
 
     println!("Doing gradient ascent...");
@@ -90,7 +86,12 @@ pub fn run_hpp_sim(t: usize, n: usize) {
         let res = (&linv * &sol).map(|x| x.round() as i32);
         println!("Is res in key? \n{} \n", vec_in_key(&res, &binv.map(|x| x.round() as i32)));
         eprintln!("Res: {res}");
+        println!("Norm of res: {}", res.map(|x| x as f64).norm());
+        println!("Norm of col0: {}", binv.column(0).norm());
+        println!("Norm of coln: {}", binv.column(n).norm());
+        measure_res(&res, &binv);
     }
+
 
     eprintln!("{binv}");
 }
@@ -115,6 +116,28 @@ fn create_secret_matrix(n: usize) -> Option<(DMatrix<i64>, DMatrix<i64>)> {
         }
     }
 }
+
+fn create_secret_matrix_plain(n: usize) -> Option<(DMatrix<i64>, DMatrix<i64>)> {
+    let mut j = 0;
+    loop {
+        let mut rng = StdRng::seed_from_u64(9876+ 13*j);
+        let mut columns: Vec<Vec<i64>> = Vec::new();
+        for i in (0..2*n) {
+            columns.push(get_uniform_slice_fixed(2*n, &mut rng));
+        }
+        let columnsflat: Vec<i64> = columns.into_iter().flatten().collect();
+        let mat = DMatrix::from_row_slice(2*n, 2*n, &columnsflat);
+        
+        // TODO check for rank of mat and return if rank == 2n
+        let svd = SVD::new(mat.map(|x| x as f64), true, true);
+        let rank = svd.singular_values.iter().filter(|&&sigma| sigma > TOLERANCE).count();
+        if rank == 2*n {
+            let mat_inverse = mat.map(|x| x as f64).try_inverse().unwrap().map(|x| x.round() as i64);
+            return Some((mat, mat_inverse));
+        }
+    }
+} 
+    // create plain uniform random secret matrix
 
 fn to_mat(privkey: (Vec<i64>, Vec<i64>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64>) {
     // given private key, construct entire secret matrix B and B inverse
@@ -165,6 +188,16 @@ pub fn get_uniform_slice_float(n: usize, rng: &mut StdRng) -> Vec<f64> {
     let dist = Uniform::new(-4.0*SIGMA, 4.0*SIGMA);
 
     let mut rnd_bytes: Vec<f64> = Vec::with_capacity(n);
+
+    (0..n).into_iter().for_each(|_| { rnd_bytes.push(dist.sample(rng).round())});
+    rnd_bytes
+}
+
+pub fn get_uniform_slice_fixed(n: usize, rng: &mut StdRng) -> Vec<i64> {
+
+    let dist = Uniform::new(-1, 1);
+
+    let mut rnd_bytes: Vec<i64> = Vec::with_capacity(n);
 
     (0..n).into_iter().for_each(|_| { rnd_bytes.push(dist.sample(rng))});
     rnd_bytes
@@ -240,6 +273,8 @@ fn hypercube_transformation(
     let mut samples_f64: DMatrix<f64> = samples.map(|x| x as f64);
     std::mem::drop(samples);
 
+    let c = &l.l().transpose() * skey;
+
     // multiply samples with L
     let res = &l.l().transpose() * samples_f64;
     println!("Samples converted");
@@ -251,7 +286,10 @@ fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> 
     // performs gradient descent on hypercube samples
 
     let n = samples.nrows();
-    let mut rng = StdRng::seed_from_u64(111111194);
+    let mut rng = rand::thread_rng();
+    let y: u64 = rng.gen_range((0..100000000000));
+    println!("Y: {y}");
+    let mut rng = StdRng::seed_from_u64(y);
     let mut num_iter = 0;
     // 1: choose w uniformly from unit sphere of R^n
     let mut w = get_rand_w(n, &mut rng);
@@ -270,7 +308,6 @@ fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> 
         // 4: normalize w_new
         w_new = &w_new / w_new.norm();
 
-        println!("{}", (w_new.norm() - w.norm()).abs());
         // 5.1: if 4th moment of w_new is greater than 4th moment of w, we have "overshot" and return w
         // or if there is practically no change since last iteration
         println!("Checking condition...");
@@ -293,7 +330,9 @@ fn gradient_ascent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
     // performs gradient descent on hypercube samples
 
     let n = samples.nrows();
-    let mut rng = StdRng::seed_from_u64(1093294);
+    let mut rng = rand::thread_rng();
+    let y: u64 = rng.gen_range((0..100000000000));
+    let mut rng = StdRng::seed_from_u64(y);
     let mut num_iter = 0;
     // 1: choose w uniformly from unit sphere of R^n
     let mut w = get_rand_w(n, &mut rng);
@@ -398,7 +437,7 @@ fn is_orthogonal(matrix: &DMatrix<f64>) -> bool {
     let qt_q = matrix.transpose() * matrix;
     let diff = (&qt_q - identity).norm();
     // eprintln!("{qt_q:.1}");
-    println!("Diff: {diff}");
+    // println!("Diff: {diff}");
     diff < TOLERANCE
 }
 
@@ -429,4 +468,14 @@ fn mat_dist(a_mat: &DMatrix<f64>, b_mat: &DMatrix<f64>) {
     let avg_diff = sum_diff as f64 / (a_mat.nrows() * a_mat.ncols()) as f64;
     println!("Matrices have different elements: {}", num_diff);
     println!("Average difference between elements: {}", avg_diff);
+}
+
+fn measure_res(res: &DVector<i32>, binv: &DMatrix<f64>) {
+    let binv = binv.map(|x| x as i32);
+    
+    (0..res.len()).into_iter().for_each(|i| {
+        let col: DVector<i32> = binv.column(i).into_owned();
+        let diff = (col-res).map(|x| x as f64).norm();
+        println!("Diff: {diff}");
+    });
 }
