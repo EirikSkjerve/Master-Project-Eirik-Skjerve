@@ -40,10 +40,10 @@ fn main() {
 
     // covariance_matrix_estimation(t, n);
     // estimate_mem_all(500000, true);
-    // estimate_mem_norm_all(t, false);
+    estimate_mem_norm_all(t, false);
 
     // collect_signatures_par(t, n);
-    run_hpp_attack(t, n);
+    // run_hpp_attack(t, n);
     // run_hpp_sim(t, n);
 
     println!(

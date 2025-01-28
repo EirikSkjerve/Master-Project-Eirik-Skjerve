@@ -41,7 +41,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // samples is a tx2n matrix
     // TODO if samples does not exist they need to be generated
     let samples = generate_samples(t, n);
-    println!("Samples collected...");
+    // println!("Samples collected...");
 
     // println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
 
@@ -65,7 +65,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     let mut res_gradient_descent: DVector<i32> = DVector::zeros(2*n);
     let mut res_gradient_ascent: DVector<i32> = DVector::zeros(2*n);
 
-    println!("Doing gradient descent...");
+    println!("\nDoing gradient descent...");
     loop {
         if let Some(sol) = gradient_descent(&u, DELTA) {
             res_gradient_descent = (&linv * &sol).map(|x| x.round() as i32);
@@ -78,7 +78,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
             }
     }
 
-    println!("Doing gradient ascent...");
+    println!("\nDoing gradient ascent...");
     loop {
         if let Some(sol) = gradient_ascent(&u, DELTA) {
             res_gradient_ascent = (&linv * &sol).map(|x| x.round() as i32);
@@ -96,6 +96,11 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
     measure_res(&res_gradient_descent, &binv);
     measure_res(&res_gradient_ascent, &binv);
+
+    // TODO
+    // for each res, we can try to construct matrix by using vec- and rot
+    // functions, construct B' and see if B't B' is close to Q
+    let (res1, res2) = (res_gradient_descent, res_gradient_ascent);
 }
 
 fn hypercube_transformation(
@@ -139,7 +144,8 @@ fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> 
     // performs gradient descent on hypercube samples
 
     let n = samples.nrows();
-    let mut rng = StdRng::seed_from_u64(rand::random::<u64>());
+    // let mut rng = StdRng::seed_from_u64(rand::random::<u64>());
+    let mut rng = StdRng::seed_from_u64(1234);
     let mut num_iter = 0;
     // 1: choose w uniformly from unit sphere of R^n
     let mut w = get_rand_w(n, &mut rng);
@@ -154,7 +160,7 @@ fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> 
         // println!("Computing new w...");
         // 3: compute w_new = w-delta*g
         // eprintln!("g: {g}");
-        let mut w_new = &w + (delta * g);
+        let mut w_new = &w - (delta * g);
 
         // 4: normalize w_new
         w_new = &w_new / w_new.norm();
@@ -184,7 +190,8 @@ fn gradient_ascent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
     // performs gradient descent on hypercube samples
 
     let n = samples.nrows();
-    let mut rng = StdRng::seed_from_u64(rand::random::<u64>());
+    // let mut rng = StdRng::seed_from_u64(rand::random::<u64>());
+    let mut rng = StdRng::seed_from_u64(1234);
 
     let mut num_iter = 0;
     // 1: choose w uniformly from unit sphere of R^n
@@ -279,15 +286,23 @@ fn mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> f64 {
 }
 
 fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
+    let n = w.nrows();
+    let t = samples.ncols();
     // estimate gradient of 4th moment given samples and vector w
     // compute 4(<u, w>^3 * u)
-
+    // println!("Shape of U: ({}, {})", samples.nrows(), samples.ncols());
+    // println!("Shape of w: ({}, {})", w.nrows(), w.ncols());
     // dot product
     // power of 3 to each entry
+    // println!("Shape of uw: ({}, {})", uw3.nrows(), uw3.ncols());
     let uw3: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(3));
     // let uw3u: DVector<f64> = (4.0 * (samples * uw3) / samples.nrows() as f64);
-    let uw3u: DVector<f64> = (4.0 * (samples * uw3) / samples.ncols() as f64);
-    uw3u
+    // println!("Shape of uw3u: ({}, {})", uw3u.nrows(), uw3u.ncols());
+    // let g: DVector<f64> = (4.0 * (samples * uw3) / samples.ncols() as f64);
+    let uw3u = DMatrix::from_fn(n, t, |i, j| uw3[j] * samples[(i, j)]);
+    let g = 4.0*uw3u.column_mean();
+    // println!("Shape of g: ({}, {})", g.nrows(), g.ncols());
+    g
 }
 
 fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) {
