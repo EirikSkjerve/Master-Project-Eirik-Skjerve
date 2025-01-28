@@ -14,7 +14,7 @@ use peak_alloc::PeakAlloc;
 
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 static TOLERANCE: f64 = 1e-5;
-static DELTA: f64 = 0.5;
+static DELTA: f64 = 0.01;
 
 pub fn run_hpp_attack(t: usize, n: usize) {
     // runs the HPP attack against Hawk
@@ -66,12 +66,14 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     let mut res_gradient_ascent: DVector<i32> = DVector::zeros(2*n);
 
     println!("\nDoing gradient descent...");
-    loop {
+    let mut retries = 0;
+    while retries < 10{
+        retries += 1;
         if let Some(sol) = gradient_descent(&u, DELTA) {
             res_gradient_descent = (&linv * &sol).map(|x| x.round() as i32);
                 if !vec_in_key(&res_gradient_descent, &binv) {
                     println!("Result not in key...");
-                    break;
+                    continue;
                 }
                 println!("FOUND!!!");
                 break;
@@ -79,12 +81,14 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     }
 
     println!("\nDoing gradient ascent...");
-    loop {
+    retries = 0;
+    while retries < 10{
+        retries += 1;
         if let Some(sol) = gradient_ascent(&u, DELTA) {
             res_gradient_ascent = (&linv * &sol).map(|x| x.round() as i32);
                 if !vec_in_key(&res_gradient_ascent, &binv) {
                     println!("Result not in key...");
-                    break;
+                    continue;
                 }
                 println!("FOUND!!!");
                 break;
@@ -144,8 +148,8 @@ fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> 
     // performs gradient descent on hypercube samples
 
     let n = samples.nrows();
-    // let mut rng = StdRng::seed_from_u64(rand::random::<u64>());
-    let mut rng = StdRng::seed_from_u64(1234);
+    let mut rng = StdRng::seed_from_u64(rand::random::<u64>());
+    // let mut rng = StdRng::seed_from_u64(1234);
     let mut num_iter = 0;
     // 1: choose w uniformly from unit sphere of R^n
     let mut w = get_rand_w(n, &mut rng);
@@ -190,8 +194,8 @@ fn gradient_ascent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
     // performs gradient descent on hypercube samples
 
     let n = samples.nrows();
-    // let mut rng = StdRng::seed_from_u64(rand::random::<u64>());
-    let mut rng = StdRng::seed_from_u64(1234);
+    let mut rng = StdRng::seed_from_u64(rand::random::<u64>());
+    // let mut rng = StdRng::seed_from_u64(1234);
 
     let mut num_iter = 0;
     // 1: choose w uniformly from unit sphere of R^n
@@ -258,7 +262,7 @@ fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
 
     use rand::distributions::{Distribution, Uniform};
     // define uniform distribution
-    let dist = Uniform::from(-1.0..1.0);
+    let dist = Uniform::from(-10.0..10.0);
 
     // initialize empty vector to store the samples
     let mut rnd_bytes: Vec<f64> = Vec::with_capacity(n);
@@ -281,7 +285,7 @@ fn mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> f64 {
     // compute <u,w>^4
     let temp: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(4));
     // compute mean of above, and return result
-    let res = temp.sum() / w.len() as f64;
+    let res = temp.sum() / samples.ncols() as f64;
     res
 }
 
