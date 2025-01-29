@@ -114,9 +114,7 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
 
     // sample x-vectors in parallel
     (0..t).into_par_iter().for_each(|i| {
-        let rand_bytes = get_random_bytes(20);
-
-        let temp: Vec<i64> = hawksign_x_only(&privkey, &rand_bytes, n, true);
+        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(20), n, true);
         let tempvar: f64 = temp.iter().map(|&x| (x as f64).powi(2)).sum();
         // divide to get the mean
         *var.lock().unwrap() += tempvar / (t * 2 * n) as f64;
@@ -145,7 +143,6 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
     (0..t).into_par_iter().for_each(|_| {
         let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(20), n, true);
 
-        // println!("{:?}", temp);
         let (tempvar, tempkur): (f64, f64) = temp
             .iter()
             .map(|&x| {

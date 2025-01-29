@@ -5,6 +5,8 @@ use hawklib::hawkkeygen::gen_f_g;
 use hawklib::ntru_solve::ntrusolve;
 use hawklib::utils::rot_key;
 
+use crate::test_candidate_vec::test_candidate_vec;
+
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
@@ -14,7 +16,7 @@ use peak_alloc::PeakAlloc;
 
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 static TOLERANCE: f64 = 1e-5;
-static DELTA: f64 = 0.01;
+static DELTA: f64 = 0.5;
 
 pub fn run_hpp_attack(t: usize, n: usize) {
     // runs the HPP attack against Hawk
@@ -34,6 +36,16 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // get the public key Q
     let q = get_public_key(t, n).unwrap().map(|x| x as f64);
 
+    // TEST INSTANCE HERE
+    // let a: DVector<i32> = binv.column(0).into_owned();
+    // eprintln!("a: {a}");
+    // if test_candidate_vec(&a, &q.map(|x| x as i32)) {
+    //     println!("Succ");
+    // }
+    //
+    // return;
+    // TEST INSTANCE FINISHED
+
     println!("Running HPP attack with {t} samples against Hawk{n}");
 
     // STEP 0: Generate samples
@@ -52,7 +64,11 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // the estimation in step two, the better conversion estimation we can do here.
     // Given matrix G, we want to compute L s.t. L^t L = G^-1, and thereafter
     // multiply our signature samples on the right with this L
-    let (u, linv) = hypercube_transformation(samples, q, &binv);
+    let (u, linv, c) = hypercube_transformation(samples, q, &binv);
+
+    // TEST
+    let u = u*0.1;
+
     println!("Samples transformed...");
 
     // STEP 3: Gradient Descent:
@@ -67,24 +83,23 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 
     println!("\nDoing gradient descent...");
     let mut retries = 0;
-    while retries < 10{
+    while retries < 3{
         retries += 1;
-        if let Some(sol) = gradient_descent(&u, DELTA) {
+        if let Some(sol) = gradient_descent(&u, &c) {
             res_gradient_descent = (&linv * &sol).map(|x| x.round() as i32);
-                if !vec_in_key(&res_gradient_descent, &binv) {
-                    println!("Result not in key...");
-                    continue;
-                }
-                println!("FOUND!!!");
-                break;
+                if vec_in_key(&res_gradient_descent, &binv) {
+                    println!("Result is in key based on direct checking");
+                    break;
+                } 
             }
     }
 
     println!("\nDoing gradient ascent...");
     retries = 0;
-    while retries < 10{
+    while retries < 3{
+
         retries += 1;
-        if let Some(sol) = gradient_ascent(&u, DELTA) {
+        if let Some(sol) = gradient_ascent(&u, &c) {
             res_gradient_ascent = (&linv * &sol).map(|x| x.round() as i32);
                 if !vec_in_key(&res_gradient_ascent, &binv) {
                     println!("Result not in key...");
@@ -104,14 +119,15 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // TODO
     // for each res, we can try to construct matrix by using vec- and rot
     // functions, construct B' and see if B't B' is close to Q
-    let (res1, res2) = (res_gradient_descent, res_gradient_ascent);
+    // let (res1, res2) = (res_gradient_descent, res_gradient_ascent);
+
 }
 
 fn hypercube_transformation(
     samples: DMatrix<i32>,
     q: DMatrix<f64>,
     skey: &DMatrix<i32>,
-) -> (DMatrix<f64>, DMatrix<f64>) {
+) -> (DMatrix<f64>, DMatrix<f64>, DMatrix<f64>) {
     // given samples and estimate of covariance matrix, return transformed
     // samples from hidden parallelepiped onto hidden hypercube for easier
     // analysis later
@@ -139,12 +155,14 @@ fn hypercube_transformation(
     // multiply samples with L
     // samples = l.l().transpose() * &samples;
     let res = &l.l().transpose() * samples_f64;
+    let c = &l.l().transpose() * skey.map(|x| x as f64);
+    // eprintln!("{:.1}", &c * &c.transpose());
     // println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
 
-    (res, linv)
+    (res, linv, c)
 }
 
-fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
+fn gradient_descent(samples: &DMatrix<f64>, c: &DMatrix<f64>) -> Option<DVector<f64>> {
     // performs gradient descent on hypercube samples
 
     let n = samples.nrows();
@@ -154,20 +172,23 @@ fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> 
     // 1: choose w uniformly from unit sphere of R^n
     let mut w = get_rand_w(n, &mut rng);
 
+    // TEST
+    // let test_w = c.column(10);
+    // w = test_w.into_owned();
+    // println!("mom4 of a correct vector: {}", mom4(&w, &samples));
+
+    // TODO if process starts to slow down/speed up one can maybe tweak delta as one goes?
     loop {
         num_iter += 1;
         println!("\nOn iteration {num_iter}...");
         // 2: compute approx. gradient of nabla_mom_4
-        // println!("Computing gradient of 4th moment...");
         let g = grad_mom4(&w, &samples);
 
-        // println!("Computing new w...");
         // 3: compute w_new = w-delta*g
-        // eprintln!("g: {g}");
-        let mut w_new = &w - (delta * g);
+        let mut w_new = &w - (DELTA * &g);
 
         // 4: normalize w_new
-        w_new = &w_new / w_new.norm();
+        w_new = w_new.normalize();
 
         // 5.1: if 4th moment of w_new is greater than 4th moment of w, we have "overshot" and return w
         // or if there is practically no change since last iteration
@@ -176,7 +197,7 @@ fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> 
         println!("Mom4(w)    : {w_mom4}");
         println!("Mom4(w_new): {wnew_mom4}");
         if wnew_mom4 >= w_mom4 
-            || (&w_new - &w).norm() <= 1e-3
+            // || (wnew_mom4 - w_mom4).abs() <= 0.0004
         {
             println!("Returned in {num_iter} iterations!");
             return Some(w);
@@ -190,7 +211,7 @@ fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> 
     None
 }
 
-fn gradient_ascent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
+fn gradient_ascent(samples: &DMatrix<f64>, c: &DMatrix<f64>) -> Option<DVector<f64>> {
     // performs gradient descent on hypercube samples
 
     let n = samples.nrows();
@@ -201,28 +222,32 @@ fn gradient_ascent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
     // 1: choose w uniformly from unit sphere of R^n
     let mut w = get_rand_w(n, &mut rng);
 
+    // TEST
+    // let test_w = c.column(88);
+    // w = test_w.into_owned();
+    // println!("mom4 of a correct vector: {}", mom4(&w, &samples));
+
+    // TODO if process starts to slow down/speed up one can maybe tweak delta as one goes?
     loop {
         num_iter += 1;
         println!("\nOn iteration {num_iter}...");
         // 2: compute approx. gradient of nabla_mom_4
-        // println!("Computing gradient of 4th moment...");
         let g = grad_mom4(&w, &samples);
 
-        // println!("Computing new w...");
         // 3: compute w_new = w-delta*g
-        let mut w_new = &w + (delta * g);
+        let mut w_new = &w + (DELTA * g);
 
         // 4: normalize w_new
-        w_new = &w_new / w_new.norm();
+        w_new = w_new.normalize();
+
         // 5.1: if 4th moment of w_new is lower than 4th moment of w, we have "overshot" and return w
         // or if there is practically no change since last iteration
-        // println!("{}", (&w_new - &w).abs().norm());
         let wnew_mom4 = mom4(&w_new, &samples);
         let w_mom4 = mom4(&w, &samples);
         println!("Mom4(w)    : {w_mom4}");
         println!("Mom4(w_new): {wnew_mom4}");
         if wnew_mom4 <=w_mom4 
-            || (&w_new - &w).norm() <= 0.0001
+            || (wnew_mom4 - w_mom4).abs() <= 0.04
         {
             println!("Returned in {num_iter} iterations!");
             return Some(w);
@@ -281,12 +306,27 @@ fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
 }
 
 fn mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> f64 {
+
+    // naive method
+    let n = samples.nrows();
+    let t = samples.ncols();
+    let mut res: f64 = 0.0;
+    for i in (0..t) {
+        let dot = samples.column(i).dot(w).powi(4);
+        // println!("dot: {dot}");
+        // println!("\nnorm s: {}", samples.column(i).norm());
+        // println!("norm w: {}", w.norm());
+        res += dot;
+    }
+    res /= t as f64;
+    println!("Res: {res}");
+    res
     // estimate 4th moment given samples and vector w
     // compute <u,w>^4
-    let temp: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(4));
-    // compute mean of above, and return result
-    let res = temp.sum() / samples.ncols() as f64;
-    res
+    // let dot: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(4));
+    // // println!("Res 2: {}", dot.mean());
+    // // compute mean of above, and return result
+    // dot.mean()
 }
 
 fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
@@ -379,6 +419,11 @@ fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64
 
     // reconstruct f and g
     let (f, g) = gen_f_g(fgseed, bigf.len());
+
+    // println!("f: {:?}", f);
+    // println!("g: {:?}", g);
+    // println!("F: {:?}", bigf);
+    // println!("G: {:?}", bigg);
 
     // create the matrix form of B and B inverse
     let b = rot_key(&f, &g, &bigf, &bigg);
