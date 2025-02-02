@@ -9,6 +9,7 @@ mod hpp;
 mod hpp_attack;
 mod hpp_simulation;
 mod test_candidate_vec;
+mod procrustes_attack;
 
 use collect_signatures::{
     collect_signatures, collect_signatures_par, covariance_matrix_estimation,
@@ -18,6 +19,8 @@ use dgd_estimation_normalized::estimate_mem_norm_all;
 
 use hpp_attack::run_hpp_attack;
 use hpp_simulation::run_hpp_sim;
+
+use procrustes_attack::*;
 
 use peak_alloc::PeakAlloc;
 use prettytable::{Cell, Row, Table};

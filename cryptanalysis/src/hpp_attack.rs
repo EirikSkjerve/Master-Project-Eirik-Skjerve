@@ -16,7 +16,7 @@ use peak_alloc::PeakAlloc;
 
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 static TOLERANCE: f64 = 1e-5;
-static DELTA: f64 = 0.5;
+static DELTA: f64 = 0.1;
 
 pub fn run_hpp_attack(t: usize, n: usize) {
     // runs the HPP attack against Hawk
@@ -55,8 +55,6 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     let samples = generate_samples(t, n);
     // println!("Samples collected...");
 
-    // println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
-
     // STEP 1: estimate covariance matrix. This step is automatically given by public key Q
 
     // STEP 2: conversion from hidden parallelepiped to hidden hypercube.
@@ -66,8 +64,31 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // multiply our signature samples on the right with this L
     let (u, linv, c) = hypercube_transformation(samples, q, &binv);
 
-    // TEST
-    // let u = u*0.1;
+    // test random column in c
+    let correct_vec: DVector<f64> = c.column(430).into_owned();
+    let extremum = mom4(&correct_vec, &u);
+    println!("Extremum mom4: {extremum}");
+
+    // let total_num_elements = (u.nrows() * u.ncols()) as f64;
+    // let mean = u.iter().sum::<f64>() / total_num_elements;
+    //
+    // let variance = u.iter()
+    //     .map(|&x| {
+    //         let diff = x-mean;
+    //         diff*diff
+    //     })
+    // .sum::<f64>() / total_num_elements;
+    //
+    // let kurtosis = u.iter()
+    //     .map(|&x| {
+    //         let diff = (x-mean).powi(4);
+    //         diff
+    //     })
+    // .sum::<f64>() / total_num_elements;
+    //
+    // println!("Mean: {}", mean);
+    // println!("Var:  {}", variance);
+    // println!("Kur:  {}", kurtosis);
 
     println!("Samples transformed...");
 
@@ -75,34 +96,41 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // The final step is to do gradient descent on our (converted) samples to minimize the
     // fourth moment, and consequently reveal a row/column from +/- B
 
+    // return;
+
     let col0 = binv.column(0);
     let coln = binv.column(n);
 
     let mut res_gradient_descent: DVector<i32> = DVector::zeros(2*n);
     let mut res_gradient_ascent: DVector<i32> = DVector::zeros(2*n);
 
+    let threshold = 100.0 / t as f64;
+    println!("Threshold for {t} samples is: {threshold}");
+
     println!("\nDoing gradient descent...");
     let mut retries = 0;
-    // while retries < 3{
-    //     retries += 1;
-    //     if let Some(sol) = gradient_descent(&u, &c) {
-    //         res_gradient_descent = (&linv * &sol).map(|x| x.round() as i32);
-    //             if vec_in_key(&res_gradient_descent, &binv) {
-    //                 println!("Result is in key based on direct checking");
-    //                 break;
-    //             } 
-    //         }
-    // }
+    while retries < 10{
+        retries += 1;
+        if let Some(sol) = gradient_descent(&u, &c, threshold) {
+            res_gradient_descent = (&linv * &sol).map(|x| x.round() as i32);
+                if vec_in_key(&res_gradient_descent, &binv) {
+                    println!("Result is in key based on direct checking");
+                    break;
+                } 
+                // eprintln!("{res_gradient_descent}");
+            }
+    }
 
     println!("\nDoing gradient ascent...");
     retries = 0;
-    while retries < 3{
+    while retries < 10{
 
         retries += 1;
-        if let Some(sol) = gradient_ascent(&u, &c) {
+        if let Some(sol) = gradient_ascent(&u, &c, threshold) {
             res_gradient_ascent = (&linv * &sol).map(|x| x.round() as i32);
                 if !vec_in_key(&res_gradient_ascent, &binv) {
                     println!("Result not in key...");
+                    // eprintln!("{res_gradient_ascent}");
                     continue;
                 }
                 println!("FOUND!!!");
@@ -133,6 +161,14 @@ fn hypercube_transformation(
     // analysis later
     // Also returns the l inverse so we don't have to recompute it later
 
+    // get theoretical sigma here for scaling
+
+    let sigma = match q.nrows() / 2{
+        256 => 2.0 * 1.001, // 1.01 in theory but in practice it is measured to be 1.001
+        512 => 2.0 * 1.278,
+        _ =>   2.0 * 1.299,
+    };
+
     // compute L = Cholesky decomposition of Q
     let l = Cholesky::new(q).expect("Couldn't do Cholesky decomposition of ginv");
 
@@ -143,7 +179,7 @@ fn hypercube_transformation(
         .clone()
         .try_inverse()
         .expect("Couldn't take inverse of l")
-        .map(|x| x as f64);
+        .map(|x| x as f64) * sigma;
 
     println!("Cholesky decomposition complete.");
 
@@ -154,7 +190,7 @@ fn hypercube_transformation(
     // println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
     // multiply samples with L
     // samples = l.l().transpose() * &samples;
-    let res = &l.l().transpose() * samples_f64;
+    let res = (&l.l().transpose() / sigma) * samples_f64;
     let c = &l.l().transpose() * skey.map(|x| x as f64);
     // eprintln!("{:.1}", &c * &c.transpose());
     // println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
@@ -162,7 +198,7 @@ fn hypercube_transformation(
     (res, linv, c)
 }
 
-fn gradient_descent(samples: &DMatrix<f64>, c: &DMatrix<f64>) -> Option<DVector<f64>> {
+fn gradient_descent(samples: &DMatrix<f64>, c: &DMatrix<f64>, threshold: f64) -> Option<DVector<f64>> {
     // performs gradient descent on hypercube samples
 
     let n = samples.nrows();
@@ -173,9 +209,11 @@ fn gradient_descent(samples: &DMatrix<f64>, c: &DMatrix<f64>) -> Option<DVector<
     let mut w = get_rand_w(n, &mut rng);
 
     // TEST
-    // let test_w = c.column(10);
-    // w = test_w.into_owned();
+    // let test_w = c.column(10); w = test_w.into_owned();
     // println!("mom4 of a correct vector: {}", mom4(&w, &samples));
+
+    let beta = 0.9;
+    let mut v_t = DVector::<f64>::zeros(n);
 
     // TODO if process starts to slow down/speed up one can maybe tweak delta as one goes?
     loop {
@@ -184,8 +222,12 @@ fn gradient_descent(samples: &DMatrix<f64>, c: &DMatrix<f64>) -> Option<DVector<
         // 2: compute approx. gradient of nabla_mom_4
         let g = grad_mom4(&w, &samples);
 
+        // do momentum computations
+        let v_t = beta*&v_t + (1.0-beta)*&g;
+
         // 3: compute w_new = w-delta*g
-        let mut w_new = &w - (DELTA * &g);
+        let mut w_new = &w - (DELTA * &v_t);
+        // let mut w_new = &w - &v_t;
 
         // 4: normalize w_new
         w_new = w_new.normalize();
@@ -194,10 +236,9 @@ fn gradient_descent(samples: &DMatrix<f64>, c: &DMatrix<f64>) -> Option<DVector<
         // or if there is practically no change since last iteration
         let wnew_mom4 = mom4(&w_new, &samples);
         let w_mom4 = mom4(&w, &samples);
-        println!("Mom4(w)    : {w_mom4}");
-        println!("Mom4(w_new): {wnew_mom4}");
+        println!("Diff: {:.7}", w_mom4 - wnew_mom4);
         if wnew_mom4 >= w_mom4 
-            // || (wnew_mom4 - w_mom4).abs() <= 0.0004
+            // || (wnew_mom4 - w_mom4).abs() <= threshold
         {
             println!("Returned in {num_iter} iterations!");
             return Some(w);
@@ -211,7 +252,7 @@ fn gradient_descent(samples: &DMatrix<f64>, c: &DMatrix<f64>) -> Option<DVector<
     None
 }
 
-fn gradient_ascent(samples: &DMatrix<f64>, c: &DMatrix<f64>) -> Option<DVector<f64>> {
+fn gradient_ascent(samples: &DMatrix<f64>, c: &DMatrix<f64>, threshold: f64) -> Option<DVector<f64>> {
     // performs gradient descent on hypercube samples
 
     let n = samples.nrows();
@@ -247,7 +288,7 @@ fn gradient_ascent(samples: &DMatrix<f64>, c: &DMatrix<f64>) -> Option<DVector<f
         println!("Mom4(w)    : {w_mom4}");
         println!("Mom4(w_new): {wnew_mom4}");
         if wnew_mom4 <=w_mom4 
-            || (wnew_mom4 - w_mom4).abs() <= 0.04
+            || (wnew_mom4 - w_mom4).abs() <= threshold
         {
             println!("Returned in {num_iter} iterations!");
             return Some(w);
@@ -262,19 +303,15 @@ fn gradient_ascent(samples: &DMatrix<f64>, c: &DMatrix<f64>) -> Option<DVector<f
 }
 
 fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
-    // Check if the vector exists as a row in the matrix
-    let as_row = key.row_iter().any(|row| row == vec.transpose());
 
     // Check if the vector exists as a column in the matrix
     let as_column = key.column_iter().any(|col| col == *vec);
 
-    // Check if the negative vector exists as a row in the matrix
-    let as_row_neg = key.row_iter().any(|row| -row == vec.transpose());
-
     // Check if the negative vector exists as a column in the matrix
     let as_column_neg = key.column_iter().any(|col| -col == *vec);
 
-    as_row || as_column || as_row_neg || as_column_neg
+    as_column || as_column_neg
+
 }
 
 fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
