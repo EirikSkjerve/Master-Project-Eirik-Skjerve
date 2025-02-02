@@ -67,7 +67,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     let (u, linv, c) = hypercube_transformation(samples, q, &binv);
 
     // TEST
-    let u = u*0.1;
+    // let u = u*0.1;
 
     println!("Samples transformed...");
 
@@ -83,16 +83,16 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 
     println!("\nDoing gradient descent...");
     let mut retries = 0;
-    while retries < 3{
-        retries += 1;
-        if let Some(sol) = gradient_descent(&u, &c) {
-            res_gradient_descent = (&linv * &sol).map(|x| x.round() as i32);
-                if vec_in_key(&res_gradient_descent, &binv) {
-                    println!("Result is in key based on direct checking");
-                    break;
-                } 
-            }
-    }
+    // while retries < 3{
+    //     retries += 1;
+    //     if let Some(sol) = gradient_descent(&u, &c) {
+    //         res_gradient_descent = (&linv * &sol).map(|x| x.round() as i32);
+    //             if vec_in_key(&res_gradient_descent, &binv) {
+    //                 println!("Result is in key based on direct checking");
+    //                 break;
+    //             } 
+    //         }
+    // }
 
     println!("\nDoing gradient ascent...");
     retries = 0;
@@ -308,25 +308,25 @@ fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
 fn mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> f64 {
 
     // naive method
-    let n = samples.nrows();
-    let t = samples.ncols();
-    let mut res: f64 = 0.0;
-    for i in (0..t) {
-        let dot = samples.column(i).dot(w).powi(4);
-        // println!("dot: {dot}");
-        // println!("\nnorm s: {}", samples.column(i).norm());
-        // println!("norm w: {}", w.norm());
-        res += dot;
-    }
-    res /= t as f64;
-    println!("Res: {res}");
-    res
+    // let n = samples.nrows();
+    // let t = samples.ncols();
+    // let mut res: f64 = 0.0;
+    // for i in (0..t) {
+    //     let dot = samples.column(i).dot(w).powi(4);
+    //     // println!("dot: {dot}");
+    //     // println!("\nnorm s: {}", samples.column(i).norm());
+    //     // println!("norm w: {}", w.norm());
+    //     res += dot;
+    // }
+    // res /= t as f64;
+    // println!("Res: {res}");
+    // res
     // estimate 4th moment given samples and vector w
     // compute <u,w>^4
-    // let dot: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(4));
+    let dot: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(4));
     // // println!("Res 2: {}", dot.mean());
     // // compute mean of above, and return result
-    // dot.mean()
+    dot.mean()
 }
 
 fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
