@@ -114,7 +114,6 @@ pub fn sample(s: &[u8], t: Vec<u8>, n: usize) -> Vec<i64> {
 
                 // flip the sign if the original value from y is too high
                 if a >= 1 << 63 {
-                    // println!("{}", r);
                     v = -v;
                 }
 
@@ -246,37 +245,7 @@ pub fn hawksign(
 
         // compute one part of the signature
         // w = B^-1 x, so w1 = g*x0 - f*x1
-        // let mut w0 = poly_sub(&poly_mult_ntt(&bigg, &x0, p), &poly_mult_ntt(&bigf, &x1, p));
         let mut w1 = poly_sub(&poly_mult_ntt(&f, &x1, p), &poly_mult_ntt(&g, &x0, p));
-
-        // let mut w0_m = poly_sub(&polymul(&bigg, &x0), &polymul(&bigf, &x1));
-        // let mut w1_m = poly_sub(&polymul(&f, &x1), &polymul(&g, &x0));
-        //
-        // assert_eq!(w0, w0_m);
-        // assert_eq!(w1, w1_m);
-        //
-        // let rotf = rot(&f);
-        // let rotg = rot(&g);
-        // let rotbigf = rot(&bigf);
-        // let rotbigg = rot(&bigg);
-        //
-        // let w0_2 = poly_sub(&matmul(&rotbigg, &x0), &matmul(&rotbigf, &x1));
-        // let w1_2 = poly_sub(&matmul(&rotf, &x1), &matmul(&rotg, &x0));
-        // assert_eq!(w0, w0_2);
-        // assert_eq!(w1, w1_2);
-        //
-        // let rotbinv = rot_key(
-        //     &bigg,
-        //     &g.clone().iter().map(|&x| -x).collect(),
-        //     &bigf.clone().iter().map(|&x| -x).collect(),
-        //     &f,
-        // );
-        //
-        // let w_t = matmul(&rotbinv, &x);
-        //
-        // let mut w_t_c = w0.clone();
-        // w_t_c.append(&mut w1.clone());
-        // assert_eq!(w_t_c, w_t);
 
         // check symbreak condition
         if !symbreak(&w1) {
@@ -300,9 +269,8 @@ pub fn hawksign_total(
 ) -> Vec<i64> {
     //
     // given secret key components and message, compute a signature
-    // unlike specifications, return the entire w as signature
+    // unlike specification, return the entire w as signature
     // so that one does not need to use "rebuild" function to get entire w
-    // also returns the raw x-vector
 
     let (kgseed, bigf, bigg) = privkey;
 

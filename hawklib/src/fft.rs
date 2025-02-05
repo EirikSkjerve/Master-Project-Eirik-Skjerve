@@ -94,7 +94,6 @@ pub fn inverse_fft(p: &Vec<i64>) -> Vec<f64> {
 
     let m = p.len() / 2;
     let mut p_fft = fft(&p_f);
-    //println!("p_fft: {:?}", p_fft);
 
     for u in 0..m {
         p_fft[u].re = 1.0 / p_fft[u].re;
