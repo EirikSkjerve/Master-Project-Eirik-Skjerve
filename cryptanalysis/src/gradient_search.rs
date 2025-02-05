@@ -11,16 +11,22 @@ use peak_alloc::PeakAlloc;
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 static EPSILON: f64 = 1e-10;
+static TOLERANCE: f64 = 1e-4;
 static BETA1: f64 = 0.9;
 static BETA2: f64 = 0.999;
-static DELTA: f64 = 0.7;
+static DELTA: f64 = 0.001;
 
 fn gradient_optimize(u: &DMatrix<f64>, c: &DMatrix<f64>, descent: bool) -> Option<DVector<f64>> {
     // perform gradient descent if parameter <descent> is set to true
     // otherwise do gradient ascent.
 
     let n = u.nrows();
-    let mut rng = StdRng::seed_from_u64(rand::random::<u64>());
+    let seed = rand::random::<u64>();
+    if descent{
+        println!("Running gradient descent");
+    } else { println!("Running gradient ascent")}
+    println!("Seed: {seed}");
+    let mut rng = StdRng::seed_from_u64(seed);
 
     // random starting point on the unit circle
     let mut w = get_rand_w(n, &mut rng);
@@ -34,6 +40,7 @@ fn gradient_optimize(u: &DMatrix<f64>, c: &DMatrix<f64>, descent: bool) -> Optio
 
     loop {
         t += 1;
+        println!("\nAt iteration {t}");
         let g = grad_mom4(&w, &u); // get gradient
 
         m_t = (BETA1*&m_t) + (1.0-BETA1)*&g;
@@ -54,18 +61,37 @@ fn gradient_optimize(u: &DMatrix<f64>, c: &DMatrix<f64>, descent: bool) -> Optio
         let mom4_wnew = mom4(&wnew, &u);
 
         // measure difference between old and new
-        let mom4_diff = (mom4_w - mom4_wnew).abs();
+        let mom4_diff = mom4_wnew - mom4_w;
         let w_diff = (&w - &wnew).norm();
 
+        println!("Mom4(w)    : {mom4_w}");
+        println!("Mom4(w_new): {mom4_wnew}");
+        println!("Diff       : {mom4_diff}");
+
         // check requirements for extremum point
-        if mom4_diff <= EPSILON || w_diff <= EPSILON || g.norm() <= EPSILON {
-            println!("Possibly at an extremum here...");
+        if mom4_diff.abs() <= TOLERANCE || w_diff <= TOLERANCE || g.norm() <= TOLERANCE {
+            println!("Possibly at an extremum: rate of change negligible. \n");
             return Some(w);
         }
+
+        // not sure of these requirements...
+        // in the case of gradient descent
+        // if descent && mom4_wnew >= mom4_w {
+        //     println!("Possibly at an extremum: mom4 started increasing. \n");
+        //     return Some(w);
+        // }
+        //
+        // // in the case of gradient ascent
+        // if !descent && mom4_wnew <= mom4_w {
+        //     println!("Possibly at an extremum: mom4 started increasing. \n");
+        //     return Some(w);
+        // }
 
         // before next iteration, update current w and mom4(w)
         w = wnew;
         mom4_w = mom4_wnew;
+        
+        println!("");
     }
 
 }
@@ -80,6 +106,21 @@ pub fn gradient_ascent(samples: &DMatrix<f64>, c: &DMatrix<f64>) -> Option<DVect
     if let result = gradient_optimize(samples, c, false) {
         return result;
     } else {return None;}
+}
+
+fn mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> f64 {
+
+    let dot: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(4));
+    dot.mean()
+}
+
+fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
+    let n = w.nrows();
+    let t = samples.ncols();
+    let uw3: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(3));
+    let uw3u = DMatrix::from_fn(n, t, |i, j| uw3[j] * samples[(i, j)]);
+    let g = 4.0*uw3u.column_mean();
+    g
 }
 
 fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
@@ -100,50 +141,7 @@ fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
     let mut w = DVector::from_vec(rnd_bytes);
 
     // normalize the w vector
-    w /= w.norm();
+    w = w.normalize();
     w
 }
 
-fn mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> f64 {
-
-    // naive method
-    // let n = samples.nrows();
-    // let t = samples.ncols();
-    // let mut res: f64 = 0.0;
-    // for i in (0..t) {
-    //     let dot = samples.column(i).dot(w).powi(4);
-    //     // println!("dot: {dot}");
-    //     // println!("\nnorm s: {}", samples.column(i).norm());
-    //     // println!("norm w: {}", w.norm());
-    //     res += dot;
-    // }
-    // res /= t as f64;
-    // println!("Res: {res}");
-    // res
-    // estimate 4th moment given samples and vector w
-    // compute <u,w>^4
-    let dot: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(4));
-    // // println!("Res 2: {}", dot.mean());
-    // // compute mean of above, and return result
-    dot.mean()
-}
-
-fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
-    let n = w.nrows();
-    let t = samples.ncols();
-    // estimate gradient of 4th moment given samples and vector w
-    // compute 4(<u, w>^3 * u)
-    // println!("Shape of U: ({}, {})", samples.nrows(), samples.ncols());
-    // println!("Shape of w: ({}, {})", w.nrows(), w.ncols());
-    // dot product
-    // power of 3 to each entry
-    // println!("Shape of uw: ({}, {})", uw3.nrows(), uw3.ncols());
-    let uw3: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(3));
-    // let uw3u: DVector<f64> = (4.0 * (samples * uw3) / samples.nrows() as f64);
-    // println!("Shape of uw3u: ({}, {})", uw3u.nrows(), uw3u.ncols());
-    // let g: DVector<f64> = (4.0 * (samples * uw3) / samples.ncols() as f64);
-    let uw3u = DMatrix::from_fn(n, t, |i, j| uw3[j] * samples[(i, j)]);
-    let g = 4.0*uw3u.column_mean();
-    // println!("Shape of g: ({}, {})", g.nrows(), g.ncols());
-    g
-}
