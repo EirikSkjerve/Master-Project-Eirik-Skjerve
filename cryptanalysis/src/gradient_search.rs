@@ -1,9 +1,13 @@
 use nalgebra::*;
+use rayon::prelude::*;
+
 
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rand::distributions::{Distribution, Uniform};
 
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use std::io::{stdout, Write};
 
 use peak_alloc::PeakAlloc;
@@ -14,7 +18,7 @@ static EPSILON: f64 = 1e-10;
 static TOLERANCE: f64 = 1e-4;
 static BETA1: f64 = 0.9;
 static BETA2: f64 = 0.999;
-static DELTA: f64 = 0.001;
+static DELTA: f64 = 0.01;
 
 fn gradient_optimize(u: &DMatrix<f64>, c: &DMatrix<f64>, descent: bool) -> Option<DVector<f64>> {
     // perform gradient descent if parameter <descent> is set to true
@@ -41,7 +45,8 @@ fn gradient_optimize(u: &DMatrix<f64>, c: &DMatrix<f64>, descent: bool) -> Optio
     loop {
         t += 1;
         println!("\nAt iteration {t}");
-        let g = grad_mom4(&w, &u); // get gradient
+
+        let g = grad_mom4_par(&w, &u); // get gradient
 
         m_t = (BETA1*&m_t) + (1.0-BETA1)*&g;
         v_t = (BETA2*v_t) + (1.0-BETA2)*&g.map(|x| x.powi(2));
@@ -69,27 +74,31 @@ fn gradient_optimize(u: &DMatrix<f64>, c: &DMatrix<f64>, descent: bool) -> Optio
         println!("Diff       : {mom4_diff}");
 
         // check requirements for extremum point
-        if mom4_diff.abs() <= TOLERANCE || w_diff <= TOLERANCE || g.norm() <= TOLERANCE {
-            println!("Possibly at an extremum: rate of change negligible. \n");
+        // if mom4_diff.abs() <= TOLERANCE || w_diff <= TOLERANCE || g.norm() <= TOLERANCE {
+        //     println!("Possibly at an extremum: rate of change negligible. \n");
+        //     return Some(w);
+        // }
+
+        // in the case of gradient descent
+        if descent && mom4_wnew >= mom4_w {
+            println!("Possibly at an extremum: mom4 started increasing. \n");
             return Some(w);
         }
 
-        // not sure of these requirements...
-        // in the case of gradient descent
-        // if descent && mom4_wnew >= mom4_w {
-        //     println!("Possibly at an extremum: mom4 started increasing. \n");
-        //     return Some(w);
-        // }
-        //
-        // // in the case of gradient ascent
-        // if !descent && mom4_wnew <= mom4_w {
-        //     println!("Possibly at an extremum: mom4 started increasing. \n");
-        //     return Some(w);
-        // }
+        // in the case of gradient ascent
+        if !descent && mom4_wnew <= mom4_w {
+            println!("Possibly at an extremum: mom4 started increasing. \n");
+            return Some(w);
+        }
 
         // before next iteration, update current w and mom4(w)
         w = wnew;
         mom4_w = mom4_wnew;
+
+        if t >= 100 {
+            println!("Too many steps - probably?");
+            return Some(w);
+        }
         
         println!("");
     }
@@ -109,7 +118,6 @@ pub fn gradient_ascent(samples: &DMatrix<f64>, c: &DMatrix<f64>) -> Option<DVect
 }
 
 fn mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> f64 {
-
     let dot: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(4));
     dot.mean()
 }
@@ -121,6 +129,35 @@ fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
     let uw3u = DMatrix::from_fn(n, t, |i, j| uw3[j] * samples[(i, j)]);
     let g = 4.0*uw3u.column_mean();
     g
+}
+
+fn grad_mom4_par(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
+    let n = w.nrows();
+    let t = samples.ncols();
+
+    // Precompute the dot product of each column of `samples` with `w`
+    let uw: Vec<f64> = (0..t)
+        .into_par_iter() // Parallelize over columns
+        .map(|j| samples.column(j).dot(w))
+        .collect();
+
+    // Compute uw^3 for each column
+    let uw3: Vec<f64> = uw.par_iter().map(|x| x.powi(3)).collect();
+
+    // Compute the gradient in parallel
+    let mut g = Arc::new(Mutex::new(DVector::zeros(n)));
+    (0..n).into_par_iter().for_each(|i| {
+        let mut sum = 0.0;
+        for j in 0..t {
+            sum += uw3[j] * samples[(i, j)];
+        }
+        g.lock().unwrap()[i] = 4.0 * sum / (t as f64);
+    });
+
+    Arc::try_unwrap(g)
+        .expect("Could not unpack gradient g")
+        .into_inner()
+        .unwrap()
 }
 
 fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
