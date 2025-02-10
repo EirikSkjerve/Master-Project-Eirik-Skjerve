@@ -5,11 +5,12 @@ mod collect_signatures;
 mod dgd_estimation;
 mod dgd_estimation_normalized;
 mod file_utils;
+mod gradient_search;
 mod hpp;
 mod hpp_attack;
 mod hpp_simulation;
-mod test_candidate_vec;
 mod procrustes_attack;
+mod test_candidate_vec;
 
 use collect_signatures::{
     collect_signatures, collect_signatures_par, covariance_matrix_estimation,
@@ -35,16 +36,18 @@ fn main() {
     let t: usize = args[1]
         .parse()
         .expect("Invalid input for number of samples");
-    let n: usize = args[2]
-        .parse()
-        .expect("Invalid input for Hawk degree");
+    let n: usize = args[2].parse().expect("Invalid input for Hawk degree");
 
     // covariance_matrix_estimation(t, n);
     // estimate_mem_all(500000, true);
     // estimate_mem_norm_all(t, false);
 
-    // collect_signatures_par(t, n);
+    // use real life signatures
+
+    // collect_signatures_par(t, n, false);
     run_hpp_attack(t, n);
+
+    // run a simulation using much smaller parameters
     // run_hpp_sim(t, n);
 
     println!(

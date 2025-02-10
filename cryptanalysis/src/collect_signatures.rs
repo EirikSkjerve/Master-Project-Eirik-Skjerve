@@ -71,7 +71,12 @@ pub fn collect_signatures(t: usize, n: usize) {
     println!("\nWritten signatures to {}", filename);
 }
 
-pub fn collect_signatures_par(t: usize, n: usize) {
+pub fn collect_signatures_par(t: usize, n: usize, write: bool) ->
+    Option<
+    (Vec<Vec<i16>>,
+    (Vec<u8>, Vec<i64>, Vec<i64>),
+    (Vec<i64>, Vec<i64>))>
+{
     let filename = format!("{t}vectors_deg{n}");
 
     // generate a keypair
@@ -107,8 +112,12 @@ pub fn collect_signatures_par(t: usize, n: usize) {
         .into_inner()
         .unwrap();
 
-    write_vectors_to_file(signatures_unpacked.to_vec(), privkey, pubkey, &filename);
-    println!("\nWritten signatures to {}", filename);
+    if write {
+        write_vectors_to_file(signatures_unpacked.to_vec(), privkey, pubkey, &filename);
+        println!("\nWritten signatures to {}", filename);
+        return None
+    }
+    else { return Some((signatures_unpacked.to_vec(), privkey, pubkey))}
 }
 
 pub fn covariance_matrix_estimation(t: usize, n: usize) {

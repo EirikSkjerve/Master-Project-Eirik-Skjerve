@@ -1,12 +1,16 @@
 use crate::file_utils::read_vectors_from_file;
-use crate::gradient_search::{gradient_descent, gradient_ascent};
+use crate::gradient_search::{gradient_ascent, gradient_descent};
+
+use crate::collect_signatures::collect_signatures_par;
+
+use crate::test_candidate_vec::test_candidate_vec;
+
 use nalgebra::*;
 
 use hawklib::hawkkeygen::gen_f_g;
 use hawklib::ntru_solve::ntrusolve;
 use hawklib::utils::rot_key;
 
-use crate::test_candidate_vec::test_candidate_vec;
 
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
@@ -31,46 +35,52 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // and directly return the entire signature w which we use to deduce information about B
 
     // get the correct key for later comparison
-    let (b, binv) = get_secret_key(t, n);
+    // let (b, binv) = get_secret_key(t, n);
+    //
+    // // get the public key Q
+    // let q = get_public_key(t, n).unwrap().map(|x| x as f64);
+    //
+    // println!("Running HPP attack with {t} samples against Hawk{n}");
+    //
+    // // STEP 0: Generate samples
+    // // We need to generate a lot of samples to run the attack on
+    // // Samples is a tx2n matrix
+    // let samples = generate_samples(t, n);
 
-    // get the public key Q
-    let q = get_public_key(t, n).unwrap().map(|x| x as f64);
-
-    println!("Running HPP attack with {t} samples against Hawk{n}");
-
-    // STEP 0: Generate samples
-    // We need to generate a lot of samples to run the attack on
-    // Samples is a tx2n matrix
-    let samples = generate_samples(t, n);
+    let (samples, (b, binv), q) = generate_samples_and_keys(t, n).unwrap();
 
     // STEP 1: estimate covariance matrix. This step is automatically given by public key Q
 
     // STEP 2: conversion from hidden parallelepiped to hidden hypercube.
     // Given Q, we do cholesky decomposition to get L s.t. Q = LLt
     // multiply our signature samples on the right with this L
-    println!("U dim: {}, {}", samples.nrows(), samples.ncols());
-    let (u, linv, c) = hypercube_transformation(samples, q, &binv);
-    println!("U' dim: {}, {}", u.nrows(), u.ncols());
-    // let total_num_elements = (u.nrows() * u.ncols()) as f64;
-    // let mean = u.iter().sum::<f64>() / total_num_elements;
-    //
-    // let variance = u.iter()
-    //     .map(|&x| {
-    //         let diff = x-mean;
-    //         diff*diff
-    //     })
-    // .sum::<f64>() / total_num_elements;
-    //
-    // let kurtosis = u.iter()
-    //     .map(|&x| {
-    //         let diff = (x-mean).powi(4);
-    //         diff
-    //     })
-    // .sum::<f64>() / total_num_elements;
-    //
-    // println!("Mean: {}", mean);
-    // println!("Var:  {}", variance);
-    // println!("Kur:  {}", kurtosis);
+    // to produce U which is distributed over L^t B^-1
+    let (u, linv, c) = hypercube_transformation(samples, q.map(|x| x as f64), &binv);
+
+    let total_num_elements = (u.nrows() * u.ncols()) as f64;
+    let mean = u.iter().sum::<f64>() / total_num_elements;
+
+    let variance = u
+        .iter()
+        .map(|&x| {
+            let diff = x - mean;
+            diff * diff
+        })
+        .sum::<f64>()
+        / total_num_elements;
+
+    let kurtosis = u
+        .iter()
+        .map(|&x| {
+            let diff = (x - mean).powi(4);
+            diff
+        })
+        .sum::<f64>()
+        / total_num_elements;
+
+    println!("Mean: {}", mean);
+    println!("Var:  {}", variance);
+    println!("Kur:  {}", kurtosis);
 
     println!("Samples transformed...");
 
@@ -81,43 +91,51 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     let col0 = binv.column(0);
     let coln = binv.column(n);
 
-    let mut res_gradient_descent: DVector<i32> = DVector::zeros(2*n);
-    let mut res_gradient_ascent: DVector<i32> = DVector::zeros(2*n);
+    let mut res_gradient_descent: DVector<i32> = DVector::zeros(2 * n);
+    let mut res_gradient_ascent: DVector<i32> = DVector::zeros(2 * n);
+
+    println!("Current memory usage: {} mb", PEAK_ALLOC.current_usage_as_mb());
 
     println!("\nDoing gradient descent...");
     let mut retries = 0;
-    while retries < 10{
+    while retries < 10 {
         retries += 1;
         if let Some(sol) = gradient_descent(&u, &c) {
             res_gradient_descent = (&linv * &sol).map(|x| x.round() as i32);
-                if vec_in_key(&res_gradient_descent, &binv) {
-                    println!("FOUND! Result is in key based on direct checking");
-                    break;
-                } 
-                measure_res(&res_gradient_descent, &binv);
-                println!("Norm of res from descent: {}", res_gradient_descent.map(|x| x as f64).norm());
-                println!("Norm of col0: {}", col0.map(|x| x as f64).norm());
-                println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
-                println!("Result not in key... \n");
+            if vec_in_key(&res_gradient_descent, &binv) {
+                println!("FOUND! Result is in key based on direct checking");
+                return;
             }
+            measure_res(&res_gradient_descent, &binv);
+            println!(
+                "Norm of res from descent: {}",
+                res_gradient_descent.map(|x| x as f64).norm()
+            );
+            println!("Norm of col0: {}", col0.map(|x| x as f64).norm());
+            println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
+            println!("Result not in key... \n");
+        }
     }
 
     println!("\nDoing gradient ascent...");
     retries = 0;
-    while retries < 10{
+    while retries < 10 {
         retries += 1;
         if let Some(sol) = gradient_ascent(&u, &c) {
             res_gradient_ascent = (&linv * &sol).map(|x| x.round() as i32);
-                if vec_in_key(&res_gradient_ascent, &binv) {
-                    println!("FOUND! Result is in key based on direct checking");
-                    break;
-                }
-                measure_res(&res_gradient_ascent, &binv);
-                println!("Norm of res from ascent: {}", res_gradient_ascent.map(|x| x as f64).norm());
-                println!("Norm of col0: {}", col0.map(|x| x as f64).norm());
-                println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
-                println!("Result not in key... \n");
+            if vec_in_key(&res_gradient_ascent, &binv) {
+                println!("FOUND! Result is in key based on direct checking");
+                return;
             }
+            measure_res(&res_gradient_ascent, &binv);
+            println!(
+                "Norm of res from ascent: {}",
+                res_gradient_ascent.map(|x| x as f64).norm()
+            );
+            println!("Norm of col0: {}", col0.map(|x| x as f64).norm());
+            println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
+            println!("Result not in key... \n");
+        }
     }
 }
 
@@ -133,10 +151,10 @@ fn hypercube_transformation(
 
     // get theoretical sigma here for scaling
 
-    let sigma = match q.nrows() / 2{
+    let sigma = match q.nrows() / 2 {
         256 => 2.0 * 1.001, // 1.01 in theory but in practice it is measured to be 1.001
         512 => 2.0 * 1.278,
-        _ =>   2.0 * 1.299,
+        _ => 2.0 * 1.299,
     };
 
     // compute L = Cholesky decomposition of Q
@@ -156,11 +174,18 @@ fn hypercube_transformation(
     // println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
     let mut samples_f64: DMatrix<f64> = samples.map(|x| x as f64);
     // to guarantee that no extra memory is taken by this
+    println!("Current mem usage before drop: {} gb", PEAK_ALLOC.current_usage_as_gb());
     std::mem::drop(samples);
-    // println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
+    println!("Current mem usage after drop: {} gb", PEAK_ALLOC.current_usage_as_gb());
     // multiply samples with L
     // samples = l.l().transpose() * &samples;
-    let res = (&l.l().transpose() / sigma) * samples_f64;
+
+    // let res = (&l.l().transpose() / sigma) * samples_f64;
+    let res = ((&l.l().transpose() / sigma) * &samples_f64);
+    std::mem::drop(samples_f64);
+    println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
+    println!("Max usage so far: {} gb", PEAK_ALLOC.peak_usage_as_gb());
+
     let c = &l.l().transpose() * skey.map(|x| x as f64);
     // eprintln!("{:.1}", &c * &c.transpose());
     // println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
@@ -168,9 +193,7 @@ fn hypercube_transformation(
     (res, linv, c)
 }
 
-
 fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
-
     // Check if the vector exists as a column in the matrix
     let as_column = key.column_iter().any(|col| col == *vec);
 
@@ -178,23 +201,29 @@ fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
     let as_column_neg = key.column_iter().any(|col| -col == *vec);
 
     as_column || as_column_neg
-
 }
-
 
 fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) {
     // given a solution, measure how far the solution is away from each column of the secret key
     let mut min = f64::INFINITY;
     let mut max = f64::NEG_INFINITY;
+    let mut min_index = 0;
     (0..res.len()).into_iter().for_each(|i| {
         let col: DVector<f64> = binv.column(i).into_owned().map(|x| x as f64);
-        
-        let diff = (col.abs() -res.map(|x| x as f64).abs()).norm();
-        if diff < min { min = diff };
-        if diff > max { max = diff };
+
+        let diff = (col.abs() - res.map(|x| x as f64).abs()).norm();
+        if diff < min {
+            min = diff;
+            min_index = i
+        };
+        if diff > max {
+            max = diff
+        };
     });
 
-    println!("Min: {min} \nMax: {max}");
+    let comb = DMatrix::from_columns(&[res.column(0), binv.column(min_index)]);
+    eprintln!("{comb}");
+    println!("Min norm of diff: {min} \nMax norm of diff: {max}");
 }
 
 fn is_orthogonal(matrix: &DMatrix<f64>) -> bool {
@@ -211,36 +240,6 @@ fn is_orthonormal(matrix: &DMatrix<f64>) -> bool {
             .all(|col| (col.norm() - 1.0).abs() < TOLERANCE)
 }
 
-fn get_secret_key(t: usize, degree: usize) -> (DMatrix<i32>, DMatrix<i32>) {
-    // gets the secret key for t samples degree n
-    // provided there is only one file
-
-    // get the private key
-    let (_, pkey, _) = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).expect(&format!(
-        "Could not find file with length {t} and degree {degree}"
-    ));
-    // println!("F: {:?} \nG: {:?}", pkey.1, pkey.2);
-    // get the matrix form of b inverse
-    let (b, binv) = to_mat(&pkey);
-
-    (b.map(|x| x as i32), binv.map(|x| x as i32))
-}
-
-fn get_public_key(t: usize, degree: usize) -> Option<DMatrix<i64>> {
-    // get the public key
-    let (_, _, (q00, q01)) = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).expect(
-        &format!("Could not find file with length {t} and degree {degree}"),
-    );
-
-    // use ntrusolve to get q01 and q11, and convert it into a DMatrix
-    if let Some((q10, q11)) = ntrusolve(&q00, &q01) {
-        let q = rot_key(&q00, &q10, &q01, &q11);
-        let flatq: Vec<i64> = q.into_iter().flatten().collect();
-        let q_mat = DMatrix::from_row_slice(2 * degree, 2 * degree, &flatq);
-        return Some(q_mat);
-    }
-    None
-}
 
 fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64>) {
     // given private key, reconstruct entire secret matrix B and B inverse
@@ -273,6 +272,69 @@ fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64
     (b, binv)
 }
 
+fn generate_samples_and_keys(t: usize, degree: usize) -> Option<(DMatrix<i32>, (DMatrix<i32>, DMatrix<i32>), DMatrix<i64>)>{
+    if let Some((signatures, pkey, skey)) = collect_signatures_par(t, degree, false) {
+        // get dimensions
+        let rows = signatures[0].len();
+        let cols = signatures.len();
+
+        // flatten the signature samples
+        let sig_flat: Vec<i16> = signatures.into_iter().flatten().collect();
+
+        // construct nalgebra matrix from this
+        let signature_matrix = DMatrix::from_column_slice(rows, cols, &sig_flat);
+
+        // convert to i32
+        let signature_matrix = signature_matrix.map(|x| x as i32);
+
+        let (b, binv) = to_mat(&pkey);
+        let (q00, q01) = skey;
+
+        // use ntrusolve to get q01 and q11, and convert it into a DMatrix
+        if let Some((q10, q11)) = ntrusolve(&q00, &q01) {
+            let q = rot_key(&q00, &q10, &q01, &q11);
+            let flatq: Vec<i64> = q.into_iter().flatten().collect();
+            let q_mat = DMatrix::from_row_slice(2 * degree, 2 * degree, &flatq);
+
+            return Some((signature_matrix, (b.map(|x| x as i32), binv.map(|x| x as i32)), q_mat));
+        }
+        else {
+            return None;
+        }
+    }
+    None
+}
+
+fn get_secret_key(t: usize, degree: usize) -> (DMatrix<i32>, DMatrix<i32>) {
+    // gets the secret key for t samples degree n
+    // provided there is only one file
+
+    // get the private key
+    let (_, pkey, _) = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).expect(&format!(
+        "Could not find file with length {t} and degree {degree}"
+    ));
+    // println!("F: {:?} \nG: {:?}", pkey.1, pkey.2);
+    // get the matrix form of b inverse
+    let (b, binv) = to_mat(&pkey);
+
+    (b.map(|x| x as i32), binv.map(|x| x as i32))
+}
+
+fn get_public_key(t: usize, degree: usize) -> Option<DMatrix<i64>> {
+    // get the public key
+    let (_, _, (q00, q01)) = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).expect(
+        &format!("Could not find file with length {t} and degree {degree}"),
+    );
+
+    // use ntrusolve to get q01 and q11, and convert it into a DMatrix
+    if let Some((q10, q11)) = ntrusolve(&q00, &q01) {
+        let q = rot_key(&q00, &q10, &q01, &q11);
+        let flatq: Vec<i64> = q.into_iter().flatten().collect();
+        let q_mat = DMatrix::from_row_slice(2 * degree, 2 * degree, &flatq);
+        return Some(q_mat);
+    }
+    None
+}
 fn generate_samples(t: usize, degree: usize) -> DMatrix<i32> {
     // returns samples of length t for Hawk degree n
     // will return data from file if file exists.
@@ -302,4 +364,3 @@ fn generate_samples(t: usize, degree: usize) -> DMatrix<i32> {
     // return the nalgebra matrix
     signature_matrix
 }
-

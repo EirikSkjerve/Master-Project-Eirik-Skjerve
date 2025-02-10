@@ -1,14 +1,13 @@
 use nalgebra::*;
 use rayon::prelude::*;
 
-
+use rand::distributions::{Distribution, Uniform};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
-use rand::distributions::{Distribution, Uniform};
 
+use std::io::{stdout, Write};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use std::io::{stdout, Write};
 
 use peak_alloc::PeakAlloc;
 
@@ -26,9 +25,11 @@ fn gradient_optimize(u: &DMatrix<f64>, c: &DMatrix<f64>, descent: bool) -> Optio
 
     let n = u.nrows();
     let seed = rand::random::<u64>();
-    if descent{
+    if descent {
         println!("Running gradient descent");
-    } else { println!("Running gradient ascent")}
+    } else {
+        println!("Running gradient ascent")
+    }
     println!("Seed: {seed}");
     let mut rng = StdRng::seed_from_u64(seed);
 
@@ -40,25 +41,28 @@ fn gradient_optimize(u: &DMatrix<f64>, c: &DMatrix<f64>, descent: bool) -> Optio
 
     let mut m_t = DVector::<f64>::zeros(n);
     let mut v_t = DVector::<f64>::zeros(n);
+    let mut m_est = DVector::<f64>::zeros(n);
+    let mut v_est = DVector::<f64>::zeros(n);
     let mut t = 0;
 
     loop {
         t += 1;
         println!("\nAt iteration {t}");
 
-        let g = grad_mom4_par(&w, &u); // get gradient
+        // compute gradient of fourth moment
+        let g = grad_mom4_par(&w, &u);
 
-        m_t = (BETA1*&m_t) + (1.0-BETA1)*&g;
-        v_t = (BETA2*v_t) + (1.0-BETA2)*&g.map(|x| x.powi(2));
-        let m_est = &m_t / (1.0 - BETA1.powi(t));
-        let v_est = &v_t / (1.0 - BETA2.powi(t));
+        m_t = (BETA1 * &m_t) + (1.0 - BETA1) * &g;
+        v_t = (BETA2 * v_t) + (1.0 - BETA2) * &g.map(|x| x.powi(2));
+        m_est = &m_t / (1.0 - BETA1.powi(t));
+        v_est = &v_t / (1.0 - BETA2.powi(t));
 
         // based on descent/ascent we need to move in different directions
         let mut wnew = match descent {
-            true => &w - (m_est.zip_map(&v_est, |mi, vi| (DELTA*mi)/(vi.sqrt() + EPSILON))),
-            false => &w + (m_est.zip_map(&v_est, |mi, vi| (DELTA*mi)/(vi.sqrt() + EPSILON))),
+            true => &w - (m_est.zip_map(&v_est, |mi, vi| (DELTA * mi) / (vi.sqrt() + EPSILON))),
+            false => &w + (m_est.zip_map(&v_est, |mi, vi| (DELTA * mi) / (vi.sqrt() + EPSILON))),
         };
-        
+
         // normalize new w to put it back on the unit circle
         wnew = wnew.normalize();
 
@@ -99,22 +103,25 @@ fn gradient_optimize(u: &DMatrix<f64>, c: &DMatrix<f64>, descent: bool) -> Optio
             println!("Too many steps - probably?");
             return Some(w);
         }
-        
+
         println!("");
     }
-
 }
 
 pub fn gradient_descent(samples: &DMatrix<f64>, c: &DMatrix<f64>) -> Option<DVector<f64>> {
     if let result = gradient_optimize(samples, c, true) {
         return result;
-    } else {return None;}
+    } else {
+        return None;
+    }
 }
 
 pub fn gradient_ascent(samples: &DMatrix<f64>, c: &DMatrix<f64>) -> Option<DVector<f64>> {
     if let result = gradient_optimize(samples, c, false) {
         return result;
-    } else {return None;}
+    } else {
+        return None;
+    }
 }
 
 fn mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> f64 {
@@ -127,7 +134,7 @@ fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
     let t = samples.ncols();
     let uw3: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(3));
     let uw3u = DMatrix::from_fn(n, t, |i, j| uw3[j] * samples[(i, j)]);
-    let g = 4.0*uw3u.column_mean();
+    let g = 4.0 * uw3u.column_mean();
     g
 }
 
@@ -181,4 +188,3 @@ fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
     w = w.normalize();
     w
 }
-

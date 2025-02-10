@@ -1,4 +1,5 @@
 use crate::file_utils::read_vectors_from_file;
+use crate::gradient_search::{gradient_ascent, gradient_descent};
 use nalgebra::*;
 
 use hawklib::hawkkeygen::gen_f_g;
@@ -6,9 +7,9 @@ use hawklib::utils::rot_key;
 
 use hawklib::ntru_solve::ntrusolve;
 
+use rand::prelude::*;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
-use rand::prelude::*;
 
 use rand_distr::{Distribution, Normal, Uniform};
 
@@ -18,8 +19,7 @@ use peak_alloc::PeakAlloc;
 
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 static TOLERANCE: f64 = 1e-12;
-static DELTA: f64 = 0.001;
-static SIGMA: f64 = 1.5;
+static SIGMA: f64 = 1.0;
 
 pub fn run_hpp_sim(t: usize, n: usize) {
     // runs the HPP attack against Hawk
@@ -33,74 +33,96 @@ pub fn run_hpp_sim(t: usize, n: usize) {
     // However for this implementation we simply generate entire signatures on signer end
     // and directly return the entire signature w which we use to deduce information about B
 
+    println!("Running HPP attack with {t} samples against Hawk{n}");
+
     let (b, binv) = create_secret_matrix(n).unwrap();
-    // let (b, binv) = create_secret_matrix_plain(n).unwrap();
+    // eprintln!("B: {b} \nB^-1: {binv}");
     let b = b.map(|x| x as f64);
     let binv = binv.map(|x| x as f64);
 
-    eprintln!("b: {b}");
-    eprintln!("b_inv: {binv}");
-
-    println!("Running HPP attack with {t} samples against Hawk{n}");
-
     let q = &b.transpose() * &b;
-    // eprintln!("{cg}");
 
     // STEP 0: Generate samples
     // We need to generate a lot of samples to run the attack on
     // samples is a tx2n matrix
 
-    let mut samples_rows: Vec<RowDVector<f64>> = Vec::new();
+    let mut samples_cols: Vec<DVector<f64>> = Vec::new();
+    let mut rng = StdRng::seed_from_u64(rand::random::<u64>());
     for i in 0..t {
-        let mut rng = StdRng::seed_from_u64(13 + (i*22) as u64);
-        let x = DVector::from_vec(get_norm_slice_float(2 * n, &mut rng));
-        // let x = DVector::from_vec(get_uniform_slice_float(2*n, &mut rng));
+        let x = DVector::from_vec(get_norm_slice_float(2 * n, &mut rng)).map(|x| x.round());
         // eprintln!("x: {x}");
+        // let x = DVector::from_vec(get_uniform_slice_float(2*n, &mut rng));
         let y: DVector<f64> = &binv * x;
-        samples_rows.push(y.transpose());
+        samples_cols.push(y);
     }
 
-    let samples = DMatrix::<f64>::from_rows(&samples_rows).transpose();
+    let samples = DMatrix::<f64>::from_columns(&samples_cols);
 
     // STEP 1: estimate covariance matrix. We use Q=BtB for this
 
-    let (u, linv) = hypercube_transformation(samples, q, &binv);
-    println!("Samples transformed...");
+    println!("U dim: {}, {}", samples.nrows(), samples.ncols());
+    let (u, linv, c) =
+        hypercube_transformation(samples.map(|x| x as i32), q, &binv.map(|x| x as i32));
+    println!("U' dim: {}, {}", u.nrows(), u.ncols());
 
     // // STEP 3: Gradient Descent:
     // // The final step is to do gradient descent on our (converted) samples to minimize the
     // // fourth moment, and consequently reveal a row/column from +/- B
-    println!("Doing gradient descent...");
-    if let Some(sol) = gradient_descent(&u, DELTA) {
-        let res = (&linv * &sol).map(|x| x.round() as i32);
-        println!("Is res in key? \n{} \n", vec_in_key(&res, &binv.map(|x| x.round() as i32)));
-        eprintln!("Res: {res}");
-        println!("Norm of res: {}", res.map(|x| x as f64).norm());
-        println!("Norm of col0: {}", binv.column(0).norm());
-        println!("Norm of coln: {}", binv.column(n).norm());
-        measure_res(&res, &binv);
+    let mut num_iter = 0;
+    loop {
+        num_iter += 1;
+        println!("Doing gradient descent...");
+        if let Some(sol) = gradient_descent(&u, &binv) {
+            let res = (&linv * &sol).map(|x| x.round() as i32);
+            if vec_in_key(&res, &binv.map(|x| x.round() as i32)) {
+                println!("FOUND!");
+                eprintln!("{res}");
+                eprintln!("{binv}");
+                println!("Total iterations: {num_iter}");
+                break;
+            }
+            eprintln!("Res: {res}");
+            println!("Norm of res: {}", res.map(|x| x as f64).norm());
+            println!("Norm of col0: {}", binv.column(0).norm());
+            println!("Norm of coln: {}", binv.column(n).norm());
+            eprintln!("{binv}");
+        }
+
+        if num_iter == 10 {
+            break;
+        }
     }
 
-    println!("Doing gradient ascent...");
-    if let Some(sol) = gradient_ascent(&u, DELTA) {
-        let res = (&linv * &sol).map(|x| x.round() as i32);
-        println!("Is res in key? \n{} \n", vec_in_key(&res, &binv.map(|x| x.round() as i32)));
-        eprintln!("Res: {res}");
-        println!("Norm of res: {}", res.map(|x| x as f64).norm());
-        println!("Norm of col0: {}", binv.column(0).norm());
-        println!("Norm of coln: {}", binv.column(n).norm());
-        measure_res(&res, &binv);
+    num_iter = 0;
+    loop {
+        println!("Doing gradient ascent...");
+        if let Some(sol) = gradient_ascent(&u, &binv) {
+            let res = (&linv * &sol).map(|x| x.round() as i32);
+            if vec_in_key(&res, &binv.map(|x| x.round() as i32)) {
+                println!("FOUND!");
+                eprintln!("{res}");
+                eprintln!("{binv}");
+                println!("Total iterations: {num_iter}");
+                break;
+            }
+            eprintln!("Res: {res}");
+            println!("Norm of res: {}", res.map(|x| x as f64).norm());
+            println!("Norm of col0: {}", binv.column(0).norm());
+            println!("Norm of coln: {}", binv.column(n).norm());
+            eprintln!("{binv}");
+        }
+        if num_iter == 10 {
+            break;
+        }
     }
-
-
-    eprintln!("{binv}");
 }
 
 fn create_secret_matrix(n: usize) -> Option<(DMatrix<i64>, DMatrix<i64>)> {
     // here we try and replicate a HAWK matrix for smaller degree
     let mut i = 0;
+    let mut rng = StdRng::seed_from_u64(rand::random());
     loop {
-        let mut rng = StdRng::seed_from_u64(13289 + i);
+        i += 1;
 
         // generate uniformly distributed vectors f and g
         let (f, g) = (
@@ -120,24 +142,32 @@ fn create_secret_matrix(n: usize) -> Option<(DMatrix<i64>, DMatrix<i64>)> {
 fn create_secret_matrix_plain(n: usize) -> Option<(DMatrix<i64>, DMatrix<i64>)> {
     let mut j = 0;
     loop {
-        let mut rng = StdRng::seed_from_u64(9876+ 13*j);
+        let mut rng = StdRng::seed_from_u64(9876 + 13 * j);
         let mut columns: Vec<Vec<i64>> = Vec::new();
-        for i in (0..2*n) {
-            columns.push(get_uniform_slice_fixed(2*n, &mut rng));
+        for i in (0..2 * n) {
+            columns.push(get_uniform_slice_fixed(2 * n, &mut rng));
         }
         let columnsflat: Vec<i64> = columns.into_iter().flatten().collect();
-        let mat = DMatrix::from_row_slice(2*n, 2*n, &columnsflat);
-        
+        let mat = DMatrix::from_row_slice(2 * n, 2 * n, &columnsflat);
+
         // TODO check for rank of mat and return if rank == 2n
         let svd = SVD::new(mat.map(|x| x as f64), true, true);
-        let rank = svd.singular_values.iter().filter(|&&sigma| sigma > TOLERANCE).count();
-        if rank == 2*n {
-            let mat_inverse = mat.map(|x| x as f64).try_inverse().unwrap().map(|x| x.round() as i64);
+        let rank = svd
+            .singular_values
+            .iter()
+            .filter(|&&sigma| sigma > TOLERANCE)
+            .count();
+        if rank == 2 * n {
+            let mat_inverse = mat
+                .map(|x| x as f64)
+                .try_inverse()
+                .unwrap()
+                .map(|x| x.round() as i64);
             return Some((mat, mat_inverse));
         }
     }
-} 
-    // create plain uniform random secret matrix
+}
+// create plain uniform random secret matrix
 
 fn to_mat(privkey: (Vec<i64>, Vec<i64>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64>) {
     // given private key, construct entire secret matrix B and B inverse
@@ -184,73 +214,32 @@ pub fn get_norm_slice_float(n: usize, rng: &mut StdRng) -> Vec<f64> {
 }
 
 pub fn get_uniform_slice_float(n: usize, rng: &mut StdRng) -> Vec<f64> {
-
-    let dist = Uniform::new(-4.0*SIGMA, 4.0*SIGMA);
+    let dist = Uniform::new(-4.0 * SIGMA, 4.0 * SIGMA);
 
     let mut rnd_bytes: Vec<f64> = Vec::with_capacity(n);
 
-    (0..n).into_iter().for_each(|_| { rnd_bytes.push(dist.sample(rng).round())});
+    (0..n)
+        .into_iter()
+        .for_each(|_| rnd_bytes.push(dist.sample(rng).round()));
     rnd_bytes
 }
 
 pub fn get_uniform_slice_fixed(n: usize, rng: &mut StdRng) -> Vec<i64> {
-
     let dist = Uniform::new(-1, 1);
 
     let mut rnd_bytes: Vec<i64> = Vec::with_capacity(n);
 
-    (0..n).into_iter().for_each(|_| { rnd_bytes.push(dist.sample(rng))});
+    (0..n)
+        .into_iter()
+        .for_each(|_| rnd_bytes.push(dist.sample(rng)));
     rnd_bytes
 }
 
-fn estimate_covariance_matrix(samples: &DMatrix<i32>) -> DMatrix<f64> {
-    // estimate covariance matrix BtB given samples
-
-    // which scalar depends on Hawk degree and std.dev of distribution
-    let sigma = match samples.ncols() / 2 {
-        256 => 2.00205824, // experimentally, from samples vs 2 * 1.01 theorethically
-        512 => 2.0 * 1.278,
-        1024 => 2.0 * 1.299,
-        _ => SIGMA,
-    };
-
-    // store number of samples
-    let nrows: f64 = samples.nrows() as f64;
-
-    // compute yty and convert to f64 after computation is done
-    let yty: DMatrix<f64> = (samples.transpose() * samples).map(|x| x as f64);
-    // divide each entry by (sigma^2 * num_samples) to scale properly, and round the result
-    println!("{sigma}");
-    let g: DMatrix<f64> = (yty).map(|x| (x / (sigma.powi(2) * nrows)).round());
-
-    let is_positive_definite = g.clone().cholesky().is_some();
-    println!("Is G positive definite? {is_positive_definite}");
-
-    // TODO check if this approach is faster
-    // let g: DMatrix<f64> = (samples.transpose()/sigma.powi(2))*(&samples / nrows).map(|x| x.round());
-
-    // Perform Singular Value Decomposition
-    let svd = SVD::new(g.clone(), true, true);
-
-    // Compute the rank by counting singular values above the tolerance
-    let rank = svd
-        .singular_values
-        .iter()
-        .filter(|&&x| x > TOLERANCE)
-        .count();
-
-    eprintln!("G: {g}");
-    println!("Rank of G: {}", rank);
-    assert_eq!(g, g.transpose());
-
-    g
-}
-
 fn hypercube_transformation(
-    samples: DMatrix<f64>,
+    samples: DMatrix<i32>,
     q: DMatrix<f64>,
-    skey: &DMatrix<f64>,
-) -> (DMatrix<f64>, DMatrix<f64>) {
+    skey: &DMatrix<i32>,
+) -> (DMatrix<f64>, DMatrix<f64>, DMatrix<f64>) {
     // given samples and estimate of covariance matrix, return transformed
     // samples from hidden parallelepiped onto hidden hypercube for easier
     // analysis later
@@ -270,166 +259,26 @@ fn hypercube_transformation(
 
     println!("Cholesky decomposition complete.");
 
+    // println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
     let mut samples_f64: DMatrix<f64> = samples.map(|x| x as f64);
+    // to guarantee that no extra memory is taken by this
     std::mem::drop(samples);
-
-    let c = &l.l().transpose() * skey;
-
+    // println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
     // multiply samples with L
-    let res = &l.l().transpose() * samples_f64;
-    println!("Samples converted");
-
-    (res, linv)
-}
-
-fn gradient_descent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
-    // performs gradient descent on hypercube samples
-
-    let n = samples.nrows();
-    let mut rng = rand::thread_rng();
-    let y: u64 = rng.gen_range((0..100000000000));
-    println!("Y: {y}");
-    let mut rng = StdRng::seed_from_u64(y);
-    let mut num_iter = 0;
-    // 1: choose w uniformly from unit sphere of R^n
-    let mut w = get_rand_w(n, &mut rng);
-
-    loop {
-        num_iter += 1;
-        println!("\nOn iteration {num_iter}...");
-        // 2: compute approx. gradient of nabla_mom_4
-        println!("Computing gradient of 4th moment...");
-        let g = grad_mom4(&w, &samples);
-
-        println!("Computing new w...");
-        // 3: compute w_new = w-delta*g
-        let mut w_new = &w - (delta * g);
-
-        // 4: normalize w_new
-        w_new = &w_new / w_new.norm();
-
-        // 5.1: if 4th moment of w_new is greater than 4th moment of w, we have "overshot" and return w
-        // or if there is practically no change since last iteration
-        println!("Checking condition...");
-        if mom4(&w_new, &samples) >= mom4(&w, &samples)
-            // || (w_new.norm() - w.norm()).abs() <= TOLERANCE
-        {
-            println!("Returned in {num_iter} iterations!");
-            return Some(w);
-        }
-        // 5.2: otherwise set w to be w_new and goto 2
-        else {
-            w = w_new;
-        }
-    }
-    // if a solution cannot be found
-    None
-}
-
-fn gradient_ascent(samples: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
-    // performs gradient descent on hypercube samples
-
-    let n = samples.nrows();
-    let mut rng = rand::thread_rng();
-    let y: u64 = rng.gen_range((0..100000000000));
-    let mut rng = StdRng::seed_from_u64(y);
-    let mut num_iter = 0;
-    // 1: choose w uniformly from unit sphere of R^n
-    let mut w = get_rand_w(n, &mut rng);
-
-    loop {
-        num_iter += 1;
-        println!("\nOn iteration {num_iter}...");
-        // 2: compute approx. gradient of nabla_mom_4
-        println!("Computing gradient of 4th moment...");
-        let g = grad_mom4(&w, &samples);
-
-        println!("Computing new w...");
-        // 3: compute w_new = w-delta*g
-        let mut w_new = &w + (delta * g);
-
-        // 4: normalize w_new
-        w_new = &w_new / w_new.norm();
-        // 5.1: if 4th moment of w_new is lower than 4th moment of w, we have "overshot" and return w
-        // or if there is practically no change since last iteration
-        println!("Checking condition...");
-        if mom4(&w_new, &samples) <= mom4(&w, &samples)
-            || (w_new.norm() - w.norm()).abs() <= TOLERANCE
-        {
-            println!("Returned in {num_iter} iterations!");
-            return Some(w);
-        }
-        // 5.2: otherwise set w to be w_new and goto 2
-        else {
-            w = w_new;
-        }
-    }
-    // if a solution cannot be found
-    None
+    // samples = l.l().transpose() * &samples;
+    let res = (&l.l().transpose() / SIGMA) * samples_f64;
+    let c = &l.l().transpose() * skey.map(|x| x as f64);
+    (res, linv, c)
 }
 
 fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
-    // Check if the vector exists as a row in the matrix
-    let as_row = key.row_iter().any(|row| row == vec.transpose());
-
     // Check if the vector exists as a column in the matrix
     let as_column = key.column_iter().any(|col| col == *vec);
-
-    // Check if the negative vector exists as a row in the matrix
-    let as_row_neg = key.row_iter().any(|row| -row == vec.transpose());
 
     // Check if the negative vector exists as a column in the matrix
     let as_column_neg = key.column_iter().any(|col| -col == *vec);
 
-    as_row || as_column || as_row_neg || as_column_neg
-}
-
-fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
-    // inputs:
-    //  - n: number of samples to produce
-    //  - dist_bound: the range to sample in
-    //  - rng: a pre-seeded StdRng instance
-    //
-    //  outputs some randomly generated w on the unit circle
-
-    use rand::distributions::{Distribution, Uniform};
-    // define uniform distribution
-    let dist = Uniform::from(-1.0..1.0);
-
-    // initialize empty vector to store the samples
-    let mut rnd_bytes: Vec<f64> = Vec::with_capacity(n);
-
-    // sample n times
-    for _ in 0..n {
-        rnd_bytes.push(dist.sample(rng));
-    }
-
-    // load random number into DVector
-    let mut w = DVector::from_vec(rnd_bytes);
-
-    // normalize the w vector
-    w /= w.norm();
-    w
-}
-
-fn mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> f64 {
-    // estimate 4th moment given samples and vector w
-    // compute <u,w>^4
-    let temp: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(4));
-    // compute mean of above, and return result
-    let res = temp.sum() / w.len() as f64;
-    res
-}
-
-fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
-    // estimate gradient of 4th moment given samples and vector w
-    // compute 4(<u, w>^3 * u)
-
-    // dot product
-    let uw3: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(3));
-    // power of 3 to each entry
-    let uw3u: DVector<f64> = (4.0 * (samples * uw3) / samples.nrows() as f64);
-    uw3u
+    as_column || as_column_neg
 }
 
 fn is_orthogonal(matrix: &DMatrix<f64>) -> bool {
@@ -472,10 +321,10 @@ fn mat_dist(a_mat: &DMatrix<f64>, b_mat: &DMatrix<f64>) {
 
 fn measure_res(res: &DVector<i32>, binv: &DMatrix<f64>) {
     let binv = binv.map(|x| x as i32);
-    
+
     (0..res.len()).into_iter().for_each(|i| {
         let col: DVector<i32> = binv.column(i).into_owned();
-        let diff = (col-res).map(|x| x as f64).norm();
+        let diff = (col - res).map(|x| x as f64).norm();
         println!("Diff: {diff}");
     });
 }
