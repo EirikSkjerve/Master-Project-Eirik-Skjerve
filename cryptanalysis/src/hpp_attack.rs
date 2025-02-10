@@ -34,18 +34,10 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // However for this implementation we simply generate entire signatures on signer end
     // and directly return the entire signature w which we use to deduce information about B
 
-    // get the correct key for later comparison
-    // let (b, binv) = get_secret_key(t, n);
-    //
-    // // get the public key Q
-    // let q = get_public_key(t, n).unwrap().map(|x| x as f64);
-    //
-    // println!("Running HPP attack with {t} samples against Hawk{n}");
-    //
-    // // STEP 0: Generate samples
-    // // We need to generate a lot of samples to run the attack on
-    // // Samples is a tx2n matrix
-    // let samples = generate_samples(t, n);
+    println!("Running HPP attack with {t} samples against Hawk{n}");
+    // STEP 0: Generate samples
+    // We need to generate a lot of samples to run the attack on
+    // Samples is a tx2n matrix
 
     let (samples, (b, binv), q) = generate_samples_and_keys(t, n).unwrap();
 
@@ -249,11 +241,6 @@ fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64
     // reconstruct f and g
     let (f, g) = gen_f_g(fgseed, bigf.len());
 
-    // println!("f: {:?}", f);
-    // println!("g: {:?}", g);
-    // println!("F: {:?}", bigf);
-    // println!("G: {:?}", bigg);
-
     // create the matrix form of B and B inverse
     let b = rot_key(&f, &g, &bigf, &bigg);
     let binv = rot_key(
@@ -273,37 +260,51 @@ fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64
 }
 
 fn generate_samples_and_keys(t: usize, degree: usize) -> Option<(DMatrix<i32>, (DMatrix<i32>, DMatrix<i32>), DMatrix<i64>)>{
-    if let Some((signatures, pkey, skey)) = collect_signatures_par(t, degree, false) {
-        // get dimensions
-        let rows = signatures[0].len();
-        let cols = signatures.len();
 
-        // flatten the signature samples
-        let sig_flat: Vec<i16> = signatures.into_iter().flatten().collect();
-
-        // construct nalgebra matrix from this
-        let signature_matrix = DMatrix::from_column_slice(rows, cols, &sig_flat);
-
-        // convert to i32
-        let signature_matrix = signature_matrix.map(|x| x as i32);
-
-        let (b, binv) = to_mat(&pkey);
-        let (q00, q01) = skey;
-
-        // use ntrusolve to get q01 and q11, and convert it into a DMatrix
-        if let Some((q10, q11)) = ntrusolve(&q00, &q01) {
-            let q = rot_key(&q00, &q10, &q01, &q11);
-            let flatq: Vec<i64> = q.into_iter().flatten().collect();
-            let q_mat = DMatrix::from_row_slice(2 * degree, 2 * degree, &flatq);
-
-            return Some((signature_matrix, (b.map(|x| x as i32), binv.map(|x| x as i32)), q_mat));
-        }
-        else {
-            return None;
-        }
+    // check first if file exists
+    let file_exists: bool = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).is_ok(); 
+    if file_exists {
+        println!("{t}vectors_deg{degree}.bin exists");
     }
-    None
+    else {
+        println!("{t}vectors_deg{degree}.bin does not exist");
+    }
+    let (signatures, pkey, skey) = match file_exists {
+        false => collect_signatures_par(t, degree, false).unwrap(),
+        true => read_vectors_from_file(&format!("{t}vectors_deg{degree}")).unwrap()
+    };
+    
+
+    // get dimensions
+    let rows = signatures[0].len();
+    let cols = signatures.len();
+
+    // flatten the signature samples
+    let sig_flat: Vec<i16> = signatures.into_iter().flatten().collect();
+
+    // construct nalgebra matrix from this
+    let signature_matrix = DMatrix::from_column_slice(rows, cols, &sig_flat);
+
+    // convert to i32
+    let signature_matrix = signature_matrix.map(|x| x as i32);
+
+    let (b, binv) = to_mat(&pkey);
+    let (q00, q01) = skey;
+
+    // use ntrusolve to get q01 and q11, and convert it into a DMatrix
+    if let Some((q10, q11)) = ntrusolve(&q00, &q01) {
+        let q = rot_key(&q00, &q10, &q01, &q11);
+        let flatq: Vec<i64> = q.into_iter().flatten().collect();
+        let q_mat = DMatrix::from_row_slice(2 * degree, 2 * degree, &flatq);
+
+        return Some((signature_matrix, (b.map(|x| x as i32), binv.map(|x| x as i32)), q_mat));
+    }
+    else {
+        return None;
+    }
 }
+
+// fn gen_samples_and_keys_inner()
 
 fn get_secret_key(t: usize, degree: usize) -> (DMatrix<i32>, DMatrix<i32>) {
     // gets the secret key for t samples degree n
