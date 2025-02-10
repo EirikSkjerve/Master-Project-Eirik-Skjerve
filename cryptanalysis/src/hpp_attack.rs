@@ -11,7 +11,6 @@ use hawklib::hawkkeygen::gen_f_g;
 use hawklib::ntru_solve::ntrusolve;
 use hawklib::utils::rot_key;
 
-
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
@@ -39,7 +38,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // We need to generate a lot of samples to run the attack on
     // Samples is a tx2n matrix
 
-    let (samples, (b, binv), q) = generate_samples_and_keys(t, n).unwrap();
+    let (mut samples, (b, binv), q) = generate_samples_and_keys(t, n).unwrap();
 
     // STEP 1: estimate covariance matrix. This step is automatically given by public key Q
 
@@ -47,12 +46,13 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // Given Q, we do cholesky decomposition to get L s.t. Q = LLt
     // multiply our signature samples on the right with this L
     // to produce U which is distributed over L^t B^-1
-    let (u, linv, c) = hypercube_transformation(samples, q.map(|x| x as f64), &binv);
+    // now samples are modified in place so samples = U
+    let (linv, c) = hypercube_transformation(&mut samples, q.map(|x| x as f64), &binv);
 
-    let total_num_elements = (u.nrows() * u.ncols()) as f64;
-    let mean = u.iter().sum::<f64>() / total_num_elements;
+    let total_num_elements = (samples.nrows() * samples.ncols()) as f64;
+    let mean = samples.iter().sum::<f64>() / total_num_elements;
 
-    let variance = u
+    let variance = samples
         .iter()
         .map(|&x| {
             let diff = x - mean;
@@ -61,7 +61,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
         .sum::<f64>()
         / total_num_elements;
 
-    let kurtosis = u
+    let kurtosis = samples
         .iter()
         .map(|&x| {
             let diff = (x - mean).powi(4);
@@ -77,7 +77,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     println!("Samples transformed...");
 
     // STEP 3: Gradient Descent:
-    // The final step is to do gradient descent on our (converted) samples to minimize the
+    // The final and main step is to do gradient descent on our (converted) samples to minimize the
     // fourth moment, and consequently reveal a row/column from +/- B
 
     let col0 = binv.column(0);
@@ -86,13 +86,16 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     let mut res_gradient_descent: DVector<i32> = DVector::zeros(2 * n);
     let mut res_gradient_ascent: DVector<i32> = DVector::zeros(2 * n);
 
-    println!("Current memory usage: {} mb", PEAK_ALLOC.current_usage_as_mb());
+    println!(
+        "Current memory usage: {} mb",
+        PEAK_ALLOC.current_usage_as_mb()
+    );
 
     println!("\nDoing gradient descent...");
     let mut retries = 0;
     while retries < 10 {
         retries += 1;
-        if let Some(sol) = gradient_descent(&u, &c) {
+        if let Some(sol) = gradient_descent(&samples, &c) {
             res_gradient_descent = (&linv * &sol).map(|x| x.round() as i32);
             if vec_in_key(&res_gradient_descent, &binv) {
                 println!("FOUND! Result is in key based on direct checking");
@@ -113,7 +116,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     retries = 0;
     while retries < 10 {
         retries += 1;
-        if let Some(sol) = gradient_ascent(&u, &c) {
+        if let Some(sol) = gradient_ascent(&samples, &c) {
             res_gradient_ascent = (&linv * &sol).map(|x| x.round() as i32);
             if vec_in_key(&res_gradient_ascent, &binv) {
                 println!("FOUND! Result is in key based on direct checking");
@@ -132,10 +135,10 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 }
 
 fn hypercube_transformation(
-    samples: DMatrix<i32>,
+    samples: &mut DMatrix<f64>,
     q: DMatrix<f64>,
     skey: &DMatrix<i32>,
-) -> (DMatrix<f64>, DMatrix<f64>, DMatrix<f64>) {
+) -> (DMatrix<f64>, DMatrix<f64>) {
     // given samples and estimate of covariance matrix, return transformed
     // samples from hidden parallelepiped onto hidden hypercube for easier
     // analysis later
@@ -158,31 +161,50 @@ fn hypercube_transformation(
         .transpose()
         .clone()
         .try_inverse()
-        .expect("Couldn't take inverse of l")
-        .map(|x| x as f64);
+        .expect("Couldn't take inverse of l");
 
     println!("Cholesky decomposition complete.");
 
-    // println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
-    let mut samples_f64: DMatrix<f64> = samples.map(|x| x as f64);
-    // to guarantee that no extra memory is taken by this
-    println!("Current mem usage before drop: {} gb", PEAK_ALLOC.current_usage_as_gb());
-    std::mem::drop(samples);
-    println!("Current mem usage after drop: {} gb", PEAK_ALLOC.current_usage_as_gb());
-    // multiply samples with L
-    // samples = l.l().transpose() * &samples;
-
-    // let res = (&l.l().transpose() / sigma) * samples_f64;
-    let res = ((&l.l().transpose() / sigma) * &samples_f64);
-    std::mem::drop(samples_f64);
     println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
+    // to guarantee that no extra memory is taken by this
+    // multiply samples with L
+
     println!("Max usage so far: {} gb", PEAK_ALLOC.peak_usage_as_gb());
+    // modify in place
+    // samples.gemm(1.0, &l.l().transpose(), samples, 0.0);
+    // *samples = ((&l.l().transpose() / sigma) * &*samples);
+    matmul_custom(l.l().transpose(), samples);
+    println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
 
     let c = &l.l().transpose() * skey.map(|x| x as f64);
-    // eprintln!("{:.1}", &c * &c.transpose());
-    // println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
+    println!("Max usage so far: {} gb", PEAK_ALLOC.peak_usage_as_gb());
+    println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
 
-    (res, linv, c)
+    (linv, c)
+}
+
+fn matmul_custom(lhs: DMatrix<f64>, rhs: &mut DMatrix<f64>) {
+    let (rows_l, cols_l) = (lhs.nrows(), lhs.ncols());
+    let (rows_r, cols_r) = (rhs.nrows(), rhs.ncols());
+    // Temporary buffer to hold one row of the output at a time
+    let mut row_buffer = vec![0.0; rhs.ncols()];
+
+    // Iterate over rows of L
+    for i in 0..rows_l {
+        // Compute row `i` of the result and store in `row_buffer`
+        for j in 0..cols_r {
+            let mut sum = 0.0;
+            for k in 0..cols_l {
+                sum += lhs[(i, k)] * rhs[(k, j)];
+            }
+            row_buffer[j] = sum;  // Store computed value
+        }
+
+        // Write computed row back to M (since we are modifying in place)
+        for j in 0..cols_r {
+            rhs[(i, j)] = row_buffer[j];
+        }
+    }
 }
 
 fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
@@ -232,7 +254,6 @@ fn is_orthonormal(matrix: &DMatrix<f64>) -> bool {
             .all(|col| (col.norm() - 1.0).abs() < TOLERANCE)
 }
 
-
 fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64>) {
     // given private key, reconstruct entire secret matrix B and B inverse
     let (fgseed, bigf, bigg) = privkey;
@@ -259,21 +280,21 @@ fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64
     (b, binv)
 }
 
-fn generate_samples_and_keys(t: usize, degree: usize) -> Option<(DMatrix<i32>, (DMatrix<i32>, DMatrix<i32>), DMatrix<i64>)>{
-
+fn generate_samples_and_keys(
+    t: usize,
+    degree: usize,
+) -> Option<(DMatrix<f64>, (DMatrix<i32>, DMatrix<i32>), DMatrix<i64>)> {
     // check first if file exists
-    let file_exists: bool = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).is_ok(); 
+    let file_exists: bool = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).is_ok();
     if file_exists {
         println!("{t}vectors_deg{degree}.bin exists");
-    }
-    else {
+    } else {
         println!("{t}vectors_deg{degree}.bin does not exist");
     }
     let (signatures, pkey, skey) = match file_exists {
         false => collect_signatures_par(t, degree, false).unwrap(),
-        true => read_vectors_from_file(&format!("{t}vectors_deg{degree}")).unwrap()
+        true => read_vectors_from_file(&format!("{t}vectors_deg{degree}")).unwrap(),
     };
-    
 
     // get dimensions
     let rows = signatures[0].len();
@@ -285,8 +306,8 @@ fn generate_samples_and_keys(t: usize, degree: usize) -> Option<(DMatrix<i32>, (
     // construct nalgebra matrix from this
     let signature_matrix = DMatrix::from_column_slice(rows, cols, &sig_flat);
 
-    // convert to i32
-    let signature_matrix = signature_matrix.map(|x| x as i32);
+    // convert to f64
+    let signature_matrix = signature_matrix.map(|x| x as f64);
 
     let (b, binv) = to_mat(&pkey);
     let (q00, q01) = skey;
@@ -297,9 +318,12 @@ fn generate_samples_and_keys(t: usize, degree: usize) -> Option<(DMatrix<i32>, (
         let flatq: Vec<i64> = q.into_iter().flatten().collect();
         let q_mat = DMatrix::from_row_slice(2 * degree, 2 * degree, &flatq);
 
-        return Some((signature_matrix, (b.map(|x| x as i32), binv.map(|x| x as i32)), q_mat));
-    }
-    else {
+        return Some((
+            signature_matrix,
+            (b.map(|x| x as i32), binv.map(|x| x as i32)),
+            q_mat,
+        ));
+    } else {
         return None;
     }
 }
