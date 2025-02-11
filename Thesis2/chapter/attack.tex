@@ -7,17 +7,20 @@ In this chapter we perform the cryptanalysis of Hawk.
 \section{Overview}
 
 
-The HPP attack can not work if the vector $\vec{x}$ multiplied with secret $\mat{V}$ has normally distributed entries as shown in section 3.4.
+The original HPP attack can not work if the vector $\vec{x}$ multiplied with secret $\mat{V}$ has normally distributed entries as shown in section 3.4.
 In practical Hawk, however, the distribution of entries of $\vec{x}$ is discrete, not continuous. The \gls{dgd} as described in \cite{HawkSpec24} and in section 2.4.... closely emulates
 that of its continuous normal counterpart. It is however not that straightforward to prove \ref{hpp_norm_lemma} for the discrete case.
 The sampling procedure in the signature generation step in Hawk (see section 3.2...) emulates sampling from \gls{dgd} using cumulative distribution tables.
 Instead of showing theoretical and asymptotic results for the \gls{dgd}, we instead use our implementation of Hawk to measure the properties the distribution of the practical sampler.
+
+The belief is that the discretization of the distribution is enough to make \ref{hpp_norm_lemma} not hold. Consequently, one might be able to disclose a column of
 
 \section{HPP against practical Discrete Gaussian Distribution}
 Consider the Discrete Gaussian Distribution as described in \cite{HawkSpec24} and in section 2.4... We use our implementation of Hawk to sample many points from the practical distribution.
 Let $\dgd$ denote the theoretical discrete Gaussian distribution, and let $\dgdi$ denote the practical discrete Gaussian distribution from sampled points.
 Let $0$, $\sigma^2$ be the expectation and variance of $\dgd$, and $\hat{\mu}$, $\hat{\sigma}^2$ be the expectation and variance of $\dgdi$.
 Assume we sample $t$ points as $X = \{x_1, x_2, ..., x_t\}$. We estimate $\hat{\mu}$ and $\hat{\sigma}^2$ simply by $\hat{\mu} = \frac{1}{t} \sum_{i=1}^{t} x_i$ and $\hat{\sigma}^2 = \frac{1}{t} \sum_{i=1}^{t}(x_i - \hat{\mu})^2$.
+For simplicity, we can also assume $\hat{\mu} = \mu = 0$ as specified in \cite{HawkSpec24}.
 To simplify later computations we can normalize our samples by computing $Z = \{z_1, z_2, ..., z_t\} = \{\frac{x_1}{\hat{\sigma}}, \frac{x_2}{\hat{\sigma}},..., \frac{x_t}{\hat{\sigma}}\}$ such that 
 $\bb{V}[z_i] = 1$.
 
