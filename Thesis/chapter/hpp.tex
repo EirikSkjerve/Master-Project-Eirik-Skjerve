@@ -109,17 +109,64 @@ We look at the two cases when $k = 2$ and $k=4$.
     \frac{2}{15}\sum_{i} \langle c_i, \vec{w} \rangle ^4 = \frac{1}{3} - 
     \frac{2}{15}\sum_{i} \langle c_i, \vec{w} \rangle ^4\]
 
-    
-
 \end{itemize}
+
+We also need to compute the gradient of the fourth moment.
+*show computations here*
 
 \section{HPP against the Normal Distribution}
 
 \begin{lemma}[Lemma 1]
 \label{hpp_norm_lemma}
-Assume signatures on the form $\vec{v} = \vec{x} \mat{V}$ where $x_i \sim \normdist{0}{\sigma}$. After converting $\PP{V}$ to $\PP{C}$, the fourth moment of $\PP{C}$ is constant over some $\vec{w}$ on the unit circle.
-% \in \mathcal{O}](\bb{R})$
+Assume signatures on the form $\vec{v} = \vec{x} \mat{V}$ where $x_i \sim \normdist{0}{\sigma}$. After converting $\PP{V}$ to $\PP{C}$, 
+the fourth moment of $\PP{C}$ is constant over $\vec{w}$ on the unit circle.
 \end{lemma}
 \begin{proof}
-    Some proof here
+    We simply do the same calculations as in the previous section, with the difference that $x$ is normally distributed over the interval $(-1, 1)$.
+    Considering
+    \[ mom_{4, \mat{C}}(\vec{w}) = \bb{E}[(\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle ) ^4] = 
+        \bb{E}[\sum_{i}^{n} \sum_{j}^{n} \sum_{k}^{n} \sum_{l}^{n} x_i x_j x_k x_l 
+        \langle c_i, \vec{w} \rangle \langle c_j, \vec{w} \rangle
+    \langle c_k, \vec{w} \rangle \langle c_l, \vec{w} \rangle] \]
+
+    for the three different cases:
+    \begin{itemize}
+        \item \textbf{All equal: } If $i = j = k = l$, we simply have $\sum_i^n \bb{E}[x^4] \langle c_i, \vec{w} \rangle ^4 = 3 \sigma ^4 \sum_i \langle c_i, \vec{w} \rangle ^4$
+            due to the well known fact that $\bb{E}[x^4] = 3 \sigma ^4$ for $x$ distributed according to $\normdist{0}{\sigma}$.
+        \item \textbf{None equal:} Since $\bb{E}[x] = 0$ as in the case of the uniform distribution, this results in zero.
+        \item \textbf{Pairwise equal:} If either 
+            \begin{itemize}
+                \item $i = j \neq k = l$
+                \item $i = k \neq j = l$ 
+                \item $i = l \neq j = k$
+            \end{itemize}
+            we have $\sum_{i \neq j} \bb{E}[x_i^2 x_j^2] \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2$ \\
+            $= (\sigma^2 )^2 \sum_{i \neq j}\langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2$ \\
+            $= \sigma^4 \sum_{i \neq j}\langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2$ since $\bb{E}[x^2] = \sigma^2$.
+    \end{itemize}
+
+    Putting together expressions we get 
+    \[
+        mom_{4, \mat{C}}(\vec{w}) = 3 \sigma ^4 \sum_i \langle c_i, \vec{w} \rangle ^4 + 3(\sigma^4 \sum_{i \neq j}\langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2)
+    \]
+
+    \[
+        mom_{4, \mat{C}}(\vec{w}) = 3 \sigma ^4 \sum_i \langle c_i, \vec{w} \rangle ^4 
+        + 3\sigma^4 \sum_{i} \sum_{j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2
+        - 3\sigma^4 \sum_{i} \langle c_i, \vec{w} \rangle ^4
+    \]
+
+    \[
+        mom_{4, \mat{C}}(\vec{w}) = 3\sigma^4 \sum_{i} \sum_{j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2
+    \]
+
+    \[
+        mom_{4, \mat{C}}(\vec{w}) = 3\sigma^4 \sum_{i} \sum_{j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2
+    \]
+
+    \[
+        mom_{4, \mat{C}}(\vec{w}) = 3\sigma^4 (\lVert \vec{w} \rVert ^2 ) ^2
+    \]
+
+    Since $mom_{4, \mat{C}}(\vec{w})$ is constant for $\vec{w}$ on the unit sphere, the term does not depend on the secret matrix $\mat{C}$ and the attack will not work.
 \end{proof}

@@ -13,7 +13,7 @@ that of its continuous normal counterpart. It is however not that straightforwar
 The sampling procedure in the signature generation step in Hawk (see section 3.2...) emulates sampling from \gls{dgd} using cumulative distribution tables.
 Instead of showing theoretical and asymptotic results for the \gls{dgd}, we instead use our implementation of Hawk to measure the properties the distribution of the practical sampler.
 
-The belief is that the discretization of the distribution is enough to make \ref{hpp_norm_lemma} not hold. Consequently, one might be able to disclose a column of
+The belief is that the discretization of the distribution is enough to make \ref{hpp_norm_lemma} not hold. Consequently, one might be able to disclose a column of the secret matrix $\mat{V}$.
 
 \section{HPP against practical Discrete Gaussian Distribution}
 Consider the Discrete Gaussian Distribution as described in \cite{HawkSpec24} and in section 2.4... We use our implementation of Hawk to sample many points from the practical distribution.
@@ -24,4 +24,6 @@ For simplicity, we can also assume $\hat{\mu} = \mu = 0$ as specified in \cite{H
 To simplify later computations we can normalize our samples by computing $Z = \{z_1, z_2, ..., z_t\} = \{\frac{x_1}{\hat{\sigma}}, \frac{x_2}{\hat{\sigma}},..., \frac{x_t}{\hat{\sigma}}\}$ such that 
 $\bb{V}[z_i] = 1$.
 
-Now, assume
+Now, denote by $\mu_4 = \bb{E}[z^4]$ in our normalized $\dgdi$. By rewriting the terms from section 3.4 for this new, normalized, distribution $\dgdi$, we have that
+\[mom_{4, \mat{C}} \vec{w} = (\mu_4 - 3) \sum_{i=1}^{n} \langle v_i, \vec{w} \rangle^4 + 3 \lVert \vec{w} \rVert ^4 \]
+This means that if the difference $(\mu_4 - 3)$ is big enough, one might be able to employ the same minimization technique as in the original attack to reveal a column of $\mat{V}$.
