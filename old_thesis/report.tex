@@ -4,21 +4,21 @@
 
 \documentclass[12pt,oneside,final,a4paper]{report}
 \usepackage{generators/imports}
-\include{generators/glossary}
+
 \begin{document}
+
+\include{generators/glossary}
 \include{generators/frontpage} % This is the titlepage
 \include{generators/abstract}
 \include{generators/tableOfContentsAndListings}
 \pagenumbering{arabic}
 \setcounter{page}{1}
 \setlength{\parskip}{0.5cm plus4mm minus3mm}  
-
 \include{chapter/introduction}
 \include{chapter/background}
-\include{chapter/hawk_and_hpp}
-\include{chapter/hawk}
-\include{chapter/hpp}
-\include{chapter/attack}
+\include{chapter/hawkandhpp}
+\include{chapter/implementation}
+\include{chapter/adaptingHppToHawk}
 
 % Include more chapters as required.
 %%=========================================
@@ -31,7 +31,7 @@
 
 %Alternative 2
 %Simplified way of printing glossaries, slower than alt 1, but has better compatibility
-\printnoidxglossaries
+% \printnoidxglossaries
 
 % Include more appendices as required.
 %%=========================================

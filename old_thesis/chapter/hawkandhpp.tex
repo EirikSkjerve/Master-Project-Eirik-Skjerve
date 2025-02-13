@@ -176,10 +176,3 @@ We now do the same computations considering the discrete Gaussian distribution a
 It turns out that for the parameters used in Hawk, this distribution behaves like its corresponding Normal distribution, and consequently gradient descent
 is infeasible. \\ 
 Consider the discrete Gaussian distribution as described in \cite{HawkSpec24}.
-\[\cdots Show \ definitions \ and \ stuff \ here \cdots\]
-
-Then by computational results, as $\eta$ grows large enough, $\bb{E}[x^2] = \sum_{-\eta}^{\eta} x^2 f_X(x)$ and $\bb{E}[x^4] = \sum_{-\eta}^{\eta} x^4 f_X(x)$ approaches $\sigma^2$ and $3 \sigma^4$ respectively. 
-
-\[\cdots Show \ table \ of \ computations \ here \cdots\]
-% As a countermeasure against these types of attacks, it was proposed in \cite{GPV07} to not use the uniform distribution when creating signatures. Rather, by sampling from a Discrete Gaussian distribution
-% (a discrete analogue to the Normal distribution), signatures do not "leak" any information about the secret parallelepiped, and the geometry of the key remains concealed.

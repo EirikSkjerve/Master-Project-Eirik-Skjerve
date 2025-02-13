@@ -1,0 +1,72 @@
+
+\newcommand{\PP}[2][]{\mathcal{P}_{#1}(\mat{#2})}
+\newcommand{\mat}[1]{\mathit{#1}}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\newcommand{\GLnR}{\mathcal{GL}_{n}(\mathbb{R})}
+\newcommand{\normdist}[2]{\mathcal{N}(#1, #2^2)}
+\newcommand{\dgdist}{\mathcal{D}_{2\bb{Z}+c, \sigma}}
+\newcommand{\bb}[1]{\mathbb{#1}}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{proof}{Proof}
+
+\section{HPP}
+In this section we present the \textit{Learning a Parallelepiped} attack as described in \cite{NR09}, with some different notation to not confuse with Hawk notation.
+\subsection{Setup and idealized version}
+Let $\mat{V} \in \mathcal{GL}(\bb{R})$ be a secret $n \times n$ unimodular matrix and $\PP{V}$ be a fundamental parallelepiped, defined as $\{V \vec{x}: \vec{x} \in [-1, 1]^n\}$. Let $\vec{x} = \{\vec{x}_1, \vec{x}_2, ...,\vec{x}_t\}$
+be $t$ row vectors of length $n$ with entries uniformly distributed over $[-1, 1] \in \bb{Q}$ and $\vec{v} = \{\vec{v}_1, \vec{v}_2, ..., \vec{v}_t\} = \{\mat{V} \vec{x}_1, \mat{V} \vec{x}_2, ..., \mat{V} \vec{x}_t\}$ 
+such that $\vec{v} \subset \PP{V}$. By observing $\vec{v}$ for large enough $t$, one is able to retrieve the rows of $\pm \mat{V}$ by the following steps:
+\begin{enumerate}
+    \item Estimate covariance matrix $\mat{V}^t \mat{V}$
+    \item Transform samples $\vec{v} \in \PP{V}$ to $\vec{c} \in \PP{C}$ where $\PP{C}$ is a hypercube, i.e. $\mat{C} \mat{C}^t = \mat{I}$
+    \item Do gradient descent to minimize the fourth moment of one-dimensional projections and reveal a row of $\pm \mat{C}$ which finally can be transformed into a row of $\pm \mat{V}$
+\end{enumerate}
+In the following, each of these steps will be covered in detail.
+\subsection{Covariance matrix estimation}
+Given enough samples $\vec{v} = \mat{V} \vec{x}$, we want to estimate the covariance matrix $\mat{G} \approx \mat{V}^t \mat{V}$.
+This is achieved as $\vec{v}^t \vec{v} = (\mat{V} \vec{x})^t(\mat{V} \vec{x}) = \mat{V}^t \vec{x}^t \vec{x} \mat{V}$.
+% Remark that since $\vec{x}$ is a row vector, $\bb{E}[\vec{x}^t \vec{x}]$ will be an $n \times n$ matrix.
+Now, $\bb{E}[\vec{x}^t \vec{x}] = \mat{I} \cdot 3$ because of the following:
+Since all $x_i \in \vec{x}$ are independent, and $\bb{E}[x_i] = 0$, we have that $\bb{E}[x_i x_j] = \bb{E}[x_i] \bb{E}[x_j] = 0$ for $i \neq j$.
+For the case when $i = j$, we have \[\bb{E}[x_i x_j] = \bb{E}[x ^2] = \int_{a}^{b} x^2 \frac{1}{b-a} dx = \int_{-1}^{1} x^2 \frac{1}{2} dx = 3\]
+Therefore, $\bb{E}[\vec{x}^t \vec{x}]$ has 3 down the diagonal and is 0 otherwise, i.e. $\mat{I} \cdot 3$.
+Consequently, $\vec{v} ^t \vec{v} = \mat{V}^t (\mat{I}\cdot 3) \mat{V}$, and therefore $\frac{\vec{v}^t \vec{v}}{3} = \mat{V}^t \mat{V}$.
+Clearly, the more samples $\vec{v}$ one has, the more accurate the approximation $\mat{G} \approx \mat{V} ^t \mat{V}$ is.
+\subsection{Hidden parallelepiped to hidden hypercube transformation}
+Given a good approximation $\mat{G}$ of $\mat{V}^t \mat{V}$, the next step is to calculate a linear transformation $\mat{L}$ such that the following is true:
+\begin{enumerate}
+    \item $\mat{C} = \mat{V}\mat{L}$ is orthonormal, i.e. the rows are pairwise orthogonal and the norm of each row is 1. In other words, $\mat{C} \mat{C}^t = \mat{I}$. 
+        Consequently, $\PP{C}$ becomes a hypercube.
+    \item If $\vec{v}$ is uniformly distributed over $\PP{V}$ then $\vec{c} = \vec{v} \mat{L}$ is uniformly distributed over $\PP{C}$.
+\end{enumerate}
+This is achieved by taking the Cholesky decomposition of $\mat{G}^{-1} = \mat{L} \mat{L}^t$. 
+To compute Cholesky decomposition of $\mat{G}^{-1}$, we must first show that $\mat{G}$ is symmetric positive definite.
+$\mat{G}$ is symmetric $\iff \mat{G}^{t}= \mat{G}$ which is clear as $\mat{G}^t = (\mat{V}^t\mat{V})^t = \mat{V}^t (\mat{V}^t)^t = \mat{V}^t \mat{V} = \mat{G}$.
+$\mat{G}$ is positive definite if for any non-zero column vector $\vec{x} \in \bb{R}^n$, $\vec{x}^t \mat{G} \vec{x} > 0.$
+We have that $\vec{x}^t \mat{G} \vec{x} = \vec{x}^t \mat{V}^t \mat{V} \vec{x} = (\mat{V} \vec{x})^t (\mat{V} \vec{x})$. Denote by $\vec{y} = \mat{V} \vec{x}$.
+Since $\vec{x} \neq \mathbf{0}$ and $\mat{V}$ needs is invertible and therefore non-zero, it is clear that 
+$\vec{y} \neq \mathbf{0}$ and $\vec{y}^t \vec{y} = \lvert \vert{\vec{y}} \rvert \vert ^2 > 0$.
+
+From this, we easily show the following:
+\begin{enumerate}
+    \item If $\mat{C} = \mat{V} \mat{L}$, then $\mat{C} \mat{C}^t = \mat{V} \mat{L} \mat{L}^t \mat{V}^t = \mat{V} \mat{G}^{-1} \mat{V}^t = \mat{V} (\mat{V^t}\mat{V})^{-1} \mat{V}^t
+        = \mat{V} \mat{V}^{-1} \mat{V}^{-t} \mat{V}^t = \mat{I}$.
+    \item Since entries in $\vec{x}$ is uniformly distributed, then $\vec{c} = \mat{C} \vec{x}$ is clearly uniformly distributed over $\PP{C}$.
+\end{enumerate}
+
+By multiplying our samples $\vec{v}$ by $\mat{L}$ on the right, we transform them from the hidden parallelepiped to the hidden hypercube. If one finds
+the rows of $\pm \mat{C}$, one can simply multiply the result on the right by $\mat{L}^{-1}$ to obtain the solution for $\mat{V}$.
+\subsection{Gradient descent}
+Given samples $\vec{c}$ uniformly distributed over $\PP{C}$, we measure and minimize the fourth moment of one-dimensional projections to disclose rows of $\pm \mat{C}$.
+Let $mom_{k, \mat{C}}(\vec{w})$ be defined as the $k$-th moment of $\PP{C}$ projected onto $\vec{w}$, i.e. $\bb{E}[\langle \vec{c}, \vec{w} \rangle ^k]$ where $\vec{w} \in \bb{R}^n$ and $\vec{c} = \vec{x} \mat{C}$.
+More precisely, \[ mom_{k, \mat{C}} = \frac{1}{t} \sum_{i}^{t} \langle \vec{c}_i, \vec{w} \rangle ^k = \frac{1}{t} \sum_{i}^{t} \langle c_i, \vec{w} \rangle ^k\]
+\section{HPP against the Normal Distribution}
+
+\begin{lemma}[Lemma 1]
+\label{hpp_norm_lemma}
+Assume signatures on the form $\vec{v} = \vec{x} \mat{V}$ where $x_i \sim \normdist{0}{\sigma}$. After converting $\PP{V}$ to $\PP{C}$, the fourth moment of $\PP{C}$ is constant over some $\vec{w}$ on the unit circle.
+% \in \mathcal{O}](\bb{R})$
+\end{lemma}
+\begin{proof}
+    Some proof here
+\end{proof}
