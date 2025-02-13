@@ -1,4 +1,3 @@
-
 \newcommand{\PP}[2][]{\mathcal{P}_{#1}(\mat{#2})}
 \newcommand{\mat}[1]{\mathit{#1}}
 \renewcommand{\vec}[1]{\mathbf{#1}}
@@ -26,11 +25,11 @@ In the following, each of these steps will be covered in detail.
 Given enough samples $\vec{v} = \mat{V} \vec{x}$, we want to estimate the covariance matrix $\mat{G} \approx \mat{V}^t \mat{V}$.
 This is achieved as $\vec{v}^t \vec{v} = (\mat{V} \vec{x})^t(\mat{V} \vec{x}) = \mat{V}^t \vec{x}^t \vec{x} \mat{V}$.
 % Remark that since $\vec{x}$ is a row vector, $\bb{E}[\vec{x}^t \vec{x}]$ will be an $n \times n$ matrix.
-Now, $\bb{E}[\vec{x}^t \vec{x}] = \mat{I} \cdot 3$ because of the following:
+Now, $\bb{E}[\vec{x}^t \vec{x}] = \mat{I} / 3$ where $\mat{I}$ is the identity matrix because of the following:
 Since all $x_i \in \vec{x}$ are independent, and $\bb{E}[x_i] = 0$, we have that $\bb{E}[x_i x_j] = \bb{E}[x_i] \bb{E}[x_j] = 0$ for $i \neq j$.
-For the case when $i = j$, we have \[\bb{E}[x_i x_j] = \bb{E}[x ^2] = \int_{a}^{b} x^2 \frac{1}{b-a} dx = \int_{-1}^{1} x^2 \frac{1}{2} dx = 3\]
-Therefore, $\bb{E}[\vec{x}^t \vec{x}]$ has 3 down the diagonal and is 0 otherwise, i.e. $\mat{I} \cdot 3$.
-Consequently, $\vec{v} ^t \vec{v} = \mat{V}^t (\mat{I}\cdot 3) \mat{V}$, and therefore $\frac{\vec{v}^t \vec{v}}{3} = \mat{V}^t \mat{V}$.
+For the case when $i = j$, we have \[\bb{E}[x_i x_j] = \bb{E}[x ^2] = \int_{a}^{b} x^2 \frac{1}{b-a} dx = \int_{-1}^{1} x^2 \frac{1}{2} dx = \frac{1}{3}\]
+Therefore, $\bb{E}[\vec{x}^t \vec{x}]$ is $\frac{1}{3}$ down the diagonal and is 0 otherwise, i.e. $\mat{I} / 3$.
+Consequently, $\vec{v} ^t \vec{v} = \mat{V}^t (\mat{I} / 3) \mat{V}$, and therefore $\vec{v}^t \vec{v} \cdot 3 = \mat{V}^t \mat{V}$.
 Clearly, the more samples $\vec{v}$ one has, the more accurate the approximation $\mat{G} \approx \mat{V} ^t \mat{V}$ is.
 \subsection{Hidden parallelepiped to hidden hypercube transformation}
 Given a good approximation $\mat{G}$ of $\mat{V}^t \mat{V}$, the next step is to calculate a linear transformation $\mat{L}$ such that the following is true:
@@ -56,10 +55,64 @@ From this, we easily show the following:
 
 By multiplying our samples $\vec{v}$ by $\mat{L}$ on the right, we transform them from the hidden parallelepiped to the hidden hypercube. If one finds
 the rows of $\pm \mat{C}$, one can simply multiply the result on the right by $\mat{L}^{-1}$ to obtain the solution for $\mat{V}$.
-\subsection{Gradient descent}
-Given samples $\vec{c}$ uniformly distributed over $\PP{C}$, we measure and minimize the fourth moment of one-dimensional projections to disclose rows of $\pm \mat{C}$.
-Let $mom_{k, \mat{C}}(\vec{w})$ be defined as the $k$-th moment of $\PP{C}$ projected onto $\vec{w}$, i.e. $\bb{E}[\langle \vec{c}, \vec{w} \rangle ^k]$ where $\vec{w} \in \bb{R}^n$ and $\vec{c} = \vec{x} \mat{C}$.
-More precisely, \[ mom_{k, \mat{C}} = \frac{1}{t} \sum_{i}^{t} \langle \vec{c}_i, \vec{w} \rangle ^k = \frac{1}{t} \sum_{i}^{t} \langle c_i, \vec{w} \rangle ^k\]
+
+\subsection{Moments and Gradient Descent}
+We now measure and minimize the fourth moment of one-dimensional projections to disclose rows of $\pm \mat{C}$.
+Let $mom_{k, \mat{C}}(\vec{w})$ be defined as the $k$-th moment of $\PP{C}$ projected onto $\vec{w}$, i.e. 
+$\bb{E}[\langle \vec{c}, \vec{w} \rangle ^k]$ where $\vec{c} = \vec{x} \mat{C}$ for uniformly distributed $\vec{x}$ and $\vec{w} \in \bb{R}^n$.
+Looking at the term $\langle \vec{c}, \vec{w} \rangle$, we have $\langle \vec{x} \mat{C}, \vec{w} \rangle = \langle \sum_{i=1}^{n} x_i c_i, \vec{w} \rangle$
+$ = \sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle $.
+Moving this inside the $\bb{E}[ \ ]$ we have $\bb{E}[\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle ^k ]$.
+We look at the two cases when $k = 2$ and $k=4$.
+\begin{itemize}
+    \item $\mathbf{k = 2: }$
+        $\bb{E}[(\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle ) ^2] = \bb{E}[\sum_{i}^{n} \sum_{j}^{n} x_i x_j \langle c_i, \vec{w} \rangle \langle c_j, \vec{w} \rangle]$.
+        As seen before in section 3.3.2, $\bb{E}[x_i x_j] = \frac{1}{3}$ when $i = j$ and $0$ otherwise. Thus, we have the final expression 
+        $mom_{2, C}(\vec{w}) = \frac{1}{3} \sum_{i}^{n} \langle c_i, \vec{w} \rangle ^2$ which can also be written as
+        $ = \frac{1}{3} \vec{w} \mat{C}^t \mat{C} \vec{w}^t$
+    \item $\mathbf{k = 4: }$
+        \[ \bb{E}[(\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle ) ^4] = 
+        \bb{E}[\sum_{i}^{n} \sum_{j}^{n} \sum_{k}^{n} \sum_{l}^{n} x_i x_j x_k x_l 
+        \langle c_i, \vec{w} \rangle \langle c_j, \vec{w} \rangle
+    \langle c_k, \vec{w} \rangle \langle c_l, \vec{w} \rangle] \]
+    There are three cases for the indices $i, j, k$ and $l$:
+    \begin{enumerate}
+        \item \textbf{All equal: } If $i = j = k = l$, we simply have $\sum_i^n \bb{E}[x^4] \langle c_i, \vec{w} \rangle ^4 = \frac{1}{5} \sum_i \langle c_i, \vec{w} \rangle ^4$
+            due to the fact that $\bb{E}[x ^4] = \int_{-1}^{1} x^4 \frac{1}{2} dx = \frac{1}{5}$
+        \item \textbf{None equal:} If $i \neq j \neq k \neq l$ the expression is zero due to $\bb{E}[x_i] = 0$ and all $x_i, x_j, x_k$ and $x_l$ are independent.
+        \item \textbf{Pairwise equal:} If either 
+            \begin{itemize}
+                \item $i = j \neq k = l$
+                \item $i = k \neq j = l$ 
+                \item $i = l \neq j = k$
+            \end{itemize}
+            then we have 
+            $\sum_{i \neq j} \bb{E}[x_i ^2 x_j^2] \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle^2$ 
+            $ = \frac{1}{9} \sum_{i \neq j} \langle c_i, \vec{w} \rangle^2 \langle c_j, \vec{w} \rangle^2$. By putting the above together we get
+            \[\frac{1}{5} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4 + 3(\frac{1}{9} \sum_{i \neq j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2)\]
+            and the final expression becomes 
+            \[ mom_{4, \mat{C}} (\vec{w}) = \frac{1}{5} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4 + \frac{1}{3} \sum_{i \neq j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2\]
+    \end{enumerate}
+
+    Now, since $\mat{C}$ is orthonormal, and by restricting $\vec{w}$ to the unit sphere in $\bb{R}^n$, we can simplify the expressions further.
+    The second moment becomes $mom_{2, C}(\vec{w}) = \frac{1}{3} \vec{w} \mat{C}^t \mat{C} \vec{w}^t = \frac{1}{3}\vec{w} \mat{I} \vec{w}^t 
+    = \frac{1}{3} \vec{w}\vec{w}^t = \frac{1}{3} \lVert \vec{w} \rVert ^2 = \frac{1}{3}$. \\
+    By rewriting and expanding the fourth moment:
+    \[ mom_{4, \mat{C}} (\vec{w}) = \frac{1}{5} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4 + \frac{1}{3} \sum_{i \neq j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2\]
+    \[ mom_{4, \mat{C}} (\vec{w}) = \frac{1}{5} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4 + 
+    \frac{1}{3} \sum_{i} \sum_{j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2 -
+    \frac{1}{3}\sum_{i} \langle c_i, \vec{w} \rangle ^2 \langle c_i, \vec{w} \rangle ^2\]
+    \[ mom_{4, \mat{C}} (\vec{w}) = \frac{1}{5} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4 + 
+    \frac{1}{3} \sum_{i} \sum_{j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2 -
+    \frac{1}{3}\sum_{i} \langle c_i, \vec{w} \rangle ^4 \]
+    \[ mom_{4, \mat{C}} (\vec{w}) = \frac{1}{3} \lVert \vec{w} \rVert ^4 - 
+    \frac{2}{15}\sum_{i} \langle c_i, \vec{w} \rangle ^4 = \frac{1}{3} - 
+    \frac{2}{15}\sum_{i} \langle c_i, \vec{w} \rangle ^4\]
+
+    
+
+\end{itemize}
+
 \section{HPP against the Normal Distribution}
 
 \begin{lemma}[Lemma 1]
