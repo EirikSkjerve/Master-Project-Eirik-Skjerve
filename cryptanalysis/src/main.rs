@@ -33,22 +33,19 @@ static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let t: usize = args[1]
+    let mode: &str = &args[1];
+    let t: usize = args[2]
         .parse()
         .expect("Invalid input for number of samples");
-    let n: usize = args[2].parse().expect("Invalid input for Hawk degree");
+    let n: usize = args[3].parse().expect("Invalid input for Hawk degree");
 
-    // covariance_matrix_estimation(t, n);
-    // estimate_mem_all(500000, true);
-    // estimate_mem_norm_all(t, false);
 
-    // use real life signatures
-
-    // collect_signatures_par(t, n, false);
-    run_hpp_attack(t, n);
-
-    // run a simulation using much smaller parameters
-    // run_hpp_sim(t, n);
+    match mode { 
+        "measure" => estimate_mem_norm_all(t, true),
+        "collect" => {collect_signatures_par(t, n, true);},
+        "attack" => run_hpp_attack(t, n),
+        _ => println!("No action matches your input"),
+    };
 
     println!(
         "Max memory usage total in this run: {} GB",
