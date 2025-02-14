@@ -14,7 +14,10 @@ use hawklib::utils::rot_key;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
+use rayon::prelude::*;
+
 use std::io::{stdout, Write};
+use std::sync::{Arc, Mutex};
 
 use peak_alloc::PeakAlloc;
 
@@ -47,16 +50,16 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // multiply our signature samples on the right with this L
     // to produce U which is distributed over L^t B^-1
     // now samples are modified in place so samples = U
+    // the modified samples are modified as f32, but later cast into f64
     let (linv, c) = hypercube_transformation(&mut samples, q.map(|x| x as f64), &binv);
 
     let total_num_elements = (samples.nrows() * samples.ncols()) as f64;
     let mean = samples.iter().sum::<f64>() / total_num_elements;
-
     let variance = samples
         .iter()
         .map(|&x| {
-            let diff = x - mean;
-            diff * diff
+            let diff = (x - mean).powi(2);
+            diff
         })
         .sum::<f64>()
         / total_num_elements;
@@ -74,6 +77,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     println!("Var:  {}", variance);
     println!("Kur:  {}", kurtosis);
 
+    return;
     println!("Samples transformed...");
 
     // STEP 3: Gradient Descent:
@@ -91,16 +95,48 @@ pub fn run_hpp_attack(t: usize, n: usize) {
         PEAK_ALLOC.current_usage_as_mb()
     );
 
-    println!("\nDoing gradient descent...");
+
+    // random column for testing
+    // let rand_index: usize = rand::thread_rng().gen_range(0..2*n);
+    let solution: DVector<f64> = c.column(5).into_owned();
+
+    // initialize retry counter
     let mut retries = 0;
-    while retries < 10 {
+    let max_retries = 10;
+    // run loop until number of max retries is set
+    while retries < max_retries {
+        // increment counter
         retries += 1;
-        if let Some(sol) = gradient_descent(&samples, &c) {
-            res_gradient_descent = (&linv * &sol).map(|x| x.round() as i32);
-            if vec_in_key(&res_gradient_descent, &binv) {
+
+        // initialize empty result vector
+        let mut res: Option<DVector<f64>> = None;
+
+        // if kurtosis is less than 3 we need to minimize the total function
+        if kurtosis < 3.0 {
+            println!("\nDoing gradient descent...");
+            res = gradient_descent(&samples, None);
+        }
+
+        // if kurtosis is greater than 3 we need to maximize the total function
+        if kurtosis >= 3.0 {
+            println!("\nDoing gradient ascent...");
+            res = gradient_ascent(&samples, None);
+        }
+
+        // check if result is a value
+        if res.is_some() {
+
+            // multiply result vector with L inverse on the left to obtain solution as row in B
+            // inverse
+            let solution = (&linv * &res.unwrap()).map(|x| x.round() as i32);
+
+            // check directly if solution is in the actual secret key
+            if vec_in_key(&solution, &binv) {
                 println!("FOUND! Result is in key based on direct checking");
                 return;
             }
+
+            // do a measurement of the result vector up against secret key if it was not the correct one
             measure_res(&res_gradient_descent, &binv);
             println!(
                 "Norm of res from descent: {}",
@@ -112,26 +148,6 @@ pub fn run_hpp_attack(t: usize, n: usize) {
         }
     }
 
-    println!("\nDoing gradient ascent...");
-    retries = 0;
-    while retries < 10 {
-        retries += 1;
-        if let Some(sol) = gradient_ascent(&samples, &c) {
-            res_gradient_ascent = (&linv * &sol).map(|x| x.round() as i32);
-            if vec_in_key(&res_gradient_ascent, &binv) {
-                println!("FOUND! Result is in key based on direct checking");
-                return;
-            }
-            measure_res(&res_gradient_ascent, &binv);
-            println!(
-                "Norm of res from ascent: {}",
-                res_gradient_ascent.map(|x| x as f64).norm()
-            );
-            println!("Norm of col0: {}", col0.map(|x| x as f64).norm());
-            println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
-            println!("Result not in key... \n");
-        }
-    }
 }
 
 fn hypercube_transformation(
@@ -147,7 +163,8 @@ fn hypercube_transformation(
     // get theoretical sigma here for scaling
 
     let sigma = match q.nrows() / 2 {
-        256 => 2.0 * 1.001, // 1.01 in theory but in practice it is measured to be 1.001
+        256 => 2.0 * 1.001, // 1.01 in theory but in practice it is measured to be 1.001, unsure of
+                           // which to choose 
         512 => 2.0 * 1.278,
         _ => 2.0 * 1.299,
     };
@@ -163,17 +180,19 @@ fn hypercube_transformation(
         .try_inverse()
         .expect("Couldn't take inverse of l");
 
+    // eprintln!("{}", l.l());
     println!("Cholesky decomposition complete.");
 
     println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
-    // to guarantee that no extra memory is taken by this
-    // multiply samples with L
-
     println!("Max usage so far: {} gb", PEAK_ALLOC.peak_usage_as_gb());
     // modify in place
-    // samples.gemm(1.0, &l.l().transpose(), samples, 0.0);
-    // *samples = ((&l.l().transpose() / sigma) * &*samples);
-    matmul_custom(l.l().transpose(), samples);
+    // this function is slow but avoids extra allocation
+    // multiply_in_place_parallel(&(l.l().transpose() / sigma), samples);
+
+    // this method is fast but nalgebra matrix multiplication makes an extra allocation
+    // for the matrices involved
+    *samples = ((&l.l().transpose() / sigma) * &*samples);
+    // *samples = &l.l().transpose() * &*samples;
     println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
 
     let c = &l.l().transpose() * skey.map(|x| x as f64);
@@ -183,29 +202,64 @@ fn hypercube_transformation(
     (linv, c)
 }
 
-fn matmul_custom(lhs: DMatrix<f64>, rhs: &mut DMatrix<f64>) {
-    let (rows_l, cols_l) = (lhs.nrows(), lhs.ncols());
-    let (rows_r, cols_r) = (rhs.nrows(), rhs.ncols());
-    // Temporary buffer to hold one row of the output at a time
-    let mut row_buffer = vec![0.0; rhs.ncols()];
 
-    // Iterate over rows of L
-    for i in 0..rows_l {
-        // Compute row `i` of the result and store in `row_buffer`
-        for j in 0..cols_r {
+fn multiply_in_place_parallel(l: &DMatrix<f64>, m: &mut DMatrix<f64>) {
+    let (rows_l, cols_l) = (l.nrows(), l.ncols());
+    let (rows_m, cols_m) = (m.nrows(), m.ncols());
+
+    assert_eq!(cols_l, rows_m, "Matrix dimensions do not match for multiplication!");
+
+    // Wrap each row of `m` in a separate Mutex to allow parallel writes
+    let row_mutexes: Vec<_> = m.row_iter_mut().map(|r| Arc::new(Mutex::new(r.into_owned()))).collect();
+
+    (0..rows_l).into_par_iter().for_each(|i| {
+        let mut row_result = vec![0.0; cols_m];  // Thread-local row buffer
+
+        // Compute row `i` of the result
+        for j in 0..cols_m {
             let mut sum = 0.0;
             for k in 0..cols_l {
-                sum += lhs[(i, k)] * rhs[(k, j)];
+                // Read safely from M (without locking the whole thing)
+                let row_k = row_mutexes[k].lock().unwrap();
+                sum += l[(i, k)] * row_k[j];
             }
-            row_buffer[j] = sum;  // Store computed value
+            row_result[j] = sum;
         }
 
-        // Write computed row back to M (since we are modifying in place)
-        for j in 0..cols_r {
-            rhs[(i, j)] = row_buffer[j];
-        }
+        // Write computed row back to `M`
+        let mut row_lock = row_mutexes[i].lock().unwrap();
+        row_lock.copy_from_slice(&row_result);
+    });
+
+    // Copy the modified row data back into `m`
+    for (i, mut row) in m.row_iter_mut().enumerate() {
+        let locked_row = row_mutexes[i].lock().unwrap();
+        row.copy_from_slice(&locked_row.as_slice());
     }
 }
+
+//     let (rows_l, cols_l) = (lhs.nrows(), lhs.ncols());
+//     let (rows_r, cols_r) = (rhs.nrows(), rhs.ncols());
+//     // Temporary buffer to hold one row of the output at a time
+//     let mut row_buffer = vec![0.0; rhs.ncols()];
+//
+//     // Iterate over rows of L
+//     for i in 0..rows_l {
+//         // Compute row `i` of the result and store in `row_buffer`
+//         for j in 0..cols_r {
+//             let mut sum = 0.0;
+//             for k in 0..cols_l {
+//                 sum += lhs[(i, k)] * rhs[(k, j)];
+//             }
+//             row_buffer[j] = sum;  // Store computed value
+//         }
+//
+//         // Write computed row back to M (since we are modifying in place)
+//         for j in 0..cols_r {
+//             rhs[(i, j)] = row_buffer[j];
+//         }
+//     }
+// }
 
 fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
     // Check if the vector exists as a column in the matrix
