@@ -33,7 +33,7 @@ pub fn run_hpp_sim(t: usize, n: usize) {
     // However for this implementation we simply generate entire signatures on signer end
     // and directly return the entire signature w which we use to deduce information about B
 
-    println!("Running HPP attack with {t} samples against Hawk{n}");
+    println!("Running HPP attack with {t} samples against Hawk{n} simulation");
 
     let (b, binv) = create_secret_matrix(n).unwrap();
     // eprintln!("B: {b} \nB^-1: {binv}");
@@ -50,73 +50,133 @@ pub fn run_hpp_sim(t: usize, n: usize) {
     let mut rng = StdRng::seed_from_u64(rand::random::<u64>());
     for i in 0..t {
         let x = DVector::from_vec(get_norm_slice_float(2 * n, &mut rng)).map(|x| x.round());
-        // eprintln!("x: {x}");
         // let x = DVector::from_vec(get_uniform_slice_float(2*n, &mut rng));
         let y: DVector<f64> = &binv * x;
         samples_cols.push(y);
     }
 
-    let samples = DMatrix::<f64>::from_columns(&samples_cols);
+    let mut samples = DMatrix::<f64>::from_columns(&samples_cols);
 
     // STEP 1: estimate covariance matrix. We use Q=BtB for this
 
     println!("U dim: {}, {}", samples.nrows(), samples.ncols());
-    let (u, linv, c) =
-        hypercube_transformation(samples.map(|x| x as i32), q, &binv.map(|x| x as i32));
-    println!("U' dim: {}, {}", u.nrows(), u.ncols());
+    let (linv, c) =
+        hypercube_transformation(&mut samples, q, &binv.map(|x| x as i32));
+    println!("U' dim: {}, {}", samples.nrows(), samples.ncols());
 
     // // STEP 3: Gradient Descent:
     // // The final step is to do gradient descent on our (converted) samples to minimize the
     // // fourth moment, and consequently reveal a row/column from +/- B
-    let mut num_iter = 0;
-    loop {
-        num_iter += 1;
-        println!("Doing gradient descent...");
-        if let Some(sol) = gradient_descent(&u, &binv) {
-            let res = (&linv * &sol).map(|x| x.round() as i32);
-            if vec_in_key(&res, &binv.map(|x| x.round() as i32)) {
-                println!("FOUND!");
-                eprintln!("{res}");
-                eprintln!("{binv}");
-                println!("Total iterations: {num_iter}");
-                break;
-            }
-            eprintln!("Res: {res}");
-            println!("Norm of res: {}", res.map(|x| x as f64).norm());
-            println!("Norm of col0: {}", binv.column(0).norm());
-            println!("Norm of coln: {}", binv.column(n).norm());
-            eprintln!("{binv}");
-        }
-
-        if num_iter == 10 {
-            break;
-        }
-    }
-
-    num_iter = 0;
-    loop {
-        println!("Doing gradient ascent...");
-        if let Some(sol) = gradient_ascent(&u, &binv) {
-            let res = (&linv * &sol).map(|x| x.round() as i32);
-            if vec_in_key(&res, &binv.map(|x| x.round() as i32)) {
-                println!("FOUND!");
-                eprintln!("{res}");
-                eprintln!("{binv}");
-                println!("Total iterations: {num_iter}");
-                break;
-            }
-            eprintln!("Res: {res}");
-            println!("Norm of res: {}", res.map(|x| x as f64).norm());
-            println!("Norm of col0: {}", binv.column(0).norm());
-            println!("Norm of coln: {}", binv.column(n).norm());
-            eprintln!("{binv}");
-        }
-        if num_iter == 10 {
-            break;
-        }
-    }
+    // let mut num_iter = 0;
+    // loop {
+    //     num_iter += 1;
+    //     println!("Doing gradient descent...");
+    //     if let Some(sol) = gradient_descent(&samples, &binv, None) {
+    //         let res = (&linv * &sol).map(|x| x.round() as i32);
+    //         if vec_in_key(&res, &binv.map(|x| x.round() as i32)) {
+    //             println!("FOUND!");
+    //             eprintln!("{res}");
+    //             eprintln!("{binv}");
+    //             println!("Total iterations: {num_iter}");
+    //             break;
+    //         }
+    //         eprintln!("Res: {res}");
+    //         println!("Norm of res: {}", res.map(|x| x as f64).norm());
+    //         println!("Norm of col0: {}", binv.column(0).norm());
+    //         println!("Norm of coln: {}", binv.column(n).norm());
+    //         // eprintln!("{binv}");
+    //     }
+    //
+    //     if num_iter == 10 {
+    //         break;
+    //     }
+    // }
+    //
+    // num_iter = 0;
+    // loop {
+    //     println!("Doing gradient ascent...");
+    //     if let Some(sol) = gradient_ascent(&samples, &binv, None) {
+    //         let res = (&linv * &sol).map(|x| x.round() as i32);
+    //         if vec_in_key(&res, &binv.map(|x| x.round() as i32)) {
+    //             println!("FOUND!");
+    //             eprintln!("{res}");
+    //             eprintln!("{binv}");
+    //             println!("Total iterations: {num_iter}");
+    //             break;
+    //         }
+    //         eprintln!("Res: {res}");
+    //         println!("Norm of res: {}", res.map(|x| x as f64).norm());
+    //         println!("Norm of col0: {}", binv.column(0).norm());
+    //         println!("Norm of coln: {}", binv.column(n).norm());
+    //     }
+    //     if num_iter == 10 {
+    //         break;
+    //     }
+    // }
 }
 
+fn hypercube_transformation(
+    samples: &mut DMatrix<f64>,
+    q: DMatrix<f64>,
+    skey: &DMatrix<i32>,
+) -> (DMatrix<f64>, DMatrix<f64>) {
+    // given samples and estimate of covariance matrix, return transformed
+    // samples from hidden parallelepiped onto hidden hypercube for easier
+    // analysis later
+    // Also returns the l inverse so we don't have to recompute it later
+
+    // get theoretical sigma here for scaling
+
+    // compute L = Cholesky decomposition of Q
+    let l = Cholesky::new(q).expect("Couldn't do Cholesky decomposition of ginv");
+
+    // compute inverse of Lt for later transformation back to parallelepiped
+    let linv = l
+        .l()
+        .transpose()
+        .clone()
+        .try_inverse()
+        .expect("Couldn't take inverse of l");
+
+    println!("Cholesky decomposition complete.");
+
+    println!("Max usage so far: {} gb", PEAK_ALLOC.peak_usage_as_gb());
+    // modify in place
+    // this function is slow but avoids extra allocation
+
+    // this method is fast but nalgebra matrix multiplication makes an extra allocation
+    // for the matrices involved
+    *samples = ((&l.l().transpose() / SIGMA) * &*samples);
+    println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
+
+    let c = &l.l().transpose() * skey.map(|x| x as f64);
+    println!("Max usage so far: {} gb", PEAK_ALLOC.peak_usage_as_gb());
+    println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
+
+    (linv, c)
+}
+fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) {
+    // given a solution, measure how far the solution is away from each column of the secret key
+    let mut min = f64::INFINITY;
+    let mut max = f64::NEG_INFINITY;
+    let mut min_index = 0;
+    (0..res.len()).into_iter().for_each(|i| {
+        let col: DVector<f64> = binv.column(i).into_owned().map(|x| x as f64);
+
+        let diff = (col.abs() - res.map(|x| x as f64).abs()).norm();
+        if diff < min {
+            min = diff;
+            min_index = i
+        };
+        if diff > max {
+            max = diff
+        };
+    });
+
+    let comb = DMatrix::from_columns(&[res.column(0), binv.column(min_index)]);
+    eprintln!("{comb}");
+    println!("Min norm of diff: {min} \nMax norm of diff: {max}");
+}
 fn create_secret_matrix(n: usize) -> Option<(DMatrix<i64>, DMatrix<i64>)> {
     // here we try and replicate a HAWK matrix for smaller degree
     let mut i = 0;
@@ -235,41 +295,6 @@ pub fn get_uniform_slice_fixed(n: usize, rng: &mut StdRng) -> Vec<i64> {
     rnd_bytes
 }
 
-fn hypercube_transformation(
-    samples: DMatrix<i32>,
-    q: DMatrix<f64>,
-    skey: &DMatrix<i32>,
-) -> (DMatrix<f64>, DMatrix<f64>, DMatrix<f64>) {
-    // given samples and estimate of covariance matrix, return transformed
-    // samples from hidden parallelepiped onto hidden hypercube for easier
-    // analysis later
-    // Also returns the l inverse so we don't have to recompute it later
-
-    // compute L = Cholesky decomposition of Q
-    let l = Cholesky::new(q).expect("Couldn't do Cholesky decomposition of ginv");
-
-    // compute inverse of Lt for later transformation back to parallelepiped
-    let linv = l
-        .l()
-        .transpose()
-        .clone()
-        .try_inverse()
-        .expect("Couldn't take inverse of l")
-        .map(|x| x as f64);
-
-    println!("Cholesky decomposition complete.");
-
-    // println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
-    let mut samples_f64: DMatrix<f64> = samples.map(|x| x as f64);
-    // to guarantee that no extra memory is taken by this
-    std::mem::drop(samples);
-    // println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
-    // multiply samples with L
-    // samples = l.l().transpose() * &samples;
-    let res = (&l.l().transpose() / SIGMA) * samples_f64;
-    let c = &l.l().transpose() * skey.map(|x| x as f64);
-    (res, linv, c)
-}
 
 fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
     // Check if the vector exists as a column in the matrix
@@ -285,8 +310,6 @@ fn is_orthogonal(matrix: &DMatrix<f64>) -> bool {
     let identity = DMatrix::identity(matrix.ncols(), matrix.ncols());
     let qt_q = matrix.transpose() * matrix;
     let diff = (&qt_q - identity).norm();
-    // eprintln!("{qt_q:.1}");
-    // println!("Diff: {diff}");
     diff < TOLERANCE
 }
 
@@ -317,14 +340,4 @@ fn mat_dist(a_mat: &DMatrix<f64>, b_mat: &DMatrix<f64>) {
     let avg_diff = sum_diff as f64 / (a_mat.nrows() * a_mat.ncols()) as f64;
     println!("Matrices have different elements: {}", num_diff);
     println!("Average difference between elements: {}", avg_diff);
-}
-
-fn measure_res(res: &DVector<i32>, binv: &DMatrix<f64>) {
-    let binv = binv.map(|x| x as i32);
-
-    (0..res.len()).into_iter().for_each(|i| {
-        let col: DVector<i32> = binv.column(i).into_owned();
-        let diff = (col - res).map(|x| x as f64).norm();
-        println!("Diff: {diff}");
-    });
 }

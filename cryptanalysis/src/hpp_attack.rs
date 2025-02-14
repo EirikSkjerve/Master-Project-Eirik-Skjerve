@@ -52,6 +52,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // now samples are modified in place so samples = U
     // the modified samples are modified as f32, but later cast into f64
     let (linv, c) = hypercube_transformation(&mut samples, q.map(|x| x as f64), &binv);
+    println!("Samples transformed");
 
     let total_num_elements = (samples.nrows() * samples.ncols()) as f64;
     let mean = samples.iter().sum::<f64>() / total_num_elements;
@@ -77,8 +78,6 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     println!("Var:  {}", variance);
     println!("Kur:  {}", kurtosis);
 
-    return;
-    println!("Samples transformed...");
 
     // STEP 3: Gradient Descent:
     // The final and main step is to do gradient descent on our (converted) samples to minimize the
@@ -86,9 +85,6 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 
     let col0 = binv.column(0);
     let coln = binv.column(n);
-
-    let mut res_gradient_descent: DVector<i32> = DVector::zeros(2 * n);
-    let mut res_gradient_ascent: DVector<i32> = DVector::zeros(2 * n);
 
     println!(
         "Current memory usage: {} mb",
@@ -98,7 +94,8 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 
     // random column for testing
     // let rand_index: usize = rand::thread_rng().gen_range(0..2*n);
-    let solution: DVector<f64> = c.column(5).into_owned();
+    // let correct_solution: Option<DVector<f64>> = Some(c.column(5).into_owned());
+    let correct_solution: Option<DVector<f64>> = None;
 
     // initialize retry counter
     let mut retries = 0;
@@ -111,16 +108,16 @@ pub fn run_hpp_attack(t: usize, n: usize) {
         // initialize empty result vector
         let mut res: Option<DVector<f64>> = None;
 
-        // if kurtosis is less than 3 we need to minimize the total function
+        // if kurtosis is less than 3 we need to minimize
         if kurtosis < 3.0 {
             println!("\nDoing gradient descent...");
-            res = gradient_descent(&samples, None);
+            res = gradient_descent(&samples, correct_solution.as_ref());
         }
 
-        // if kurtosis is greater than 3 we need to maximize the total function
-        if kurtosis >= 3.0 {
+        // if kurtosis is greater than 3 we need to maximize
+        if kurtosis > 3.0 {
             println!("\nDoing gradient ascent...");
-            res = gradient_ascent(&samples, None);
+            res = gradient_ascent(&samples, correct_solution.as_ref());
         }
 
         // check if result is a value
@@ -128,7 +125,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 
             // multiply result vector with L inverse on the left to obtain solution as row in B
             // inverse
-            let solution = (&linv * &res.unwrap()).map(|x| x.round() as i32);
+            let solution = (&linv * res.clone().unwrap()).map(|x| x.round() as i32);
 
             // check directly if solution is in the actual secret key
             if vec_in_key(&solution, &binv) {
@@ -137,10 +134,10 @@ pub fn run_hpp_attack(t: usize, n: usize) {
             }
 
             // do a measurement of the result vector up against secret key if it was not the correct one
-            measure_res(&res_gradient_descent, &binv);
+            measure_res(&solution, &binv);
             println!(
-                "Norm of res from descent: {}",
-                res_gradient_descent.map(|x| x as f64).norm()
+                "Norm of res from gradient search: {}",
+                solution.map(|x| x as f64).norm()
             );
             println!("Norm of col0: {}", col0.map(|x| x as f64).norm());
             println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
@@ -180,24 +177,15 @@ fn hypercube_transformation(
         .try_inverse()
         .expect("Couldn't take inverse of l");
 
-    // eprintln!("{}", l.l());
     println!("Cholesky decomposition complete.");
-
-    println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
-    println!("Max usage so far: {} gb", PEAK_ALLOC.peak_usage_as_gb());
-    // modify in place
-    // this function is slow but avoids extra allocation
-    // multiply_in_place_parallel(&(l.l().transpose() / sigma), samples);
 
     // this method is fast but nalgebra matrix multiplication makes an extra allocation
     // for the matrices involved
     *samples = ((&l.l().transpose() / sigma) * &*samples);
     // *samples = &l.l().transpose() * &*samples;
-    println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
 
     let c = &l.l().transpose() * skey.map(|x| x as f64);
     println!("Max usage so far: {} gb", PEAK_ALLOC.peak_usage_as_gb());
-    println!("Current mem usage: {} gb", PEAK_ALLOC.current_usage_as_gb());
 
     (linv, c)
 }
@@ -290,7 +278,7 @@ fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) {
     });
 
     let comb = DMatrix::from_columns(&[res.column(0), binv.column(min_index)]);
-    eprintln!("{comb}");
+    // eprintln!("{comb}");
     println!("Min norm of diff: {min} \nMax norm of diff: {max}");
 }
 

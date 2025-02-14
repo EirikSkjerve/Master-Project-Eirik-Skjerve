@@ -44,6 +44,7 @@ fn main() {
         "measure" => estimate_mem_norm_all(t, true),
         "collect" => {collect_signatures_par(t, n, true);},
         "attack" => run_hpp_attack(t, n),
+        "sim" => run_hpp_sim(t, n),
         _ => println!("No action matches your input"),
     };
 

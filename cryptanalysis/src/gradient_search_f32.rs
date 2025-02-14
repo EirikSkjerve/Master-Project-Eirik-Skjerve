@@ -13,13 +13,13 @@ use peak_alloc::PeakAlloc;
 
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
-static EPSILON: f64 = 1e-10;
-static TOLERANCE: f64 = 1e-4;
-static BETA1: f64 = 0.9;
-static BETA2: f64 = 0.999;
-static DELTA: f64 = 0.01;
+static EPSILON: f32 = 1e-10;
+static TOLERANCE: f32 = 1e-4;
+static BETA1: f32 = 0.9;
+static BETA2: f32 = 0.999;
+static DELTA: f32 = 0.01;
 
-fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<f64>>) -> Option<DVector<f64>> {
+fn gradient_optimize(u: &DMatrix<f32>, c: &DMatrix<f32>, descent: bool) -> Option<DVector<f32>> {
     // perform gradient descent if parameter <descent> is set to true
     // otherwise do gradient ascent.
 
@@ -35,20 +35,14 @@ fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<
 
     // random starting point on the unit circle
     let mut w = get_rand_w(n, &mut rng);
-
-    // if a solution vector is provided, set w to this
-    // for testing purposes
-    if solution.is_some() {
-        w = solution.unwrap().clone();
-    }
     let mut mom4_w = mom4(&w, &u);
 
     // initialize variables
 
-    let mut m_t = DVector::<f64>::zeros(n);
-    let mut v_t = DVector::<f64>::zeros(n);
-    let mut m_est = DVector::<f64>::zeros(n);
-    let mut v_est = DVector::<f64>::zeros(n);
+    let mut m_t = DVector::<f32>::zeros(n);
+    let mut v_t = DVector::<f32>::zeros(n);
+    let mut m_est = DVector::<f32>::zeros(n);
+    let mut v_est = DVector::<f32>::zeros(n);
     let mut t = 0;
 
     loop {
@@ -57,8 +51,6 @@ fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<
 
         // compute gradient of fourth moment
         let g = grad_mom4_par(&w, &u);
-        let grad_norm = g.norm();
-        println!("Norm of gradient g: {grad_norm}");
 
         m_t = (BETA1 * &m_t) + (1.0 - BETA1) * &g;
         v_t = (BETA2 * v_t) + (1.0 - BETA2) * &g.map(|x| x.powi(2));
@@ -85,7 +77,6 @@ fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<
         println!("Mom4(w_new): {mom4_wnew}");
         println!("Diff       : {mom4_diff}");
 
-
         // check requirements for extremum point
         // if mom4_diff.abs() <= TOLERANCE || w_diff <= TOLERANCE || g.norm() <= TOLERANCE {
         //     println!("Possibly at an extremum: rate of change negligible. \n");
@@ -100,7 +91,7 @@ fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<
 
         // in the case of gradient ascent
         if !descent && mom4_wnew <= mom4_w {
-            println!("Possibly at an extremum: mom4 started decreasing. \n");
+            println!("Possibly at an extremum: mom4 started increasing. \n");
             return Some(w);
         }
 
@@ -117,46 +108,48 @@ fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<
     }
 }
 
-pub fn gradient_descent(samples: &DMatrix<f64>, solution: Option<&DVector<f64>>) -> Option<DVector<f64>> {
-    if let result = gradient_optimize(samples, true, solution) {
+pub fn gradient_descent(samples: &DMatrix<f32>, c: &DMatrix<f32>) -> Option<DVector<f32>> {
+    if let result = gradient_optimize(samples, c, true) {
         return result;
+    } else {
+        return None;
     }
-    None
 }
 
-pub fn gradient_ascent(samples: &DMatrix<f64>, solution: Option<&DVector<f64>>) -> Option<DVector<f64>> {
-    if let result = gradient_optimize(samples, false, solution) {
+pub fn gradient_ascent(samples: &DMatrix<f32>, c: &DMatrix<f32>) -> Option<DVector<f32>> {
+    if let result = gradient_optimize(samples, c, false) {
         return result;
+    } else {
+        return None;
     }
-    None
 }
 
-fn mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> f64 {
-    let dot: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(4));
+fn mom4(w: &DVector<f32>, samples: &DMatrix<f32>) -> f32 {
+    let dot: DVector<f32> = (samples.transpose() * w).map(|x| x.powi(4));
     dot.mean()
 }
 
-fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
+fn grad_mom4(w: &DVector<f32>, samples: &DMatrix<f32>) -> DVector<f32> {
     let n = w.nrows();
     let t = samples.ncols();
-    let uw3: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(3));
+    let uw3: DVector<f32> = (samples.transpose() * w).map(|x| x.powi(3));
     let uw3u = DMatrix::from_fn(n, t, |i, j| uw3[j] * samples[(i, j)]);
     let g = 4.0 * uw3u.column_mean();
     g
 }
 
-fn grad_mom4_par(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
+fn grad_mom4_par(w: &DVector<f32>, samples: &DMatrix<f32>) -> DVector<f32> {
     let n = w.nrows();
     let t = samples.ncols();
 
     // Precompute the dot product of each column of `samples` with `w`
-    let uw: Vec<f64> = (0..t)
+    let uw: Vec<f32> = (0..t)
         .into_par_iter() // Parallelize over columns
         .map(|j| samples.column(j).dot(w))
         .collect();
 
     // Compute uw^3 for each column
-    let uw3: Vec<f64> = uw.par_iter().map(|x| x.powi(3)).collect();
+    let uw3: Vec<f32> = uw.par_iter().map(|x| x.powi(3)).collect();
 
     // Compute the gradient in parallel
     let mut g = Arc::new(Mutex::new(DVector::zeros(n)));
@@ -165,7 +158,7 @@ fn grad_mom4_par(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
         for j in 0..t {
             sum += uw3[j] * samples[(i, j)];
         }
-        g.lock().unwrap()[i] = 4.0 * sum / (t as f64);
+        g.lock().unwrap()[i] = 4.0 * sum / (t as f32);
     });
 
     Arc::try_unwrap(g)
@@ -174,14 +167,14 @@ fn grad_mom4_par(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
         .unwrap()
 }
 
-fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
+fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f32> {
     //  outputs some randomly generated w on the unit circle
 
     // define uniform distribution
     let dist = Uniform::from(-10.0..10.0);
 
     // initialize empty vector to store the samples
-    let mut rnd_bytes: Vec<f64> = Vec::with_capacity(n);
+    let mut rnd_bytes: Vec<f32> = Vec::with_capacity(n);
 
     // sample n times
     for _ in 0..n {
