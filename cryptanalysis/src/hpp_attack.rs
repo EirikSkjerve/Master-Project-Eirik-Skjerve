@@ -23,6 +23,7 @@ use peak_alloc::PeakAlloc;
 
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 static TOLERANCE: f64 = 1e-10;
+static MAX_RETRIES: usize = 15;
 
 pub fn run_hpp_attack(t: usize, n: usize) {
     // runs the HPP attack against Hawk
@@ -41,7 +42,18 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // We need to generate a lot of samples to run the attack on
     // Samples is a tx2n matrix
 
+
     let (mut samples, (b, binv), q) = generate_samples_and_keys(t, n).unwrap();
+
+    // let mut min = 1000.0;
+    // let mut max = 0.0;
+    // for i in 0..samples.ncols() {
+    //     for j in 0..samples.nrows() {
+    //         if samples[(j, i)].abs() < min { min = samples[(j, i)].abs()}
+    //         if samples[(j, i)].abs() > max { max = samples[(j, i)].abs()}
+    //     }
+    // }
+    // println!("Min: {min}\nMax: {max}");
 
     // STEP 1: estimate covariance matrix. This step is automatically given by public key Q
 
@@ -51,8 +63,20 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // to produce U which is distributed over L^t B^-1
     // now samples are modified in place so samples = U
     // the modified samples are modified as f32, but later cast into f64
+
     let (linv, c) = hypercube_transformation(&mut samples, q.map(|x| x as f64), &binv);
     println!("Samples transformed");
+
+    // let mut min = 1000.0;
+    // let mut max = 0.0;
+    // for i in 0..samples.ncols() {
+    //     for j in 0..samples.nrows() {
+    //         if samples[(j, i)].abs() < min { min = samples[(j, i)].abs()}
+    //         if samples[(j, i)].abs() > max { max = samples[(j, i)].abs()}
+    //     }
+    // }
+    // println!("Min: {min}\nMax: {max}");
+    // return;
 
     let total_num_elements = (samples.nrows() * samples.ncols()) as f64;
     let mean = samples.iter().sum::<f64>() / total_num_elements;
@@ -78,7 +102,6 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     println!("Var:  {}", variance);
     println!("Kur:  {}", kurtosis);
 
-
     // STEP 3: Gradient Descent:
     // The final and main step is to do gradient descent on our (converted) samples to minimize the
     // fourth moment, and consequently reveal a row/column from +/- B
@@ -99,9 +122,8 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 
     // initialize retry counter
     let mut retries = 0;
-    let max_retries = 10;
     // run loop until number of max retries is set
-    while retries < max_retries {
+    while retries < MAX_RETRIES {
         // increment counter
         retries += 1;
 

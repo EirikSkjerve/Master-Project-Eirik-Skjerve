@@ -112,7 +112,7 @@ fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<
             println!("Too many steps - probably?");
             return Some(w);
         }
-        println!("Max memory used so far: {} GB", PEAK_ALLOC.peak_usage_as_gb());
+        // println!("Max memory used so far: {} GB", PEAK_ALLOC.peak_usage_as_gb());
         println!("");
     }
 }
