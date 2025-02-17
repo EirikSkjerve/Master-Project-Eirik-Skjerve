@@ -1,3 +1,13 @@
+\newcommand{\PP}[2][]{\mathcal{P}_{#1}(\mat{#2})}
+\newcommand{\mat}[1]{\mathbf{#1}}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\newcommand{\GLnR}{\mathcal{GL}_{n}(\mathbb{R})}
+\newcommand{\normdist}[2]{\mathcal{N}(#1, #2^2)}
+\newcommand{\dgdist}{\mathcal{D}_{2\bb{Z}+c, \sigma}}
+\newcommand{\bb}[1]{\mathbb{#1}}
+\newcommand{\dgd}{\mathcal{D}}
+\newcommand{\dgdi}{\widehat{\mathcal{D}}}
+
 \chapter{Introduction}
 \section{Context and motivation}
 Digital signatures are an integral part of secure communication today. They enable a receiver of a digital message to mathematically verify the sender is who they say they are. 
@@ -38,7 +48,22 @@ The objective of this thesis consists of two main parts:
 Chapter 2 will introduce important notions and mathematical background used in this thesis. Chapter 3 will introduce Hawk and its implementation, and the \textit{Learning a Parallelepiped} attack.
 In Chapter 4 the cryptanalysis of Hawk is presented. The final chapter will discuss results and future work.
 
-
+\section{Detailed tentative roadmap}
+\begin{enumerate}
+    \item Introduce idea of a digital signature
+    \item Introduce lattice facts and lattice problems used in digital signatures
+    \item Introduce other linear algebra and statistics / probability theory stuff
+    \item Introduce notion of gradient search and variations
+    \item Describe Hawk in detail
+    \item Describe Hawk implementation in detail
+    \item Describe basic HPP attack using notation from original paper
+    \item Proof and discussion of HPP against normally distributed samples, still using notation from original paper
+    \item Describe general application of HPP against Hawk using Hawk notation and conventions (e.g. column vectors instead of row vectors,
+        matrix B instead of V, etc.)
+    \item Describe measuring of DGD properties, and implementation of this
+    \item Detailed description of attack in practice, discuss implementation challenges w.r.t. memory, runtime, etc.
+    \item Results and discussion of these, limitations, considerations, etc.
+\end{enumerate}
 \subsection{Listings}
 You can do listings, like in Listing~\ref{ListingReference}
 \begin{lstlisting}[caption={[Short caption]Look at this cool listing. Find the rest in Appendix~\ref{Listing}},label=ListingReference]
