@@ -25,11 +25,7 @@ fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<
 
     let n = u.nrows();
     let seed = rand::random::<u64>();
-    if descent {
-        println!("Running gradient descent");
-    } else {
-        println!("Running gradient ascent")
-    }
+
     println!("Seed: {seed}");
     let mut rng = StdRng::seed_from_u64(seed);
 
@@ -41,7 +37,7 @@ fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<
     if solution.is_some() {
         w = solution.unwrap().clone();
     }
-    let mut mom4_w = mom4(&w, &u);
+    let mut mom4_w = mom4_par(&w, &u);
 
     // initialize variables
 
@@ -75,7 +71,7 @@ fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<
         wnew = wnew.normalize();
 
         // compute 4th moment of new w
-        let mom4_wnew = mom4(&wnew, &u);
+        let mom4_wnew = mom4_par(&wnew, &u);
 
         // measure difference between old and new
         let mom4_diff = mom4_wnew - mom4_w;
@@ -136,12 +132,23 @@ fn mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> f64 {
     dot.mean()
 }
 
+fn mom4_par(w: &DVector<f64>, samples: &DMatrix<f64>) -> f64 {
+    let uw3: Vec<f64> = (0..samples.ncols())
+        .into_par_iter()
+        .map(|j| samples.column(j).dot(w).powi(4))
+        .collect();
+
+    DVector::<f64>::from_vec(uw3).mean()
+
+}
+
 fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
     let n = w.nrows();
     let t = samples.ncols();
     let uw3: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(3));
     let uw3u = DMatrix::from_fn(n, t, |i, j| uw3[j] * samples[(i, j)]);
     let g = 4.0 * uw3u.column_mean();
+    // println!("Max memory usage: {} GB", PEAK_ALLOC.peak_usage_as_gb());
     g
 }
 
@@ -150,13 +157,13 @@ fn grad_mom4_par(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
     let t = samples.ncols();
 
     // Precompute the dot product of each column of `samples` with `w`
-    let uw: Vec<f64> = (0..t)
+    let uw3: Vec<f64> = (0..t)
         .into_par_iter() // Parallelize over columns
-        .map(|j| samples.column(j).dot(w))
+        .map(|j| samples.column(j).dot(w).powi(3))
         .collect();
 
     // Compute uw^3 for each column
-    let uw3: Vec<f64> = uw.par_iter().map(|x| x.powi(3)).collect();
+    // let uw3: Vec<f64> = uw.par_iter().map(|x| x.powi(3)).collect();
 
     // Compute the gradient in parallel
     let mut g = Arc::new(Mutex::new(DVector::zeros(n)));
@@ -168,6 +175,7 @@ fn grad_mom4_par(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
         g.lock().unwrap()[i] = 4.0 * sum / (t as f64);
     });
 
+    // println!("Max memory usage: {} GB", PEAK_ALLOC.peak_usage_as_gb());
     Arc::try_unwrap(g)
         .expect("Could not unpack gradient g")
         .into_inner()

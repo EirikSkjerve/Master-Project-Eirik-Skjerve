@@ -123,8 +123,39 @@ We also need to compute the gradient of the fourth moment, $\nabla mom_{4, \mat{
         = 4 \mathlarger{\sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^3 c_i}$
 \end{itemize}
 Putting together the terms with the constants we have 
-    \[ \nabla mom_{4, \mat{C}}(\vec{w}) =  \frac{4}{3} \lVert \vec{w} \rVert ^2 \vec{w} - \frac{8}{15} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^3 c_i\]
+\[ \nabla mom_{4, \mat{C}}(\vec{w}) =  \frac{4}{3} \lVert \vec{w} \rVert ^2 \vec{w} - \frac{8}{15} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^3 c_i\] \\
+The key observation is that by minimizing $mom_{4, \mat{C}(\vec{w})}$ one has to maximize the term 
+$ \mathlarger{-\frac{2}{15}\sum_{i=1}^{n}} \langle c_i, \vec{w} \rangle ^4$. Since $c_i$ and $\vec{w}$ are both on the unit circle, and
+all $c_i$ are orthogonal to each other, the term is maximized whenever $\vec{w} = c_i$ since $\langle c_i, \pm c_i \rangle = \langle \vec{w}, \pm \vec{w} \rangle = 1$.
+Using this observation, we can run a gradient descent to minimize $mom_{4, \mat{C}}(\vec{w})$ and find rows of $\pm \mat{C}$.
+A simple gradient descent is described in the following algorithm:
 
+% \begin{algorithm}
+%     \caption{Gradient descent}
+%     \begin{algorithmic}[1]
+%         \Procedure{Gradient descent}
+%         \State Choose random vector $\vec{w}$ on the unit sphere
+%         \State Compute an approximation of $\nabla mom_{4, \mat{C}}(\vec{w})$
+%     \end{algorithmic}
+% \end{algorithm}
+\begin{algorithm}
+\caption{Gradient descent}
+\begin{algorithmic}[1]
+% \Procedure{Euclid}{$a,b$}\Comment{The g.c.d. of a and b}
+    \Require{Parameter $\delta$}
+        \State Choose random vector $\vec{w}$ on the unit sphere
+        \State Compute an approximation $\vec{g} \gets \nabla mom_{4, \mat{C}}(\vec{w})$
+        \State Set $\vec{w}_{new} \gets \vec{w} - \delta \vec{g} $
+        \State Normalize $\vec{w}_{new}$ as $\frac{\vec{w}_{new}}{\lVert \vec{w}_{new} \rVert}$
+        \State Approximate $mom_{4, \mat{C}}(\vec{w})$ and $mom_{4, \mat{C}}(\vec{w}_{new})$
+        \If{$mom_{4, \mat{C}}(\vec{w}) \geq mom_{4, \mat{C}}(\vec{w}_{new})$}
+            \State Return $\vec{w}$
+        \Else{}
+        \State Set $\vec{w} \gets \vec{w}_{new}$ and go to step 2
+        \EndIf
+\end{algorithmic}
+\end{algorithm}
+This procedure is repeated until all rows of $\pm \mat{C}$ is found. Each row is transformed by $\mat{L}^{-1}$ to get the row in $\mat{V}$.
 \section{HPP against the Normal Distribution}
 
 \begin{lemma}[Lemma 1]
@@ -133,7 +164,7 @@ Assume signatures on the form $\vec{v} = \vec{x} \mat{V}$ where $x_i \sim \normd
 the fourth moment of $\PP{C}$ is constant over $\vec{w}$ on the unit circle.
 \end{lemma}
 \begin{proof}
-    We simply do the same calculations as in the previous section, with the difference that $x$ is normally distributed over the interval $(-1, 1)$.
+    We simply do the same calculations as in the previous section, with the difference that $x$ follows a normal distribution.
     Considering
     \[ mom_{4, \mat{C}}(\vec{w}) = \bb{E}[(\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle ) ^4] = 
         \bb{E}[\sum_{i}^{n} \sum_{j}^{n} \sum_{k}^{n} \sum_{l}^{n} x_i x_j x_k x_l 
@@ -142,7 +173,7 @@ the fourth moment of $\PP{C}$ is constant over $\vec{w}$ on the unit circle.
 
     for the three different cases:
     \begin{itemize}
-        \item \textbf{All equal: } If $i = j = k = l$, we simply have $\sum_i^n \bb{E}[x^4] \langle c_i, \vec{w} \rangle ^4 = 3 \sigma ^4 \sum_i \langle c_i, \vec{w} \rangle ^4$
+        \item \textbf{All equal: } If $i = j = k = l$, we simply have $\sum_i^n \bb{E}[x_i^4] \langle c_i, \vec{w} \rangle ^4 = 3 \sigma ^4 \sum_i \langle c_i, \vec{w} \rangle ^4$
             due to the well known fact that $\bb{E}[x^4] = 3 \sigma ^4$ for $x$ distributed according to $\normdist{0}{\sigma}$.
         \item \textbf{None equal:} Since $\bb{E}[x] = 0$ as in the case of the uniform distribution, this results in zero.
         \item \textbf{Pairwise equal:} If either 
@@ -151,8 +182,8 @@ the fourth moment of $\PP{C}$ is constant over $\vec{w}$ on the unit circle.
                 \item $i = k \neq j = l$ 
                 \item $i = l \neq j = k$
             \end{itemize}
-            we have $\sum_{i \neq j} \bb{E}[x_i^2 x_j^2] \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2$ \\
-            $= (\sigma^2 )^2 \sum_{i \neq j}\langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2$ \\
+            we have $\sum_{i \neq j} \bb{E}[x_i^2 x_j^2] \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2$
+            % $= (\sigma^2 )^2 \sum_{i \neq j}\langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2$ \\
             $= \sigma^4 \sum_{i \neq j}\langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2$ since $\bb{E}[x^2] = \sigma^2$.
     \end{itemize}
 

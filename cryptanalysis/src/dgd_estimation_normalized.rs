@@ -98,7 +98,6 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
     let (privkey, _) = hawkkeygen(n);
     let start = Instant::now();
 
-    // let mut mu: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
     let mu = 0.0;
     // thread safe variable
     let mut var: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
