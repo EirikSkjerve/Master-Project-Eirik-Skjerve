@@ -42,44 +42,25 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // We need to generate a lot of samples to run the attack on
     // Samples is a tx2n matrix
 
-
     let (mut samples, (b, binv), q) = generate_samples_and_keys(t, n).unwrap();
-
-    // let mut min = 1000.0;
-    // let mut max = 0.0;
-    // for i in 0..samples.ncols() {
-    //     for j in 0..samples.nrows() {
-    //         if samples[(j, i)].abs() < min { min = samples[(j, i)].abs()}
-    //         if samples[(j, i)].abs() > max { max = samples[(j, i)].abs()}
-    //     }
-    // }
-    // println!("Min: {min}\nMax: {max}");
 
     // STEP 1: estimate covariance matrix. This step is automatically given by public key Q
 
     // STEP 2: conversion from hidden parallelepiped to hidden hypercube.
     // Given Q, we do cholesky decomposition to get L s.t. Q = LLt
-    // multiply our signature samples on the right with this L
-    // to produce U which is distributed over L^t B^-1
-    // now samples are modified in place so samples = U
-    // the modified samples are modified as f32, but later cast into f64
+    // multiply our signature samples on the left with this Lt
+    // so that samples are is distributed over L^t B^-1
+    // samples are modified in place
 
     let (linv, c) = hypercube_transformation(&mut samples, q.map(|x| x as f64), &binv);
     println!("Samples transformed");
 
-    // let mut min = 1000.0;
-    // let mut max = 0.0;
-    // for i in 0..samples.ncols() {
-    //     for j in 0..samples.nrows() {
-    //         if samples[(j, i)].abs() < min { min = samples[(j, i)].abs()}
-    //         if samples[(j, i)].abs() > max { max = samples[(j, i)].abs()}
-    //     }
-    // }
-    // println!("Min: {min}\nMax: {max}");
-    // return;
-
+    // do some measuring of moments
     let total_num_elements = (samples.nrows() * samples.ncols()) as f64;
     let mean = samples.iter().sum::<f64>() / total_num_elements;
+    
+    // let mean = 0.0;
+
     let variance = samples
         .iter()
         .map(|&x| {
@@ -114,8 +95,9 @@ pub fn run_hpp_attack(t: usize, n: usize) {
         PEAK_ALLOC.current_usage_as_mb()
     );
 
-
     // random column for testing
+    // can be randomized which column index is chosen
+    // can either be None or some column
     // let rand_index: usize = rand::thread_rng().gen_range(0..2*n);
     // let correct_solution: Option<DVector<f64>> = Some(c.column(5).into_owned());
     let correct_solution: Option<DVector<f64>> = None;
@@ -142,31 +124,26 @@ pub fn run_hpp_attack(t: usize, n: usize) {
             res = gradient_ascent(&samples, correct_solution.as_ref());
         }
 
-        // check if result is a value
-        if res.is_some() {
+        // multiply result vector with L inverse on the left to obtain solution as row in B
+        // inverse
+        let solution = (&linv * res.unwrap()).map(|x| x.round() as i32);
 
-            // multiply result vector with L inverse on the left to obtain solution as row in B
-            // inverse
-            let solution = (&linv * res.clone().unwrap()).map(|x| x.round() as i32);
-
-            // check directly if solution is in the actual secret key
-            if vec_in_key(&solution, &binv) {
-                println!("FOUND! Result is in key based on direct checking");
-                return;
-            }
-
-            // do a measurement of the result vector up against secret key if it was not the correct one
-            measure_res(&solution, &binv);
-            println!(
-                "Norm of res from gradient search: {}",
-                solution.map(|x| x as f64).norm()
-            );
-            println!("Norm of col0: {}", col0.map(|x| x as f64).norm());
-            println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
-            println!("Result not in key... \n");
+        // check directly if solution is in the actual secret key
+        if vec_in_key(&solution, &binv) {
+            println!("FOUND! Result is in key based on direct checking");
+            return;
         }
-    }
 
+        // do a measurement of the result vector up against secret key if it was not the correct one
+        measure_res(&solution, &binv);
+        println!(
+            "Norm of res from gradient search: {}",
+            solution.map(|x| x as f64).norm()
+        );
+        println!("Norm of col0: {}", col0.map(|x| x as f64).norm());
+        println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
+        println!("Result not in key... \n");
+    }
 }
 
 fn hypercube_transformation(
@@ -212,65 +189,6 @@ fn hypercube_transformation(
     (linv, c)
 }
 
-
-fn multiply_in_place_parallel(l: &DMatrix<f64>, m: &mut DMatrix<f64>) {
-    let (rows_l, cols_l) = (l.nrows(), l.ncols());
-    let (rows_m, cols_m) = (m.nrows(), m.ncols());
-
-    assert_eq!(cols_l, rows_m, "Matrix dimensions do not match for multiplication!");
-
-    // Wrap each row of `m` in a separate Mutex to allow parallel writes
-    let row_mutexes: Vec<_> = m.row_iter_mut().map(|r| Arc::new(Mutex::new(r.into_owned()))).collect();
-
-    (0..rows_l).into_par_iter().for_each(|i| {
-        let mut row_result = vec![0.0; cols_m];  // Thread-local row buffer
-
-        // Compute row `i` of the result
-        for j in 0..cols_m {
-            let mut sum = 0.0;
-            for k in 0..cols_l {
-                // Read safely from M (without locking the whole thing)
-                let row_k = row_mutexes[k].lock().unwrap();
-                sum += l[(i, k)] * row_k[j];
-            }
-            row_result[j] = sum;
-        }
-
-        // Write computed row back to `M`
-        let mut row_lock = row_mutexes[i].lock().unwrap();
-        row_lock.copy_from_slice(&row_result);
-    });
-
-    // Copy the modified row data back into `m`
-    for (i, mut row) in m.row_iter_mut().enumerate() {
-        let locked_row = row_mutexes[i].lock().unwrap();
-        row.copy_from_slice(&locked_row.as_slice());
-    }
-}
-
-//     let (rows_l, cols_l) = (lhs.nrows(), lhs.ncols());
-//     let (rows_r, cols_r) = (rhs.nrows(), rhs.ncols());
-//     // Temporary buffer to hold one row of the output at a time
-//     let mut row_buffer = vec![0.0; rhs.ncols()];
-//
-//     // Iterate over rows of L
-//     for i in 0..rows_l {
-//         // Compute row `i` of the result and store in `row_buffer`
-//         for j in 0..cols_r {
-//             let mut sum = 0.0;
-//             for k in 0..cols_l {
-//                 sum += lhs[(i, k)] * rhs[(k, j)];
-//             }
-//             row_buffer[j] = sum;  // Store computed value
-//         }
-//
-//         // Write computed row back to M (since we are modifying in place)
-//         for j in 0..cols_r {
-//             rhs[(i, j)] = row_buffer[j];
-//         }
-//     }
-// }
-
 fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
     // Check if the vector exists as a column in the matrix
     let as_column = key.column_iter().any(|col| col == *vec);
@@ -304,19 +222,6 @@ fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) {
     println!("Min norm of diff: {min} \nMax norm of diff: {max}");
 }
 
-fn is_orthogonal(matrix: &DMatrix<f64>) -> bool {
-    let identity = DMatrix::identity(matrix.ncols(), matrix.ncols());
-    let qt_q = matrix.transpose() * matrix;
-    let diff = (&qt_q - identity).norm();
-    diff < TOLERANCE
-}
-
-fn is_orthonormal(matrix: &DMatrix<f64>) -> bool {
-    is_orthogonal(matrix)
-        && matrix
-            .column_iter()
-            .all(|col| (col.norm() - 1.0).abs() < TOLERANCE)
-}
 
 fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64>) {
     // given private key, reconstruct entire secret matrix B and B inverse
@@ -348,6 +253,9 @@ fn generate_samples_and_keys(
     t: usize,
     degree: usize,
 ) -> Option<(DMatrix<f64>, (DMatrix<i32>, DMatrix<i32>), DMatrix<i64>)> {
+    // method that returns samples and keys given number of samples t and Hawk degree n
+    // if there exists a file named <t>vectors_deg<degree>.bin, it will use the values in that file.
+    // Otherwise samples and keys will be generated on the fly
     // check first if file exists
     let file_exists: bool = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).is_ok();
     if file_exists {
@@ -355,7 +263,7 @@ fn generate_samples_and_keys(
     } else {
         println!("{t}vectors_deg{degree}.bin does not exist");
     }
-    let (signatures, pkey, skey) = match file_exists {
+    let (signatures, privkey, pubkey) = match file_exists {
         false => collect_signatures_par(t, degree, false).unwrap(),
         true => read_vectors_from_file(&format!("{t}vectors_deg{degree}")).unwrap(),
     };
@@ -373,8 +281,10 @@ fn generate_samples_and_keys(
     // convert to f64
     let signature_matrix = signature_matrix.map(|x| x as f64);
 
-    let (b, binv) = to_mat(&pkey);
-    let (q00, q01) = skey;
+    // convert the private key (i.e. f and g) to the entire matrix B and B inverse
+    let (b, binv) = to_mat(&privkey);
+    // unpack 
+    let (q00, q01) = pubkey;
 
     // use ntrusolve to get q01 and q11, and convert it into a DMatrix
     if let Some((q10, q11)) = ntrusolve(&q00, &q01) {
@@ -390,66 +300,4 @@ fn generate_samples_and_keys(
     } else {
         return None;
     }
-}
-
-// fn gen_samples_and_keys_inner()
-
-fn get_secret_key(t: usize, degree: usize) -> (DMatrix<i32>, DMatrix<i32>) {
-    // gets the secret key for t samples degree n
-    // provided there is only one file
-
-    // get the private key
-    let (_, pkey, _) = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).expect(&format!(
-        "Could not find file with length {t} and degree {degree}"
-    ));
-    // println!("F: {:?} \nG: {:?}", pkey.1, pkey.2);
-    // get the matrix form of b inverse
-    let (b, binv) = to_mat(&pkey);
-
-    (b.map(|x| x as i32), binv.map(|x| x as i32))
-}
-
-fn get_public_key(t: usize, degree: usize) -> Option<DMatrix<i64>> {
-    // get the public key
-    let (_, _, (q00, q01)) = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).expect(
-        &format!("Could not find file with length {t} and degree {degree}"),
-    );
-
-    // use ntrusolve to get q01 and q11, and convert it into a DMatrix
-    if let Some((q10, q11)) = ntrusolve(&q00, &q01) {
-        let q = rot_key(&q00, &q10, &q01, &q11);
-        let flatq: Vec<i64> = q.into_iter().flatten().collect();
-        let q_mat = DMatrix::from_row_slice(2 * degree, 2 * degree, &flatq);
-        return Some(q_mat);
-    }
-    None
-}
-fn generate_samples(t: usize, degree: usize) -> DMatrix<i32> {
-    // returns samples of length t for Hawk degree n
-    // will return data from file if file exists.
-    // TODO: Otherwise, create the samples in place
-
-    // read from precomputed file
-    let (signatures, _, _) = read_vectors_from_file(&format!("{t}vectors_deg{degree}")).expect(
-        &format!("Could not find file with length {t} and degree {degree}"),
-    );
-    // TODO create new samples if file does not exist
-
-    // convert the vectors into a nalgebra matrix
-
-    // get dimensions
-    let rows = signatures[0].len();
-    let cols = signatures.len();
-
-    // flatten the signature samples
-    let sig_flat: Vec<i16> = signatures.into_iter().flatten().collect();
-
-    // construct nalgebra matrix from this
-    let signature_matrix = DMatrix::from_column_slice(rows, cols, &sig_flat);
-
-    // convert to i32
-    let signature_matrix = signature_matrix.map(|x| x as i32);
-
-    // return the nalgebra matrix
-    signature_matrix
 }
