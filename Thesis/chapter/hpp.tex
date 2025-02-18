@@ -158,13 +158,9 @@ A simple gradient descent is described in the following algorithm:
 This procedure is repeated until all rows of $\pm \mat{C}$ is found. Each row is transformed by $\mat{L}^{-1}$ to get the row in $\mat{V}$.
 \section{HPP against the Normal Distribution}
 
-\begin{lemma}[Lemma 1]
-\label{hpp_norm_lemma}
-Assume signatures on the form $\vec{v} = \vec{x} \mat{V}$ where $x_i \sim \normdist{0}{\sigma}$. After converting $\PP{V}$ to $\PP{C}$, 
+Assume now that the signatures on the form $\vec{v} = \vec{x} \mat{V}$ where $x_i \sim \normdist{0}{\sigma}$. After converting $\PP{V}$ to $\PP{C}$, 
 the fourth moment of $\PP{C}$ is constant over $\vec{w}$ on the unit circle.
-\end{lemma}
-\begin{proof}
-    We simply do the same calculations as in the previous section, with the difference that $x$ follows a normal distribution.
+    To show this, we simply do the same calculations as in the previous section, with the difference that $x$ follows a normal distribution.
     Considering
     \[ mom_{4, \mat{C}}(\vec{w}) = \bb{E}[(\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle ) ^4] = 
         \bb{E}[\sum_{i}^{n} \sum_{j}^{n} \sum_{k}^{n} \sum_{l}^{n} x_i x_j x_k x_l 
@@ -210,5 +206,4 @@ the fourth moment of $\PP{C}$ is constant over $\vec{w}$ on the unit circle.
         mom_{4, \mat{C}}(\vec{w}) = 3\sigma^4 (\lVert \vec{w} \rVert ^2 ) ^2
     \]
 
-    Since $mom_{4, \mat{C}}(\vec{w})$ is constant for $\vec{w}$ on the unit sphere, the term does not depend on the secret matrix $\mat{C}$ and the attack will not work.
-\end{proof}
+    Since $mom_{4, \mat{C}}(\vec{w})$ is constant for $\vec{w}$ on the unit sphere, regardless $\sigma^2$, the term does not depend on the secret matrix $\mat{C}$ and the attack will not work.
