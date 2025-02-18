@@ -42,3 +42,28 @@ By taking $\mat{C} =  \mat{L}^t\mat{B}^{-1}$, we have that
 \[\mat{C}\mat{C}^t = (\mat{L}^t \mat{B}^{-1})(\mat{L}^t \mat{B}^{-1})^t = \mat{L}^t \mat{B}^{-1} \mat{B}^{-t} \mat{L} =  \mat{L}^t \mat{Q}^{-1} \mat{L} = \mat{L}^t (\mat{L} \mat{L}^t)^{-1} \mat{L} = \mat{L}^t \mat{L}^{-t} \mat{L}^{-1} \mat{L} = \mat{I}\]
 Since $\vec{x}$ is distributed according to $\dgdi$ over $\PP{\mat{B}^{-1}}$, by taking 
 $\vec{c} = \mat{L}^{t} \vec{w}$ we have $\vec{c} = \mat{L}^{t} \mat{B}^{-1} \vec{x} = \mat{C} \vec{x}$, $\vec{c}$ is distributed according to $\dgdi$ over $\PP{C}$.
+
+We summarize this step of the attack against hawk in the following algorithm
+
+\begin{algorithm}
+\caption{Hawk Hypercube Transformation}
+\begin{algorithmic}[1]
+% \Procedure{Euclid}{$a,b$}\Comment{The g.c.d. of a and b}
+    \Require{Samples $\vec{w} = \mat{B}^{-1} \vec{x}$ and public key $\mat{Q}$}
+    \State Compute $\mat{L}$ s.t. $\mat{Q} = \mat{L}\mat{L}^t$ \Comment by Cholesky decomposition
+    \State Compute $\vec{c} = \mat{L}^t \vec{w}$
+    \State \Return{$\vec{c}$ and $\mat{L}^{-1}$}
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Gradient search for Hawk}
+After having transformed the samples $\vec{w} \in \PP{\mat{B}^{-1}}$ to $\vec{c} \in \PP{\mat{C}}$ we want to recover columns of $\pm \mat{C}$.
+Due to the special structure of Hawk (and NTRU) private keys, finding one column of $\mat{B}$, one has automatically found $n$ columns.
+Unfortunately, since revealing a single column of $ \mat{B}^{-1}$ reveals a rotation of either the two polynomials $G$ and $ g$ \textit{or} $F$ and $f$,
+this is not enough to disclose the entire matrix (or a rotation thereof). If samples were on the form $\vec{w} = \mat{B} \vec{x}$, a single column would reveal $f$ and $g$, and one could simply reconstruct $F$ and $G$
+by solving the NTRU-equation as in the key generation step of Hawk.
+Nevertheless, if one finds two columns of $\mat{B}^{-1}$, it is easy to check if they are shifts of each other. If they are not, one has found shifts of all four polynomials in the secret key, 
+and by trying all combinations of shifts, of which there are $4 n^2$ (accounting for negative and positive sign), one can easily verify if a candidate $\mat{B'}^{-1}$ is valid by computing 
+$\mat{B'} = (\mat{B'}^{-1})^{-1}$, and checking if $\mat{B'}^t \mat{B'} = \mat{Q}$. If so, one is able to forge signatures.
+
+Now, given samples $\vec{c} \in \PP{C}$, we run a gradient search to minimize or maximize the fourth moment of one-dimensional projections, as in the original attack.
