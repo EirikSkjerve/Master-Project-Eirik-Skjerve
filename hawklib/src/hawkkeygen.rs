@@ -32,13 +32,19 @@ fn hawkkeygen_inner(
 
     // check that f and g have odd parity
     // I think this is mostly for encoding/decoding stuff, but just do it anyways
-    if !(is_invertible(&f, 2) && is_invertible(&g, 2)) {
-        return None;
-    }
 
-    // check l2norm of f and g
-    if ((l2norm(&f) + l2norm(&g)) as f64) <= 2.0 * (n as f64) * sigmakrsec.powi(2) {
-        return None;
+    if n == 256 || n == 512 || n == 1024 {
+
+        if !(is_invertible(&f, 2) && is_invertible(&g, 2)) {
+            println!("Is not invertible");
+            return None;
+        }
+
+        // check l2norm of f and g
+        if ((l2norm(&f) + l2norm(&g)) as f64) <= 2.0 * (n as f64) * sigmakrsec.powi(2) {
+            println!("Too low norm");
+            return None;
+        }
     }
 
     // compute f* and g*
@@ -56,6 +62,7 @@ fn hawkkeygen_inner(
 
     // check q00 invertibility mod p1 and p2
     if !(is_invertible(&q00, p1) && is_invertible(&q00, p2)) {
+        println!("not invertible...");
         return None;
     }
 
@@ -64,6 +71,7 @@ fn hawkkeygen_inner(
 
     // check the constant term of 1/q00 is not too high
     if invq00[0] >= beta0 {
+        println!("Too high thing here");
         return None;
     }
 
@@ -74,7 +82,7 @@ fn hawkkeygen_inner(
     let ntrusolve_res = ntrusolve(&f, &g);
     match ntrusolve_res {
         Some(_) => {}
-        None => return None,
+        None => {println!("Ntrusolve failed"); return None},
     }
 
     let (bigf, bigg) = ntrusolve_res.unwrap();
@@ -125,30 +133,32 @@ pub fn hawkkeygen(n: usize) -> ((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i6
     // outputs private key (kgseed, F, G)
     //         public key  (q00, q01)
 
-    assert!(n == 256 || n == 512 || n == 1024);
-
     let lenkgseed = match n {
         256 => hawk256_params::LENKGSEED,
         512 => hawk512_params::LENKGSEED,
-        _ => hawk1024_params::LENKGSEED,
+        1024 => hawk1024_params::LENKGSEED,
+        _ => hawk256_params::LENKGSEED,
     };
 
     let sigmakrsec = match n {
         256 => hawk256_params::SIGMAKRSEC,
         512 => hawk512_params::SIGMAKRSEC,
-        _ => hawk1024_params::SIGMAKRSEC,
+        1024 => hawk1024_params::SIGMAKRSEC,
+        _ => hawk256_params::SIGMAKRSEC,
     };
 
     let beta0 = match n {
         256 => hawk256_params::BETA0,
         512 => hawk512_params::BETA0,
-        _ => hawk1024_params::BETA0,
+        1024 => hawk1024_params::BETA0,
+        _ => hawk256_params::BETA0,
     };
 
     let high11 = match n {
         256 => hawk256_params::HIGH11,
         512 => hawk512_params::HIGH11,
-        _ => hawk1024_params::HIGH11,
+        1024 => hawk1024_params::HIGH11,
+        _ => hawk256_params::HIGH11,
     };
 
     // initialize a new RngContext instance, used for generating random bits

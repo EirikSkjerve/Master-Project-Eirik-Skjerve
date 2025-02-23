@@ -24,8 +24,6 @@ pub fn hawkverify(
     // main method for verifying hawk signature on message
     //
 
-    assert!(n == 256 || n == 512 || n == 1024);
-
     // get the correct parameters
     let (highs0, highs1, high00, high01, sigmaverify) = match n {
         256 => (
@@ -44,12 +42,20 @@ pub fn hawkverify(
             hawk512_params::SIGMAVERIFY,
         ),
 
-        _ => (
+        1024 => (
             hawk1024_params::HIGHS0,
             hawk1024_params::HIGHS1,
             hawk1024_params::HIGH00,
             hawk1024_params::HIGH01,
             hawk1024_params::SIGMAVERIFY,
+        ),
+
+        _ => (
+            hawk256_params::HIGHS0,
+            hawk256_params::HIGHS1,
+            hawk256_params::HIGH00,
+            hawk256_params::HIGH01,
+            hawk256_params::SIGMAVERIFY,
         ),
     };
 
@@ -90,8 +96,6 @@ pub fn hawkverify(
 
     // rebuild the missing part of the signature w
     let w0 = rebuildw0(&q00, &q01, &w1, &h0, highs0, highs1, high00, high01);
-
-    // println!("w0 from veri: {:?}", w0);
 
     // primes used for doing ntt computations with Q
     let (p1, p2): (i64, i64) = (2147473409, 2147389441);

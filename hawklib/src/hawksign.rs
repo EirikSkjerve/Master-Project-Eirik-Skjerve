@@ -54,7 +54,8 @@ pub fn sample(s: &[u8], t: Vec<u8>, n: usize) -> Vec<i64> {
     let (t0, t1) = match n {
         256 => (hawk256_params::T0, hawk256_params::T1),
         512 => (hawk512_params::T0, hawk512_params::T1),
-        _ => (hawk1024_params::T0, hawk1024_params::T1),
+        1024 => (hawk1024_params::T0, hawk1024_params::T1),
+        _ => (hawk256_params::T0, hawk256_params::T1),
     };
 
     // vector y of random high numbers
@@ -139,17 +140,17 @@ pub fn hawksign(
 
     assert_eq!(bigf.len(), n);
     assert_eq!(bigg.len(), n);
-    assert!(n == 256 || n == 512 || n == 1024);
 
     // get the right parameters
     let (lensalt, sigmaverify) = match n {
         256 => (hawk256_params::LENSALT, hawk256_params::SIGMAVERIFY),
         512 => (hawk512_params::LENSALT, hawk512_params::SIGMAVERIFY),
-        _ => (hawk1024_params::LENSALT, hawk1024_params::SIGMAVERIFY),
+        1024 => (hawk1024_params::LENSALT, hawk1024_params::SIGMAVERIFY),
+        _ => (hawk256_params::LENSALT, hawk256_params::SIGMAVERIFY),
     };
 
     // create new rng
-    let mut rng = RngContext::new(&get_random_bytes(10));
+    let mut rng = RngContext::new(&get_random_bytes(20));
 
     // regenerate part of secret key
     let (f, g) = gen_f_g(&kgseed, n);
@@ -276,13 +277,13 @@ pub fn hawksign_total(
 
     assert_eq!(bigf.len(), n);
     assert_eq!(bigg.len(), n);
-    assert!(n == 256 || n == 512 || n == 1024);
 
     // get the right parameters
     let (lensalt, sigmaverify) = match n {
         256 => (hawk256_params::LENSALT, hawk256_params::SIGMAVERIFY),
         512 => (hawk512_params::LENSALT, hawk512_params::SIGMAVERIFY),
-        _ => (hawk1024_params::LENSALT, hawk1024_params::SIGMAVERIFY),
+        1024 => (hawk1024_params::LENSALT, hawk1024_params::SIGMAVERIFY),
+        _ => (hawk256_params::LENSALT, hawk256_params::SIGMAVERIFY),
     };
 
     // create new rng
