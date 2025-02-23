@@ -7,6 +7,7 @@
 \newcommand{\bb}[1]{\mathbb{#1}}
 \newcommand{\dgd}{\mathcal{D}}
 \newcommand{\dgdi}{\widehat{\mathcal{D}}}
+\newcommand{\mom}[2]{mom_{#1, \mathbf{#2}}(\mathbf{w})}
 
 \chapter{Introduction}
 \section{Context and motivation}
@@ -26,20 +27,18 @@ The title of their paper and the name of the attack is \textit{Learning a Parall
 Countermeasures for this attack was proposed, but ultimately broken again in 2012 due to a more advanced extension of the original attack \cite{Zonotope12}.
 
 Hawk \cite{HawkSpec24} is a digital signature scheme submitted to NIST's standardization process and is a viable candidate for standardization
-due to its speed and small signature- and keysizes. This thesis will investigate if a method based on \gls{hpp} can be aimed at
-Hawk to retrieve information about the secret key.
-% It has some notable structural similarities to that of NTRUsign, but is theoretically safe from the \gls{hpp} attack.
-% In practice, however, this might not necessarily be the case. 
+due to its speed and small signature- and keysizes. It is also a lattice-based signature scheme akin to NTRU-sign, but with some significant changes, and a different underlying hard problem on which its security is based upon. 
+This thesis will investigate if a method based on \gls{hpp} can be aimed at Hawk to retrieve information about the secret key, and ultimately break the scheme.
 
 \section{Objectives}
 The objective of this thesis consists of two main parts:
 \begin{itemize}
-    \item \textbf{Implementation of Hawk in Rust}. As the first part of this thesis I implement the Hawk digital signature scheme according to \cite{HawkSpec24} in the Rust programming language. 
-    Implementing a scheme and its algorithms is a good way to more deeply learn how it works. I chose to implement it in Rust for the sake of learning the language as a personal bonus objective of the thesis.
-    Moreover, having ones own version of an algorithm makes it easier to experiment, run simulations, adjust, and modify it to ones need. It would in any case be challenging to understand and work with dense, long, 
-    and complicated source code someone else has written. For the Hawk teams source code and reference implementation see https://github.com/hawk-sign.
+    \item \textbf{Implementation of Hawk in Rust}. As the first part of this thesis I implement the Hawk digital signature scheme according to \cite{HawkSpec24} in the Rust programming language.
+        \footnote{Disclaimer: this implementation is not meant to be comparable with the Hawk teams implementation for real life usage, as it is not highly optimized and not all formal requirements are met.}
+    Implementing a scheme and its algorithms is a good way to more deeply learn how it works. I chose to do the implementation in Rust for the sake of becoming more adept this programming language as a personal bonus objective of the thesis.
+    Moreover, having ones own implementation of a scheme makes it easier to experiment on, run simulations with, adjust, and modify it to ones need. It would in any case be challenging to understand and work with dense, long, 
+    and complicated source code someone else has written. For the Hawk teams source code in C and a reference implementation in Python see https://github.com/hawk-sign.
 
-    Disclaimer: this implementation is not meant to be comparable with the Hawk teams implementation for real life usage, as it is not highly optimized and not all formal requirements are met.
 
 \item \textbf{Cryptanalysis and experimentation}. The second part of this thesis is cryptanalysis of Hawk. The goal is to use the \textit{Learning a parallelepiped} attack and adjusting it to attack Hawk. 
     This requires both theoretical and practical work, and experiments will, like the Hawk implementation itself, be implemented in Rust.

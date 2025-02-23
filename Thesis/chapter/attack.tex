@@ -39,11 +39,13 @@ Recall that in the original attack one has to take Cholesky decomposition (or an
 $\mat{G}^{-1} = \mat{B}^t \mat{B} = \mat{Q}$. Therefore, we can simply take the Cholesky decomposition of $\mat{Q} = \mat{L} \mat{L}^t$.
 By multiplying our samples $\vec{w}$ by $\mat{L}^t$ on the left, we have transformed our samples to the hidden hypercube as in the original attack. \\
 By taking $\mat{C} =  \mat{L}^t\mat{B}^{-1}$, we have that 
+\[\mat{C}^t \mat{C} = (\mat{L}^t \mat{B}^{-1})^t (\mat{L}^t \mat{B}^{-1}) = \mat{B}^{-t} \mat{L} \mat{L}^t \mat{B}^{-1} = \mat{B}^{-t} \mat{Q} \mat{B}^{-1} = \mat{B}^{-t} \mat{B}^{t} \mat{B} \mat{B}^{-1} = \mat{I}\]
+and
 \[\mat{C}\mat{C}^t = (\mat{L}^t \mat{B}^{-1})(\mat{L}^t \mat{B}^{-1})^t = \mat{L}^t \mat{B}^{-1} \mat{B}^{-t} \mat{L} =  \mat{L}^t \mat{Q}^{-1} \mat{L} = \mat{L}^t (\mat{L} \mat{L}^t)^{-1} \mat{L} = \mat{L}^t \mat{L}^{-t} \mat{L}^{-1} \mat{L} = \mat{I}\]
 Since $\vec{x}$ is distributed according to $\dgdi$ over $\PP{\mat{B}^{-1}}$, by taking 
 $\vec{c} = \mat{L}^{t} \vec{w}$ we have $\vec{c} = \mat{L}^{t} \mat{B}^{-1} \vec{x} = \mat{C} \vec{x}$, $\vec{c}$ is distributed according to $\dgdi$ over $\PP{C}$.
 
-We summarize this step of the attack against hawk in the following algorithm
+We summarize this step of the attack against Hawk in the following algorithm
 
 \begin{algorithm}
 \caption{Hawk Hypercube Transformation}
@@ -57,7 +59,7 @@ We summarize this step of the attack against hawk in the following algorithm
 \end{algorithm}
 
 \subsection{Gradient search for Hawk}
-After having transformed the samples $\vec{w} \in \PP{\mat{B}^{-1}}$ to $\vec{c} \in \PP{\mat{C}}$ we want to recover columns of $\pm \mat{C}$.
+After having transformed the samples $\vec{w} \in \PP{\mat{B}^{-1}}$ to $\vec{c} \in \PP{\mat{C}}$ we want to recover columns of $\pm \mat{C}$ and transform them back to columns of $\pm \mat{B}^{-1}$ by multiplying by $\mat{L}^{-1}$ on the left.
 Due to the special structure of Hawk (and NTRU) private keys, finding one column of $\mat{B}$, one has automatically found $n$ columns.
 Unfortunately, since revealing a single column of $ \mat{B}^{-1}$ reveals a rotation of either the two polynomials $G$ and $ g$ \textit{or} $F$ and $f$,
 this is not enough to disclose the entire matrix (or a rotation thereof). If samples were on the form $\vec{w} = \mat{B} \vec{x}$, a single column would reveal $f$ and $g$, and one could simply reconstruct $F$ and $G$
@@ -66,4 +68,6 @@ Nevertheless, if one finds two columns of $\mat{B}^{-1}$, it is easy to check if
 and by trying all combinations of shifts, of which there are $4 n^2$ (accounting for negative and positive sign), one can easily verify if a candidate $\mat{B'}^{-1}$ is valid by computing 
 $\mat{B'} = (\mat{B'}^{-1})^{-1}$, and checking if $\mat{B'}^t \mat{B'} = \mat{Q}$. If so, one is able to forge signatures.
 
-Now, given samples $\vec{c} \in \PP{C}$, we run a gradient search to minimize or maximize the fourth moment of one-dimensional projections, as in the original attack.
+Now, given samples $\vec{c} \in \PP{C}$, we run a gradient search to minimize or maximize the fourth moment of one-dimensional projections, as in the original attack. In addition to multiplying the samples by $\mat{L}^t$, we also divide them by the scalar $\sigma$, to normalize the samples
+so each sample in the vectors $\vec{c}$ has variance $1$. This also aligns with our theoretical analysis of $\mom{4}{C}$. Even though the distribution $\dgdi$ is discrete, the shape of the samples $\vec{c} \in \PP{C}$ will still have a spherical
+shape. The hope is that the areas in the directions of the columns of $\pm \mat{C}$ will deviate just enough from the spherical shape to give us a global minima/maxima in the gradient landscape.
