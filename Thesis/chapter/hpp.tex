@@ -2,7 +2,7 @@
 \newtheorem{proof}{Proof}
 
 \section{HPP}
-In this section we present the \textit{Learning a Parallelepiped} attack as described in \cite{NR09}.
+In this section we present the \textit{Learning a Parallelepiped} attack as described in \cite{NR09}. Note that in this section $\vec{v}$ denotes a \textit{row}-vector to follow the same notation as in \cite{NR09}.
 \subsection{Setup and idealized version}
 Let $\mat{V} \in \mathcal{GL}(\bb{R})$ be a secret $n \times n$ unimodular matrix and $\PP{V}$ be a fundamental parallelepiped, defined as $\{\vec{x}\mat{V}: \vec{x} \in [-1, 1]^n\}$. Let $\vec{x} = \{\vec{x}_1, \vec{x}_2, ...,\vec{x}_t\}$
 be $t$ row vectors of length $n$ with entries uniformly distributed over $[-1, 1] \in \bb{Q}$ and $\vec{v} = \{\vec{v}_1, \vec{v}_2, ..., \vec{v}_t\} = \{\mat{V} \vec{x}_1, \mat{V} \vec{x}_2, ..., \mat{V} \vec{x}_t\}$ 
@@ -13,6 +13,14 @@ such that $\vec{v} \subset \PP{V}$. By observing $\vec{v}$ for large enough $t$,
     \item Do gradient descent to minimize the fourth moment of one-dimensional projections and reveal a row of $\pm \mat{C}$ which finally can be transformed into a row of $\pm \mat{V}$
 \end{enumerate}
 In the following, each of these steps will be covered in detail.
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{hpp_parallelepiped_uniform.png}
+    \caption{Hidden parallelepiped problem in dimension 2}
+  	\medskip 
+	% \hspace*{15pt}\hbox{\scriptsize Credit: Acme company makes everything \url{https://acme.com/}}
+    \label{FlowchartFigure}
+\end{figure}
 \subsection{Covariance matrix estimation}
 Given enough samples on the form $\vec{v} = \mat{V} \vec{x}$, we want to estimate the covariance matrix $\mat{G} \approx \mat{V}^t \mat{V}$.
 This is achieved as $\vec{v}^t \vec{v} = (\mat{V} \vec{x})^t(\mat{V} \vec{x}) = \mat{V}^t \vec{x}^t \vec{x} \mat{V}$.
@@ -53,6 +61,14 @@ From this, we show the following:
 By multiplying our samples $\vec{v}$ by $\mat{L}$ on the right, we transform them from the hidden parallelepiped to the hidden hypercube. If one finds
 the rows of $\pm \mat{C}$, one can simply multiply the result on the right by $\mat{L}^{-1}$ to obtain the solution for $\mat{V}$.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{hpp_uniform_cube.png}
+    \caption{Hidden hypercube problem in dimension 2}
+  	\medskip 
+	% \hspace*{15pt}\hbox{\scriptsize Credit: Acme company makes everything \url{https://acme.com/}}
+    \label{FlowchartFigure}
+\end{figure}
 \subsection{Moments and Gradient Descent}
 The last major step in the attack is to measure and minimize the fourth moment of one-dimensional projections to disclose rows of $\pm \mat{C}$.
 Let $mom_{k, \mat{C}}(\vec{w})$ be defined as the $k$-th moment of $\PP{C}$ projected onto $\vec{w}$, i.e. 
@@ -198,3 +214,21 @@ the fourth moment of $\PP{C}$ is constant over $\vec{w}$ on the unit circle.
     \]
 
     Since $mom_{4, \mat{C}}(\vec{w})$ is constant for $\vec{w}$ on the unit sphere regardless of $\sigma^2$, the term no longer depends on the secret matrix $\mat{C}$ and the attack will not work.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{hpp_parallelepiped_normal.png}
+    \caption{Hidden parallelepiped problem in dimension 2 for normal distribution}
+  	\medskip 
+	% \hspace*{15pt}\hbox{\scriptsize Credit: Acme company makes everything \url{https://acme.com/}}
+    % \label{FlowchartFigure}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{hpp_normal_cube.png}
+    \caption{Hidden hypercube problem in dimension 2 for normal distribution}
+  	\medskip 
+	% \hspace*{15pt}\hbox{\scriptsize Credit: Acme company makes everything \url{https://acme.com/}}
+    % \label{FlowchartFigure}
+\end{figure}
