@@ -13,6 +13,9 @@ mod hpp_simulation;
 mod procrustes_attack;
 mod test_candidate_vec;
 
+mod hawk_sim;
+mod rngcontext;
+
 use collect_signatures::{
     collect_signatures, collect_signatures_par, covariance_matrix_estimation,
 };
@@ -28,6 +31,7 @@ use procrustes_attack::*;
 use peak_alloc::PeakAlloc;
 use prettytable::{Cell, Row, Table};
 
+use std::time::{Duration, Instant};
 use std::env;
 
 #[global_allocator]
@@ -41,7 +45,7 @@ fn main() {
         .expect("Invalid input for number of samples");
     let n: usize = args[3].parse().expect("Invalid input for Hawk degree");
 
-
+    let start = Instant::now();
     match mode { 
         "measure" => estimate_mem_norm_all(t, true),
         "collect" => {collect_signatures_par(t, n, true);},
@@ -55,4 +59,8 @@ fn main() {
         "Max memory usage total in this run: {} GB",
         PEAK_ALLOC.peak_usage_as_gb()
     );
+
+    println!("
+             Time used: {:?}",
+             start.elapsed());
 }

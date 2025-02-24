@@ -16,6 +16,10 @@ use rand::{Rng, SeedableRng};
 use rand_distr::{Distribution, Normal, Uniform};
 
 use std::io::{stdout, Write};
+use std::sync::{Arc, Mutex};
+
+use indicatif::{ProgressBar, ProgressStyle};
+use rayon::prelude::*;
 
 use peak_alloc::PeakAlloc;
 
@@ -39,21 +43,33 @@ pub fn run_hpp_sim(t: usize, n: usize) {
     println!("Running HPP attack with {t} samples against Hawk{n} simulation");
     let ((b, binv), q) = hawk_sim_keygen(n); 
     println!("Key generated");
-
+    // eprintln!("B: {b}");
     // STEP 0: Generate samples
     // We need to generate a lot of samples to run the attack on
     // samples is a tx2n matrix
 
+    // let mut stdout = Arc::new(Mutex::new(stdout()));
+    let pb = ProgressBar::new(t as u64);
+
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({per_sec})")
+            .unwrap()
+            .progress_chars("#>-"),
+    );
     let mut samples_cols: Vec<DVector<i64>> = Vec::new();
+    let mut signatures: Arc<Mutex<Vec<DVector<i64>>>> = Arc::new(Mutex::new(Vec::with_capacity(t)));
     // let mut rng = StdRng::seed_from_u64(rand::random::<u64>());
-    for i in 0..t {
+    (0..t).into_par_iter().for_each(|_|{
         let sig = hawk_sim_sign(n, &binv);
-        samples_cols.push(hawk_sim_sign(n, &binv));
-    }
+        signatures.lock().unwrap().push(hawk_sim_sign(n, &binv));
+        pb.inc(1);
+    });
 
-    println!("Signatures generated");
+    pb.finish_with_message("Signatures generated");
 
-    let samples = DMatrix::from_columns(&samples_cols);
+    let signatures = Arc::try_unwrap(signatures).expect("").into_inner().unwrap();
+    let samples = DMatrix::from_columns(&signatures);
     let mut samples: DMatrix<f64> = samples.map(|x| x as f64);
 
     // STEP 1: estimate covariance matrix. We use Q=BtB for this
@@ -113,14 +129,16 @@ pub fn run_hpp_sim(t: usize, n: usize) {
         // initialize empty result vector
         let mut res: Option<DVector<f64>> = None;
 
+        // do both ascent and descent
+        // Im desperado
         // if kurtosis is less than 3 we need to minimize
-        if kurtosis < 3.0 {
+        if retries%2==0{
             println!("\nDoing gradient descent...");
             res = gradient_descent(&samples, correct_solution.as_ref());
         }
 
         // if kurtosis is greater than 3 we need to maximize
-        if kurtosis > 3.0 {
+        if retries%2==1 {
             println!("\nDoing gradient ascent...");
             res = gradient_ascent(&samples, correct_solution.as_ref());
         }
@@ -203,7 +221,7 @@ fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) {
     });
 
     let comb = DMatrix::from_columns(&[res.column(0), binv.column(min_index)]);
-    // eprintln!("{comb}");
+    eprintln!("{comb}");
     println!("Min norm of diff: {min} \nMax norm of diff: {max}");
 }
 

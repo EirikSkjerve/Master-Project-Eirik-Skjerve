@@ -1,7 +1,7 @@
 use nalgebra::*;
 use rayon::prelude::*;
 
-use rand::distributions::{Distribution, Uniform};
+use rand_distr::{Distribution, Normal, Uniform};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
@@ -49,12 +49,12 @@ fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<
 
     loop {
         t += 1;
-        println!("\nAt iteration {t}");
+        // println!("\nAt iteration {t}");
 
         // compute gradient of fourth moment
         let g = grad_mom4_par(&w, &u);
         let grad_norm = g.norm();
-        println!("Norm of gradient g: {grad_norm}");
+        // println!("Norm of gradient g: {grad_norm}");
 
         m_t = (BETA1 * &m_t) + (1.0 - BETA1) * &g;
         v_t = (BETA2 * v_t) + (1.0 - BETA2) * &g.map(|x| x.powi(2));
@@ -77,25 +77,18 @@ fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<
         let mom4_diff = mom4_wnew - mom4_w;
         let w_diff = (&w - &wnew).norm();
 
-        println!("Mom4(w)    : {mom4_w}");
-        println!("Mom4(w_new): {mom4_wnew}");
-        println!("Diff       : {mom4_diff}");
-
-
-        // check requirements for extremum point
-        // if mom4_diff.abs() <= TOLERANCE || w_diff <= TOLERANCE || g.norm() <= TOLERANCE {
-        //     println!("Possibly at an extremum: rate of change negligible. \n");
-        //     return Some(w);
-        // }
+        // println!("Mom4(w)    : {mom4_w}");
+        // println!("Mom4(w_new): {mom4_wnew}");
+        // println!("Diff       : {mom4_diff}");
 
         // in the case of gradient descent
-        if descent && mom4_wnew >= mom4_w {
+        if descent && mom4_wnew > mom4_w {
             println!("Possibly at an extremum: mom4 started increasing. \n");
             return Some(w);
         }
 
         // in the case of gradient ascent
-        if !descent && mom4_wnew <= mom4_w {
+        if !descent && mom4_wnew < mom4_w {
             println!("Possibly at an extremum: mom4 started decreasing. \n");
             return Some(w);
         }
@@ -109,7 +102,7 @@ fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<
             return Some(w);
         }
         // println!("Max memory used so far: {} GB", PEAK_ALLOC.peak_usage_as_gb());
-        println!("");
+        // println!("");
     }
 }
 
@@ -185,21 +178,33 @@ fn grad_mom4_par(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
 fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
     //  outputs some randomly generated w on the unit circle
 
+    let sigma = match n / 2 {
+        256 => 2.0 * 1.001,
+        512 => 2.0 * 1.278,
+        _ => 2.0 * 1.299,
+    };
     // define uniform distribution
-    let dist = Uniform::from(-10.0..10.0);
+    let dist1 = Normal::new(0.0, 5.0).unwrap();
+    let dist2 = Normal::new(0.0, sigma).unwrap();
+    let dist3 = Uniform::from(-10.0..10.0);
 
     // initialize empty vector to store the samples
     let mut rnd_bytes: Vec<f64> = Vec::with_capacity(n);
 
     // sample n times
-    for _ in 0..n {
-        rnd_bytes.push(dist.sample(rng));
+    // n/2 for each distribution
+    for _ in 0..n/2 {
+        rnd_bytes.push(dist3.sample(rng));
+    }
+    for _ in 0..n/2 {
+        rnd_bytes.push(dist3.sample(rng));
     }
 
     // load random number into DVector
     let mut w = DVector::from_vec(rnd_bytes);
-
+    // eprintln!("w before normalizing: {w}");
     // normalize the w vector
     w = w.normalize();
+    // eprintln!("w after normalizing: {w}");
     w
 }

@@ -23,7 +23,7 @@ use peak_alloc::PeakAlloc;
 
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 static TOLERANCE: f64 = 1e-10;
-static MAX_RETRIES: usize = 15;
+static MAX_RETRIES: usize = 100;
 
 pub fn run_hpp_attack(t: usize, n: usize) {
     // runs the HPP attack against Hawk
@@ -44,9 +44,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 
     let (mut samples, (b, binv), q) = generate_samples_and_keys(t, n).unwrap();
 
-    // STEP 1: estimate covariance matrix. This step is automatically given by public key Q
-
-    // STEP 2: conversion from hidden parallelepiped to hidden hypercube.
+    // STEP 1: conversion from hidden parallelepiped to hidden hypercube.
     // Given Q, we do cholesky decomposition to get L s.t. Q = LLt
     // multiply our signature samples on the left with this Lt
     // so that samples are is distributed over L^t B^-1
@@ -58,8 +56,6 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // do some measuring of moments
     let total_num_elements = (samples.nrows() * samples.ncols()) as f64;
     let mean = samples.iter().sum::<f64>() / total_num_elements;
-    
-    // let mean = 0.0;
 
     let variance = samples
         .iter()
@@ -83,7 +79,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     println!("Var:  {}", variance);
     println!("Kur:  {}", kurtosis);
 
-    // STEP 3: Gradient Descent:
+    // STEP 2: Gradient Descent:
     // The final and main step is to do gradient descent on our (converted) samples to minimize the
     // fourth moment, and consequently reveal a row/column from +/- B
 
@@ -104,6 +100,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 
     // initialize retry counter
     let mut retries = 0;
+
     // run loop until number of max retries is set
     while retries < MAX_RETRIES {
         // increment counter
@@ -134,6 +131,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
             return;
         }
 
+
         // do a measurement of the result vector up against secret key if it was not the correct one
         measure_res(&solution, &binv);
         println!(
@@ -151,16 +149,13 @@ fn hypercube_transformation(
     q: DMatrix<f64>,
     skey: &DMatrix<i32>,
 ) -> (DMatrix<f64>, DMatrix<f64>) {
-    // given samples and estimate of covariance matrix, return transformed
-    // samples from hidden parallelepiped onto hidden hypercube for easier
-    // analysis later
+    // given samples and and covariance matrix Q, return transformed
+    // samples from hidden parallelepiped onto hidden hypercube
     // Also returns the l inverse so we don't have to recompute it later
 
     // get theoretical sigma here for scaling
-
     let sigma = match q.nrows() / 2 {
-        256 => 2.0 * 1.001, // 1.01 in theory but in practice it is measured to be 1.001, unsure of
-                           // which to choose 
+        256 => 2.0 * 1.001,
         512 => 2.0 * 1.278,
         _ => 2.0 * 1.299,
     };
@@ -180,9 +175,12 @@ fn hypercube_transformation(
 
     // this method is fast but nalgebra matrix multiplication makes an extra allocation
     // for the matrices involved
+    // testing with rounded entries
+    // *samples = (&l.l().transpose() * &*samples).map(|x| x.round());
     *samples = ((&l.l().transpose() / sigma) * &*samples);
     // *samples = &l.l().transpose() * &*samples;
 
+    // for reference, compute the matrix C
     let c = &l.l().transpose() * skey.map(|x| x as f64);
     println!("Max usage so far: {} gb", PEAK_ALLOC.peak_usage_as_gb());
 
@@ -218,7 +216,7 @@ fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) {
     });
 
     let comb = DMatrix::from_columns(&[res.column(0), binv.column(min_index)]);
-    // eprintln!("{comb}");
+    eprintln!("{comb}");
     println!("Min norm of diff: {min} \nMax norm of diff: {max}");
 }
 

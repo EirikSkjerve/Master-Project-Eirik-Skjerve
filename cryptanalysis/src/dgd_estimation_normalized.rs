@@ -23,7 +23,7 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
     // let ns = vec![512];
     // let ns = vec![256];
 
-    let precision = 8;
+    let precision = 20;
 
     // define table of estimations
     let mut table = Table::new();
@@ -116,7 +116,8 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
         let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(20), n, true);
         let tempvar: f64 = temp.iter().map(|&x| (x as f64).powi(2)).sum();
         // divide to get the mean
-        *var.lock().unwrap() += tempvar / (t * 2 * n) as f64;
+        // *var.lock().unwrap() += tempvar / (t * 2 * n) as f64;
+        *var.lock().unwrap() += tempvar;
         // increment progress bar
         pb.inc(1);
     });
@@ -132,7 +133,9 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
             .progress_chars("#>-"),
     );
 
-    let sigma = var.lock().unwrap().sqrt();
+    let sigma_sq: f64 = *var.lock().unwrap();
+    let sigma = (sigma_sq / (2*t*n) as f64).sqrt();
+
 
     // thread-safe variables
     let mut normvar: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
@@ -155,8 +158,8 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
             });
 
         // divide to get the mean
-        *normvar.lock().unwrap() += tempvar / (t * 2 * n) as f64;
-        *normkur.lock().unwrap() += tempkur / (t * 2 * n) as f64;
+        *normvar.lock().unwrap() += tempvar;
+        *normkur.lock().unwrap() += tempkur;
         // increment progress bar
         pb.inc(1);
     });
@@ -167,9 +170,9 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
 
     // unpack the thread-safe variables into normal variables to return them
     // let res_mu = *mu.lock().unwrap();
-    let res_var = *var.lock().unwrap();
-    let res_normvar = *normvar.lock().unwrap();
-    let res_normkur = *normkur.lock().unwrap();
+    let res_var = *var.lock().unwrap() / (2*t*n) as f64;
+    let res_normvar = *normvar.lock().unwrap() / (2*t*n) as f64;
+    let res_normkur = *normkur.lock().unwrap() / (2*t*n) as f64;
     (mu, res_var, res_normvar, res_normkur, end)
 }
 
@@ -257,11 +260,6 @@ pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
                 (sum_var + squared, sum_kur + fourth)
             });
 
-        // let tempkur: f64 = temp
-        //     .iter()
-        //     .map(|&x| (x as f64/sigma).powi(4) )
-        //     .sum();
-        //
         normvar += tempvar / (t * 2 * n) as f64;
         normkur += tempkur / (t * 2 * n) as f64;
 
