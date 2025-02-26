@@ -29,7 +29,7 @@ The attack can be summarized as follows:
     \caption{Hidden parallelepiped problem in dimension 2 for rounded normal distribution}
   	\medskip 
 	% \hspace*{15pt}\hbox{\scriptsize Credit: Acme company makes everything \url{https://acme.com/}}
-    % \label{FlowchartFigure}
+    \label{parallelepiped_normal_discrete}
 \end{figure}
 
 \begin{figure}[H]
@@ -38,7 +38,7 @@ The attack can be summarized as follows:
     \caption{Hidden hypercube problem in dimension 2 for rounded normal distribution}
   	\medskip 
 	% \hspace*{15pt}\hbox{\scriptsize Credit: Acme company makes everything \url{https://acme.com/}}
-    % \label{FlowchartFigure}
+    \label{hypercube_normal_discrete}
 \end{figure}
 \section{HPP against practical Discrete Gaussian Distribution}
 \subsection{Overview of method}
@@ -50,6 +50,8 @@ For simplicity, we can also assume $\hat{\mu} = \mu = 0$ as claimed in \cite{Haw
 To simplify later computations we also normalize our samples by computing $Z = \{z_1, z_2, ..., z_t\} = \{\frac{x_1}{\hat{\sigma}}, \frac{x_2}{\hat{\sigma}},..., \frac{x_t}{\hat{\sigma}}\}$ such that 
 $\bb{V}[z_i] = 1$.
 
+% Note that as an attacker we can measure the properties of the distribution by observing $\vec{w}$. 
+
 Now, denote by $\mu_4 = \bb{E}[z_i^4] = \mathlarger{\frac{1}{t} \sum_{i=1}^{n} z_i ^4}$. Assume observed signatures on the form $\vec{c} = \mat{C} \vec{z}$. By rewriting the terms from section 3.4 for this new, normalized, distribution $\dgdi$, we have that
 \[mom_{4, \mat{C}} (\vec{w}) = 3 \lVert \vec{w} \rVert ^4 + (\mu_4 - 3) \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle^4 \]
 and
@@ -59,7 +61,7 @@ This means that if the difference $(\mu_4 - 3)$ is big enough, one might be able
 Note that if $(\mu_4 - 3) < 0$ we have the same case as in the original attack, where minimization of the entire term entails maximization of $\mathlarger{\sum_{i=1}^{n} \langle c_i, \vec{w} \rangle^4}$, which gives us a row of $\pm \mat{C}$.
 If $(\mu_4 - 3) > 0$, we need to maximize the entire term $3 \lVert \vec{w} \rVert ^4 + \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle^4$, which is achieved by doing a gradient \textit{ascent} instead of a gradient \textit{descent}.
 
-\subsection{Covariance matrix and hypercube transformation in Hawk}
+\subsection{Covariance matrix and hypercube transformation}
 In the original HPP attack one has to estimate the matrix $\mat{G} \approx \mat{V} ^t \mat{V}$ as $\vec{v} ^t \vec{v} \cdot 3$. We show that this is possible even if $x$ is normally distributed, as one can estimate 
 $\frac{\vec{v}^t \vec{v}}{\sigma^2}$. For Hawk, the signatures are on the form $\vec{w} = \mat{B}^{-1} \vec{x}$. Then we would need to compute $\mat{G} = \mat{B}^{-1} \mat{B}^{-t} \approx \frac{\vec{w}\vec{w}^t}{\sigma^2}$.
 In Hawk, however, the public key $\mat{Q} = \mat{B}^{*} \mat{B}$ which for columns $\vec{b} \in \bb{Q}^n$ is equivalent to $\mat{B} ^t \mat{B}$, enables us to skip this step.
@@ -98,6 +100,9 @@ $\mat{B'} = (\mat{B'}^{-1})^{-1}$, and checking if $\mat{B'}^t \mat{B'} = \mat{Q
 
 Now, given samples $\vec{c} \in \PP{C}$, we run a gradient search to minimize or maximize the fourth moment of one-dimensional projections, as in the original attack. In addition to multiplying the samples by $\mat{L}^t$, we also divide them by the scalar $\sigma$, to normalize the samples
 so each sample in the vector $\vec{c}$ has variance $1$. This also aligns with our theoretical analysis of $\mom{4}{C}$. Even though the distribution $\dgdi$ is discrete, the shape of the samples $\vec{c} \in \PP{C}$ will still have a spherical
-shape. The hope is that the areas in the directions of the columns of $\pm \mat{C}$ will deviate just enough from the spherical shape to give us a global minima/maxima in the gradient landscape.
+shape as illustrated in \ref{hypercube_normal_discrete}. The hope is that the areas in the directions of the columns of $\pm \mat{C}$ will deviate just enough from a perfect spherical shape to give us a global minima/maxima in the gradient landscape.
 
 \subsection{Gradient search for Hawk}
+Due to the noisy and unpredictable gradient landscape we need to search, the \textit{vanilla} gradient search method as used in the original HPP attack is not very good.
+A constant stepsize means either a slow convergence (with a small value for $\delta$), or risking overshooting the correct extremum (with a big value for $\delta$).
+Therefore, we employ a more advanced method for gradient search, namely the ADAM-optimizer \cite{KB17}.

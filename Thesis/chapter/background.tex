@@ -1,6 +1,10 @@
 \chapter{Background}
+In this chapter, the field of cryptology will be introduced, with an emphasis on digital signatures and cryptanalysis.  
+We also introduce some necessary facts and notions related to linear algebra and lattices, as well as probability theory and distributions.
+Lastly, we introduce the notion of \textit{Gradient Search} and ADAM-optimizers, which will be a central tool in this thesis.
 
 \section{Cryptology}
+For this section, \cite{KL20} will be used.
 \subsection{Cryptography}
 \subsection{Cryptanalysis}
 
@@ -10,6 +14,23 @@
 \subsection{NTRU}
 
 \section{Linear Algebra and Lattices}
+Denote by $\vec{v}$ an $n \times 1$ column vector on the form 
+\[ \vec{v} = \begin{bmatrix} v_0 \\ v_1 \\ ... \\ v_{n-1} \end{bmatrix}\] and by $\mat{B}$ an $n \times m$ matrix on the form 
+\[
+    \mat{B} = 
+    \begin{bmatrix}
+        b_{0,0} & b_{0,1} & \cdots & b_{0, n-1} \\ 
+        b_{1,0} & b_{1,1} & \cdots & b_{1, n-1} \\ 
+        \cdots & \cdots & \cdots & \cdots\\
+        b_{m-1,0} & b_{m-1,1} & \cdots & b_{m-1, n-1} \\ 
+    \end{bmatrix}
+\]
 
+Generally, entries $v_i$ and $b_{i, j}$ are integers unless stated otherwise.
+Some places the thesis will use row notation instead of column notation for the vectors, so that $\vec{v}$ is a $1 \times n$ row vector on the form
+\[\vec{c} = [v_0, v_1, ..., v_{n-1}]\] In these cases this will be pointed out.
+
+We denote by $\langle \cdot, \cdot \rangle$ the dot-product of two vectors of equal dimensions as \\
+$\langle \vec{x}, \vec{y} \rangle = \vec{x}^t \vec{y} = \mathlarger{\sum_{i=0}^{n-1} x_i y_i}$
 \section{Probability Theory}
 \section{Gradient Search}

@@ -19,12 +19,12 @@ In 2016, the \gls{nist} announced a process for selecting new standard schemes f
 digital signatures that are resilient against quantum attacks (https://www.nist.gov/pqcrypto). Many of the submissions to this process, including KRYSTALS-Dilithium which is to be standardized, 
 are based on lattice problems that are believed to be hard to solve for both classical and quantum computers.
 
-Cryptographic schemes based on lattice problems are not an entirely new phenomenon, however. NTRU-Sign \cite{NTRUSign03}, the signature counterpart of the NTRU crypto-system,
+Cryptographic schemes based on lattice problems are not an entirely new phenomenon, however. NTRU-Sign \cite{HHPSW03}, the signature counterpart of the NTRU crypto-system,
 is a digital signature scheme based on the hardness of the \gls{cvp}, a well known lattice problem (source?).
 The original scheme was broken by Phong. Q. Nguyen \& Oded Regev in 2006 \cite{NR09}; not by solving the \gls{cvp}, but by retrieving a secret key by observing enough signatures.
 In other words, each signature leaks some information about the secret key.
 The title of their paper and the name of the attack is \textit{Learning a Parallelepiped}, and the problem to solve in this attack will henceforth be denoted as the \gls{hpp} as one tries to \textit{learn} a parallelepiped.
-Countermeasures for this attack was proposed, but ultimately broken again in 2012 due to a more advanced extension of the original attack \cite{Zonotope12}.
+Countermeasures for this attack was proposed, but ultimately broken again in 2012 due to a more advanced extension of the original attack \cite{DN12}.
 
 Hawk \cite{HawkSpec24} is a digital signature scheme submitted to NIST's standardization process and is a viable candidate for standardization
 due to its speed and small signature- and keysizes. It is also a lattice-based signature scheme akin to NTRU-sign, but with some significant changes, and a different underlying hard problem on which its security is based upon. 
@@ -35,12 +35,12 @@ The objective of this thesis consists of two main parts:
 \begin{itemize}
     \item \textbf{Implementation of Hawk in Rust}. As the first part of this thesis I implement the Hawk digital signature scheme according to \cite{HawkSpec24} in the Rust programming language.
         \footnote{Disclaimer: this implementation is not meant to be comparable with the Hawk teams implementation for real life usage, as it is not highly optimized and not all formal requirements are met.}
-    Implementing a scheme and its algorithms is a good way to more deeply learn how it works. I chose to do the implementation in Rust for the sake of becoming more adept this programming language as a personal bonus objective of the thesis.
+    Implementing a scheme and its algorithms is a good way to more deeply learn how it works. I chose to do the implementation in Rust for the sake of becoming more adept at this programming language as a personal bonus objective of the thesis.
     Moreover, having ones own implementation of a scheme makes it easier to experiment on, run simulations with, adjust, and modify it to ones need. It would in any case be challenging to understand and work with dense, long, 
     and complicated source code someone else has written. For the Hawk teams source code in C and a reference implementation in Python see https://github.com/hawk-sign.
 
 
-\item \textbf{Cryptanalysis and experimentation}. The second part of this thesis is cryptanalysis of Hawk. The goal is to use the \textit{Learning a parallelepiped} attack and adjusting it to attack Hawk. 
+\item \textbf{Cryptanalysis and experimentation}. The second part of this thesis is cryptanalysis of Hawk. The goal is to use the \textit{Learning a parallelepiped} attack and do suitable modifications to attack Hawk. 
     This requires both theoretical and practical work, and experiments will, like the Hawk implementation itself, be implemented in Rust.
 \end{itemize}
 \section{Thesis outline}
@@ -63,52 +63,53 @@ In Chapter 4 the cryptanalysis of Hawk is presented. The final chapter will disc
     \item Detailed description of attack in practice, discuss implementation challenges w.r.t. memory, runtime, etc.
     \item Results and discussion of these, limitations, considerations, etc.
 \end{enumerate}
-\subsection{Listings}
-You can do listings, like in Listing~\ref{ListingReference}
-\begin{lstlisting}[caption={[Short caption]Look at this cool listing. Find the rest in Appendix~\ref{Listing}},label=ListingReference]
-$ java -jar myAwesomeCode.jar
-\end{lstlisting}
 
-You can also do language highlighting for instance with Golang:
-And in line~\ref{LineThatDoesSomething} of Listing~\ref{ListingGolang} you can see that we can ref to lines in listings.
-
-\begin{lstlisting}[caption={Hello world in Golang},label=ListingGolang,escapechar=|]
-package main
-
-import "fmt"
-
-func main() {
-    fmt.Println("hello world") |\label{LineThatDoesSomething}|
-}
-
-\end{lstlisting}
-
-\subsection{Figures}
-
-Example of a centred figure
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.5]{figures/Flowchart}
-    \caption{Caption for flowchart}
-  	\medskip 
-	\hspace*{15pt}\hbox{\scriptsize Credit: Acme company makes everything \url{https://acme.com/}}
-    \label{FlowchartFigure}
-\end{figure}
-
-\subsection{Tables}
-
-We can also do tables. Protip: use \url{https://www.tablesgenerator.com/} for generating tables.
-\begin{table}[H]
-\centering
-\caption{Caption of table}
-\label{TableLabel}
-\begin{tabular}{|l|l|l|}
-\hline
-Title1 & Title2 & Title3 \\ \hline
-data1  & data2  & data3  \\ \hline
-\end{tabular}
-\end{table}
-
-\subsection{\gls{git}}
-
-\gls{git} is fun, use it!
+% \subsection{Listings}
+% You can do listings, like in Listing~\ref{ListingReference}
+% \begin{lstlisting}[caption={[Short caption]Look at this cool listing. Find the rest in Appendix~\ref{Listing}},label=ListingReference]
+% $ java -jar myAwesomeCode.jar
+% \end{lstlisting}
+%
+% You can also do language highlighting for instance with Golang:
+% And in line~\ref{LineThatDoesSomething} of Listing~\ref{ListingGolang} you can see that we can ref to lines in listings.
+%
+% \begin{lstlisting}[caption={Hello world in Golang},label=ListingGolang,escapechar=|]
+% package main
+%
+% import "fmt"
+%
+% func main() {
+%     fmt.Println("hello world") |\label{LineThatDoesSomething}|
+% }
+%
+% \end{lstlisting}
+%
+% \subsection{Figures}
+%
+% Example of a centred figure
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[scale=0.5]{figures/Flowchart}
+%     \caption{Caption for flowchart}
+%   	\medskip 
+% 	\hspace*{15pt}\hbox{\scriptsize Credit: Acme company makes everything \url{https://acme.com/}}
+%     \label{FlowchartFigure}
+% \end{figure}
+%
+% \subsection{Tables}
+%
+% We can also do tables. Protip: use \url{https://www.tablesgenerator.com/} for generating tables.
+% \begin{table}[H]
+% \centering
+% \caption{Caption of table}
+% \label{TableLabel}
+% \begin{tabular}{|l|l|l|}
+% \hline
+% Title1 & Title2 & Title3 \\ \hline
+% data1  & data2  & data3  \\ \hline
+% \end{tabular}
+% \end{table}
+%
+% \subsection{\gls{git}}
+%
+% \gls{git} is fun, use it!

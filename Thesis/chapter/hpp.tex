@@ -2,7 +2,8 @@
 \newtheorem{proof}{Proof}
 
 \section{HPP}
-In this section we present the \textit{Learning a Parallelepiped} attack as described in \cite{NR09}. Note that in this section $\vec{v}$ denotes a \textit{row}-vector to follow the same notation as in \cite{NR09}.
+In this section we present the \textit{Learning a Parallelepiped} attack as described in \cite{NR09}. 
+Note that in this section $\vec{v}$ denotes a \textit{row}-vector to follow the same notation as in the original paper.
 \subsection{Setup and idealized version}
 Let $\mat{V} \in \mathcal{GL}(\bb{R})$ be a secret $n \times n$ unimodular matrix and $\PP{V}$ be a fundamental parallelepiped, defined as $\{\vec{x}\mat{V}: \vec{x} \in [-1, 1]^n\}$. Let $\vec{x} = \{\vec{x}_1, \vec{x}_2, ...,\vec{x}_t\}$
 be $t$ row vectors of length $n$ with entries uniformly distributed over $[-1, 1] \in \bb{Q}$ and $\vec{v} = \{\vec{v}_1, \vec{v}_2, ..., \vec{v}_t\} = \{\mat{V} \vec{x}_1, \mat{V} \vec{x}_2, ..., \mat{V} \vec{x}_t\}$ 
@@ -19,7 +20,7 @@ In the following, each of these steps will be covered in detail.
     \caption{Hidden parallelepiped problem in dimension 2}
   	\medskip 
 	% \hspace*{15pt}\hbox{\scriptsize Credit: Acme company makes everything \url{https://acme.com/}}
-    \label{FlowchartFigure}
+    \label{hpp_parallelepiped_uniform}
 \end{figure}
 \subsection{Covariance matrix estimation}
 Given enough samples on the form $\vec{v} = \mat{V} \vec{x}$, we want to estimate the covariance matrix $\mat{G} \approx \mat{V}^t \mat{V}$.
@@ -67,7 +68,7 @@ the rows of $\pm \mat{C}$, one can simply multiply the result on the right by $\
     \caption{Hidden hypercube problem in dimension 2}
   	\medskip 
 	% \hspace*{15pt}\hbox{\scriptsize Credit: Acme company makes everything \url{https://acme.com/}}
-    \label{FlowchartFigure}
+    \label{hpp_uniform_cube}
 \end{figure}
 \subsection{Moments and Gradient Descent}
 The last major step in the attack is to measure and minimize the fourth moment of one-dimensional projections to disclose rows of $\pm \mat{C}$.
@@ -186,7 +187,6 @@ the fourth moment of $\PP{C}$ is constant over $\vec{w}$ on the unit circle.
                 \item $i = l \neq j = k$
             \end{itemize}
             we have $\sum_{i \neq j} \bb{E}[x_i^2 x_j^2] \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2$
-            % $= (\sigma^2 )^2 \sum_{i \neq j}\langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2$ \\
             $= \sigma^4 \sum_{i \neq j}\langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2$ since $\bb{E}[x^2] = \sigma^2$.
     \end{itemize}
 
@@ -216,19 +216,16 @@ the fourth moment of $\PP{C}$ is constant over $\vec{w}$ on the unit circle.
     Since $mom_{4, \mat{C}}(\vec{w})$ is constant for $\vec{w}$ on the unit sphere regardless of $\sigma^2$, the term no longer depends on the secret matrix $\mat{C}$ and the attack will not work.
 
 
-\begin{figure}[H]
+    \begin{figure}[H]
     \centering
-    \includegraphics[scale=0.5]{hpp_parallelepiped_normal.png}
-    \caption{Hidden parallelepiped problem in dimension 2 for normal distribution}
-  	\medskip 
-	% \hspace*{15pt}\hbox{\scriptsize Credit: Acme company makes everything \url{https://acme.com/}}
-    % \label{FlowchartFigure}
-\end{figure}
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.5]{hpp_normal_cube.png}
-    \caption{Hidden hypercube problem in dimension 2 for normal distribution}
-  	\medskip 
-	% \hspace*{15pt}\hbox{\scriptsize Credit: Acme company makes everything \url{https://acme.com/}}
-    % \label{FlowchartFigure}
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=0.9\textwidth]{hpp_parallelepiped_normal.png} % first figure itself
+        \caption{Hidden parallelepiped problem in dimension 2 for normal distribution}
+    \end{minipage}\hfill
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=0.9\textwidth]{hpp_normal_cube.png} % second figure itself
+        \caption{Hidden hypercube problem in dimension 2 for normal distribution}
+    \end{minipage}
 \end{figure}
