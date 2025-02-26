@@ -1,5 +1,6 @@
 use crate::file_utils::read_vectors_from_file;
 use crate::gradient_search::{gradient_ascent, gradient_descent};
+use crate::hpp_attack::measure_res;
 use nalgebra::*;
 
 use hawklib::hawkkeygen::gen_f_g;
@@ -201,28 +202,6 @@ fn hypercube_transformation(
     let c = &l.l().transpose() * skey.map(|x| x as f64);
 
     (linv, c)
-}
-fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) {
-    // given a solution, measure how far the solution is away from each column of the secret key
-    let mut min = f64::INFINITY;
-    let mut max = f64::NEG_INFINITY;
-    let mut min_index = 0;
-    (0..res.len()).into_iter().for_each(|i| {
-        let col: DVector<f64> = binv.column(i).into_owned().map(|x| x as f64);
-
-        let diff = (col.abs() - res.map(|x| x as f64).abs()).norm();
-        if diff < min {
-            min = diff;
-            min_index = i
-        };
-        if diff > max {
-            max = diff
-        };
-    });
-
-    let comb = DMatrix::from_columns(&[res.column(0), binv.column(min_index)]);
-    eprintln!("{comb}");
-    println!("Min norm of diff: {min} \nMax norm of diff: {max}");
 }
 
 fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {

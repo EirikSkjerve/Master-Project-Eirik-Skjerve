@@ -28,8 +28,8 @@ v_arrows_y = v[:, 1]  # Second column
 plt.figure(figsize=(8, 8))
 plt.scatter(x, y, alpha=0.1, color='blue')  # Adjust alpha for transparency
 # Use quiver to plot the arrows from origin (0, 0)
-plt.quiver(0, 0, v_arrows_x[0], v_arrows_y[0], angles='xy', scale_units='xy', scale=1, color='red', label='V Column 1')
-plt.quiver(0, 0, v_arrows_x[1], v_arrows_y[1], angles='xy', scale_units='xy', scale=1, color='green', label='V Column 2')
+plt.quiver(0, 0, v_arrows_x[0], v_arrows_y[0], angles='xy', scale_units='xy', scale=1, color='green', label='V Column 1')
+plt.quiver(0, 0, v_arrows_x[1], v_arrows_y[1], angles='xy', scale_units='xy', scale=1, color='purple', label='V Column 2')
 plt.title('2D Scatter Plot of Vectors Transformed by Matrix V')
 plt.xlabel('X-axis')
 plt.ylabel('Y-axis')

@@ -18,12 +18,13 @@ use rayon::prelude::*;
 
 use std::io::{stdout, Write};
 use std::sync::{Arc, Mutex};
+use std::time::{Instant, Duration};
 
 use peak_alloc::PeakAlloc;
 
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 static TOLERANCE: f64 = 1e-10;
-static MAX_RETRIES: usize = 100;
+static MAX_RETRIES: usize = 200;
 
 pub fn run_hpp_attack(t: usize, n: usize) {
     // runs the HPP attack against Hawk
@@ -110,13 +111,15 @@ pub fn run_hpp_attack(t: usize, n: usize) {
         let mut res: Option<DVector<f64>> = None;
 
         // if kurtosis is less than 3 we need to minimize
-        if kurtosis < 3.0 {
+        // if kurtosis < 3.0 {
+        if retries % 2 == 0 {
             println!("\nDoing gradient descent...");
             res = gradient_descent(&samples, correct_solution.as_ref());
         }
 
         // if kurtosis is greater than 3 we need to maximize
-        if kurtosis > 3.0 {
+        // if kurtosis > 3.0 {
+        if retries % 2 == 1 {
             println!("\nDoing gradient ascent...");
             res = gradient_ascent(&samples, correct_solution.as_ref());
         }
@@ -160,6 +163,8 @@ fn hypercube_transformation(
         _ => 2.0 * 1.299,
     };
 
+    let start = Instant::now();
+
     // compute L = Cholesky decomposition of Q
     let l = Cholesky::new(q).expect("Couldn't do Cholesky decomposition of ginv");
 
@@ -184,6 +189,8 @@ fn hypercube_transformation(
     let c = &l.l().transpose() * skey.map(|x| x as f64);
     println!("Max usage so far: {} gb", PEAK_ALLOC.peak_usage_as_gb());
 
+    println!("Times used for transforming samples: {:?}", start.elapsed());
+
     (linv, c)
 }
 
@@ -197,7 +204,7 @@ fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
     as_column || as_column_neg
 }
 
-fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) {
+pub fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) {
     // given a solution, measure how far the solution is away from each column of the secret key
     let mut min = f64::INFINITY;
     let mut max = f64::NEG_INFINITY;
