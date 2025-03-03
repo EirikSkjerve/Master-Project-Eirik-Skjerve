@@ -1,2 +1,33 @@
 \section{Hawk}
+In this section we introduce the digital signature scheme Hawk, which will later be the target for our cryptanalysis.
+As mentioned in the introduction, Hawk is a lattice based signature scheme that shares some key points with that of NTRU-sign \cite{HHPSW03}.
+Perhaps the most notable similarity is the algebraic structure of private key $\mat{B}$. Recall that in NTRU, polynomials are defined 
+over $\bb{Z}[X] / (X^n - 1)$, whereas in Hawk they are defined over $\bb{Z}[X] / (X^n + 1)$.
+% The private key in NTRU is defined as 
+% \[
+%     \begin{bmatrix}
+%         f_0 & f_1 & \cdots & f_{n-1} & g_0 & g_1 & \cdots & g_{n-1} \\
+%         f_{n-1} & f_{0} & \cdots & \cdots & g_{n-1} & f_{0} & \cdots \\
+%         \cdots \\ 
+%         f_{1} & f_{2} & \cdots & f_{n-1} & f_0 & g_{1} & g_{2} & \cdots & g_{n-1} & g_0 \\
+%         F_0 & F_1 & \cdots & F_{n-1} & G_0 & G_1 & \cdots & G_{n-1} \\
+%         F_{n-1} & F_{0} & \cdots & \cdots & G_{n-1} & F_{0} & \cdots \\
+%         \cdots \\ 
+%         F_{1} & F_{2} & \cdots & F_{n-1} & F_0 & G_{1} & G_{2} & \cdots & G_{n-1} & G_0 \\
+%     \end{bmatrix}
+% \]
+\subsection{Overview}
+In Hawk, polynomials are defined over the cyclotomic number field $\mathcal{K}_n = \bb{Q}[X]/(X^n +1)$ which has the corresponding ring of integers
+$\bb{Z}[X] / (X^n + 1)$.
+\subsection{Hawk key pairs and key pair generation}
+A Hawk private key is represented by the $2 \times 2$ matrix.
+\[ \mat{B} = 
+    \begin{bmatrix} 
+        f & F \\
+        g & G
+    \end{bmatrix} 
+\]
+\subsection{Hawk signature generation}
+\subsection{Hawk signature verification}
+\subsection{Hawk security}
 \section{Implementation of Hawk}
