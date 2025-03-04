@@ -17,7 +17,7 @@ static EPSILON: f64 = 1e-10;
 static TOLERANCE: f64 = 1e-4;
 static BETA1: f64 = 0.9;
 static BETA2: f64 = 0.999;
-static DELTA: f64 = 0.01;
+static DELTA: f64 = 0.001;
 
 fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<f64>>) -> Option<DVector<f64>> {
     // perform gradient descent if parameter <descent> is set to true
