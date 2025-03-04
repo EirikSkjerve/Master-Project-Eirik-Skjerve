@@ -8,8 +8,8 @@ In Hawk, the distribution of entries of $\vec{x}$ is the \gls{dgd}. As the name 
 % that of its continuous normal counterpart, and the sampling procedure in the signature generation step in Hawk (see section 3.2...) 
 % sample from \gls{dgd} using cumulative distribution tables.
 Instead of showing theoretical and asymptotic results for the \gls{dgd}, we use our implementation of Hawk to measure and estimate the properties of the distribution.
-The belief is that the discretization of the normal distribution in this manner makes the result in section 3.4 not hold in practice. 
-Consequently, by applying the HPP attack on Hawk signatures one might be able to disclose the secret key.
+The hypothesis is that the discretization of the normal distribution in this manner makes the result in section 3.4 not hold in practice. 
+Thus, by applying the HPP attack on Hawk signatures one might be able to disclose the secret key.
 
 The attack can be summarized as follows: 
 \begin{algorithm}
@@ -63,16 +63,17 @@ If $(\mu_4 - 3) > 0$, we need to maximize the entire term $3 \lVert \vec{w} \rVe
 
 \subsection{Covariance matrix and hypercube transformation}
 In the original HPP attack one has to estimate the matrix $\mat{G} \approx \mat{V} ^t \mat{V}$ as $\vec{v} ^t \vec{v} \cdot 3$. We show that this is possible even if $x$ is normally distributed, as one can estimate 
-$\frac{\vec{v}^t \vec{v}}{\sigma^2}$. For Hawk, the signatures are on the form $\vec{w} = \mat{B}^{-1} \vec{x}$. Then we would need to compute $\mat{G} = \mat{B}^{-1} \mat{B}^{-t} \approx \frac{\vec{w}\vec{w}^t}{\sigma^2}$.
-In Hawk, however, the public key $\mat{Q} = \mat{B}^{*} \mat{B}$ which for columns $\vec{b} \in \bb{Q}^n$ is equivalent to $\mat{B} ^t \mat{B}$, enables us to skip this step.
-Recall that in the original attack one has to take Cholesky decomposition (or an equivalent decomposition) of the inverse of the covariance matrix such that $\mat{G}^{-1} = \mat{L}\mat{L}^t$. For $\mat{G} = \mat{B}^{-1} \mat{B}^{-t}$, the inverse of $\mat{G}$,
+$\frac{\vec{v}^t \vec{v}}{\sigma^2}$ using the same principle as in section 3.3.2. For Hawk, the signatures are on the form $\vec{w} = \mat{B}^{-1} \vec{x}$. Then we would need to compute $\mat{G} = \mat{B}^{-1} \mat{B}^{-t} \approx \frac{\vec{w}\vec{w}^t}{\sigma^2}$.
+In Hawk, however, the public key $\mat{Q} = \mat{B}^{*} \mat{B}$, which for $\mat{B}$ with non-complex entries is equivalent to $\mat{B} ^t \mat{B}$, enables us to skip this step.
+Recall that in the original attack one has to take Cholesky decomposition (or an equivalent decomposition) of the inverse of the covariance matrix such that $\mat{G}^{-1} = \mat{L}\mat{L}^t$. 
+For $\mat{G} = \mat{B}^{-1} \mat{B}^{-t}$, the inverse,
 $\mat{G}^{-1} = \mat{B}^t \mat{B} = \mat{Q}$. Therefore, we can simply take the Cholesky decomposition of $\mat{Q} = \mat{L} \mat{L}^t$.
 By multiplying our samples $\vec{w}$ by $\mat{L}^t$ on the left, we have transformed our samples to the hidden hypercube as in the original attack. \\
 By taking $\mat{C} =  \mat{L}^t\mat{B}^{-1}$, we have that 
 \[\mat{C}^t \mat{C} = (\mat{L}^t \mat{B}^{-1})^t (\mat{L}^t \mat{B}^{-1}) = \mat{B}^{-t} \mat{L} \mat{L}^t \mat{B}^{-1} = \mat{B}^{-t} \mat{Q} \mat{B}^{-1} = \mat{B}^{-t} \mat{B}^{t} \mat{B} \mat{B}^{-1} = \mat{I}\]
 and
 \[\mat{C}\mat{C}^t = (\mat{L}^t \mat{B}^{-1})(\mat{L}^t \mat{B}^{-1})^t = \mat{L}^t \mat{B}^{-1} \mat{B}^{-t} \mat{L} =  \mat{L}^t \mat{Q}^{-1} \mat{L} = \mat{L}^t (\mat{L} \mat{L}^t)^{-1} \mat{L} = \mat{L}^t \mat{L}^{-t} \mat{L}^{-1} \mat{L} = \mat{I}\]
-Since $\vec{x}$ is distributed according to $\dgdi$ over $\PP{\mat{B}^{-1}}$, by taking 
+Since $\vec{w}$ is distributed according to $\dgdi$ over $\PP{\mat{B}^{-1}}$, by taking 
 $\vec{c} = \mat{L}^{t} \vec{w}$ we have $\vec{c} = \mat{L}^{t} \mat{B}^{-1} \vec{x} = \mat{C} \vec{x}$, $\vec{c}$ is distributed according to $\dgdi$ over $\PP{C}$.
 
 We summarize this step of the attack against Hawk in the following algorithm
@@ -90,7 +91,7 @@ We summarize this step of the attack against Hawk in the following algorithm
 
 \subsection{Gradient search overview}
 After having transformed the samples $\vec{w} \in \PP{\mat{B}^{-1}}$ to $\vec{c} \in \PP{\mat{C}}$ we want to recover columns of $\pm \mat{C}$ and transform them back to columns of $\pm \mat{B}^{-1}$ by multiplying by $\mat{L}^{-1}$ on the left.
-Due to the special structure of Hawk (and NTRU) private keys, finding one column of $\mat{B}$, one has automatically found $n$ columns.
+Due to the special structure of Hawk (and NTRU) private keys, finding one column of $\mat{B}$ automatically gives $n$ columns.
 Unfortunately, since revealing a single column of $ \mat{B}^{-1}$ reveals a rotation of either the two polynomials $G$ and $ g$ \textit{or} $F$ and $f$,
 this is not enough to disclose the entire matrix. If samples were on the form $\vec{w} = \mat{B} \vec{x}$, a single column would reveal $f$ and $g$, and one could simply reconstruct $F$ and $G$
 by solving the NTRU-equation as in the key generation step of Hawk.
@@ -103,6 +104,10 @@ so each sample in the vector $\vec{c}$ has variance $1$. This also aligns with o
 shape as illustrated in \ref{hypercube_normal_discrete}. The hope is that the areas in the directions of the columns of $\pm \mat{C}$ will deviate just enough from a perfect spherical shape to give us a global minima/maxima in the gradient landscape.
 
 \subsection{Gradient search for Hawk}
-Due to the noisy and unpredictable gradient landscape we need to search, the \textit{vanilla} gradient search method as used in the original HPP attack is not very good.
-A constant stepsize means either a slow convergence (with a small value for $\delta$), or risking overshooting the correct extremum (with a big value for $\delta$).
-Therefore, we employ a more advanced method for gradient search, namely the ADAM-optimizer \cite{KB17}.
+Due to the noisy and unpredictable gradient landscape we need to search through, the \textit{vanilla} gradient search method as used in the original HPP attack is not very applicable.
+A constant descent (or ascent) parameter $\delta$, also referred to as the stepsize, generally entails either a slow convergence (with a small value for $\delta$), or risk of overshooting the correct extremum (with a big value for $\delta$).
+In the original attack, they found through experimentation that $\delta = \frac{3}{4}$ (or 0.7 in practice) was a balanced choice for a descent parameter.
+
+For the attack on Hawk, however, we employ a more sophisticated method for gradient search, and a good choice for this is the ADAM-optimizer \cite{KB17}. Originally developed for machine learning problems, 
+this method enables a dynamic adjustment of the stepsize while the search algorithm is running. In flat parts of the gradient landscape, the stepsize is increased to converge faster, 
+while in steep parts of the landscape the stepsize is decreased to avoid overshooting an optima or minima. The method of ADAM-optimizer is claimed to yield good result
