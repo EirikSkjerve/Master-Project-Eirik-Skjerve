@@ -9,6 +9,7 @@ use hawklib::utils::rot_key;
 use hawklib::ntru_solve::ntrusolve;
 
 use crate::hawk_sim::*;
+use crate::compare_keys::compare_keys_simulated;
 
 use rand::prelude::*;
 use rand::rngs::StdRng;
@@ -27,7 +28,7 @@ use peak_alloc::PeakAlloc;
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 static TOLERANCE: f64 = 1e-12;
 static SIGMA: f64 = 2.02;
-static MAX_RETRIES: usize = 120;
+static MAX_RETRIES: usize = 100;
 
 pub fn run_hpp_sim(t: usize, n: usize) {
     // runs the HPP attack against Hawk
@@ -48,6 +49,9 @@ pub fn run_hpp_sim(t: usize, n: usize) {
     // STEP 0: Generate samples
     // We need to generate a lot of samples to run the attack on
     // samples is a tx2n matrix
+
+    // compare_keys_simulated(n);
+    // return;
 
     // let mut stdout = Arc::new(Mutex::new(stdout()));
     let pb = ProgressBar::new(t as u64);
@@ -122,10 +126,15 @@ pub fn run_hpp_sim(t: usize, n: usize) {
     // initialize retry counter
     let mut retries = 0;
 
+    let mut avg_min = 0.0;
+    let mut avg_max = 0.0;
+    let mut tot_min = f64::INFINITY;
+    let mut tot_max = f64::NEG_INFINITY;
     // run loop until number of max retries is set
     while retries < MAX_RETRIES {
         // increment counter
         retries += 1;
+        println!("Iteration {retries}");
 
         // initialize empty result vector
         let mut res: Option<DVector<f64>> = None;
@@ -156,7 +165,11 @@ pub fn run_hpp_sim(t: usize, n: usize) {
 
 
         // do a measurement of the result vector up against secret key if it was not the correct one
-        measure_res(&solution, &binv.map(|x| x as i32));
+        let (min, max) = measure_res(&solution, &binv.map(|x| x as i32));
+        avg_min += min / MAX_RETRIES as f64;
+        avg_max += max / MAX_RETRIES as f64;
+        if min < tot_min { tot_min = min}
+        if max > tot_max { tot_max = max}
         println!(
             "Norm of res from gradient search: {}",
             solution.map(|x| x as f64).norm()
@@ -165,6 +178,8 @@ pub fn run_hpp_sim(t: usize, n: usize) {
         println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
         println!("Result not in key... \n");
     }
+    println!("Avg min: {avg_min} \n Avg max: {avg_max}");
+    println!("Total min: {tot_min} \nTotal max: {tot_max}");
 }
 
 fn hypercube_transformation(

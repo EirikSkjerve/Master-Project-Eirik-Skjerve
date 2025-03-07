@@ -97,10 +97,10 @@ fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<
         w = wnew;
         mom4_w = mom4_wnew;
 
-        if t >= 100 {
-            println!("Too many steps - probably?");
-            return Some(w);
-        }
+        // if t >= 100 {
+        //     println!("Too many steps - probably?");
+        //     return Some(w);
+        // }
         // println!("Max memory used so far: {} GB", PEAK_ALLOC.peak_usage_as_gb());
         // println!("");
     }

@@ -16,6 +16,8 @@ mod test_candidate_vec;
 mod hawk_sim;
 mod rngcontext;
 
+mod compare_keys;
+
 use collect_signatures::{
     collect_signatures, collect_signatures_par, covariance_matrix_estimation,
 };

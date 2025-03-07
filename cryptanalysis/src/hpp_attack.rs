@@ -5,6 +5,8 @@ use crate::collect_signatures::collect_signatures_par;
 
 use crate::test_candidate_vec::test_candidate_vec;
 
+use crate::compare_keys::compare_keys;
+
 use nalgebra::*;
 
 use hawklib::hawkkeygen::gen_f_g;
@@ -24,7 +26,7 @@ use peak_alloc::PeakAlloc;
 
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 static TOLERANCE: f64 = 1e-10;
-static MAX_RETRIES: usize = 200;
+static MAX_RETRIES: usize = 100;
 
 pub fn run_hpp_attack(t: usize, n: usize) {
     // runs the HPP attack against Hawk
@@ -50,6 +52,9 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // multiply our signature samples on the left with this Lt
     // so that samples are is distributed over L^t B^-1
     // samples are modified in place
+
+    // compare_keys(n, &binv);
+    // return;
 
     let (linv, c) = hypercube_transformation(&mut samples, q.map(|x| x as f64), &binv);
     println!("Samples transformed");
@@ -102,6 +107,10 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     // initialize retry counter
     let mut retries = 0;
 
+    let mut avg_min = 0.0;
+    let mut avg_max = 0.0;
+    let mut tot_min = f64::INFINITY;
+    let mut tot_max = f64::NEG_INFINITY;
     // run loop until number of max retries is set
     while retries < MAX_RETRIES {
         // increment counter
@@ -136,7 +145,12 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 
 
         // do a measurement of the result vector up against secret key if it was not the correct one
-        measure_res(&solution, &binv);
+        let (min, max) = measure_res(&solution, &binv);
+        avg_min += min / MAX_RETRIES as f64;
+        avg_max += max / MAX_RETRIES as f64;
+
+        if min < tot_min { tot_min = min}
+        if max > tot_max { tot_max = max}
         println!(
             "Norm of res from gradient search: {}",
             solution.map(|x| x as f64).norm()
@@ -145,6 +159,8 @@ pub fn run_hpp_attack(t: usize, n: usize) {
         println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
         println!("Result not in key... \n");
     }
+    println!("Avg min: {avg_min} \n Avg max: {avg_max}");
+    println!("Total min: {tot_min} \nTotal max: {tot_max}");
 }
 
 fn hypercube_transformation(
@@ -204,7 +220,7 @@ fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
     as_column || as_column_neg
 }
 
-pub fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) {
+pub fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) -> (f64, f64){
     // given a solution, measure how far the solution is away from each column of the secret key
     let mut min = f64::INFINITY;
     let mut max = f64::NEG_INFINITY;
@@ -223,12 +239,13 @@ pub fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) {
     });
 
     let comb = DMatrix::from_columns(&[res.column(0), binv.column(min_index)]);
-    eprintln!("{comb}");
-    println!("Min norm of diff: {min} \nMax norm of diff: {max}");
+    // eprintln!("{comb}");
+    // println!("Min norm of diff: {min} \nMax norm of diff: {max}");
+    (min, max)
 }
 
 
-fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64>) {
+pub fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64>) {
     // given private key, reconstruct entire secret matrix B and B inverse
     let (fgseed, bigf, bigg) = privkey;
     let n = bigf.len();
