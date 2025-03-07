@@ -143,15 +143,15 @@ Below, both gradient descent and gradient ascent is described as algorithms. Not
     \caption{Gradient descent on $\PP{C}$}
 \begin{algorithmic}[1]
     \Require{Samples on the form $\vec{c} = \mat{C}\vec{x}$, descent parameter $\delta$}
-    \State $\vec{w} \gets \text{ random vector on unit sphere in } \bb{R}^{2n}$
+    \State $\vec{u} \gets \text{ random vector on unit sphere in } \bb{R}^{2n}$
     \Loop
     \State $\vec{g} \gets \nabla \mom{4}{C}$
-    \State $\vec{w}_{new} = \vec{w} - \delta \vec{g}$
-    \State normalize $\vec{w}_{new}$ as $\frac{\vec{w}_{new}}{\lVert \vec{w}_{new} \rVert}$
-    \If{$mom_{4, \mat{C}}(\vec{w}_{new}) \geq mom_{4, \mat{C}(\vec{w})}$}
-    \State \Return{$\vec{w}$}
+    \State $\vec{u}_{new} = \vec{u} - \delta \vec{g}$
+    \State normalize $\vec{u}_{new}$ as $\frac{\vec{u}_{new}}{\lVert \vec{u}_{new} \rVert}$
+    \If{$mom_{4, \mat{C}}(\vec{u}_{new}) \geq mom_{4, \mat{C}(\vec{u})}$}
+    \State \Return{$\vec{u}$}
     \Else 
-    \State $\vec{w} \gets \vec{w}_{new}$
+    \State $\vec{u} \gets \vec{u}_{new}$
     \State go to step 3
     \EndIf
     \EndLoop
@@ -162,15 +162,15 @@ Below, both gradient descent and gradient ascent is described as algorithms. Not
     \caption{Gradient ascent on $\PP{C}$}
 \begin{algorithmic}[1]
     \Require{Samples on the form $\vec{c} = \mat{C}\vec{x}$, ascent parameter $\delta$}
-    \State $\vec{w} \gets \text{ random vector on unit sphere in } \bb{R}^{2n}$
+    \State $\vec{u} \gets \text{ random vector on unit sphere in } \bb{R}^{2n}$
     \Loop
     \State $\vec{g} \gets \nabla \mom{4}{C}$
-    \State $\vec{w}_{new} = \vec{w} + \delta \vec{g}$
-    \State normalize $\vec{w}_{new}$ as $\frac{\vec{w}_{new}}{\lVert \vec{w}_{new} \rVert}$
-    \If{$mom_{4, \mat{C}}(\vec{w}_{new}) \leq mom_{4, \mat{C}(\vec{w})}$}
-    \State \Return{$\vec{w}$}
+    \State $\vec{u}_{new} = \vec{u} + \delta \vec{g}$
+    \State normalize $\vec{u}_{new}$ as $\frac{\vec{u}_{new}}{\lVert \vec{u}_{new} \rVert}$
+    \If{$mom_{4, \mat{C}}(\vec{u}_{new}) \leq mom_{4, \mat{C}(\vec{u})}$}
+    \State \Return{$\vec{u}$}
     \Else 
-    \State $\vec{w} \gets \vec{w}_{new}$
+    \State $\vec{u} \gets \vec{u}_{new}$
     \State go to step 3
     \EndIf
     \EndLoop
@@ -240,14 +240,24 @@ Below is a description of the gradient search using ADAM-optimizer in our settin
     \State $\vec{v}_t \gets \beta_2 \cdot \vec{v}_{t-1} + (1 - \beta_2) \cdot \vec{g}_t^2$
     \State $\hat{\vec{m}}_t \gets \vec{m}_t / (1 - \beta_1 ^t) $
     \State $\hat{\vec{v}}_t \gets \vec{v}_t / (1 - \beta_2 ^t) $
-    \State $\vec{u}_{new} \gets \vec{u} - \delta \cdot \hat{\vec{m}}_t / (\sqrt{\hat{\vec{v}} + \epsilon})$
+    \State $\vec{u}_{new} \gets \vec{u} - \delta \cdot \hat{\vec{m}}_t / (\sqrt{\hat{\vec{v}}_t + \epsilon})$ \Comment{Flip the $-$ sign for gradient ascent}
+    \State normalize $\vec{u}_{new}$ as $\frac{\vec{u}_{new}}{\lVert \vec{u}_{new} \rVert}$
+    \If{$mom_{4, \mat{C}}(\vec{u}_{new}) \geq mom_{4, \mat{C}}(\vec{u})$} \Comment{Flip the $\geq$ sign for gradient ascent}
+    \State \Return{$\vec{u}$}
+    \Else 
+    \State $\vec{u} \gets \vec{u}_{new}$
+    \State go to step 6
+    \EndIf
     \EndLoop
 \end{algorithmic}
 \end{algorithm}
+The $\epsilon$ in step 12 of the algorithm is inserted to not divide by 0. Proposed value for $\epsilon = 10^{-8}$,
+and proposed good values for $\delta, \beta_1$ and $\beta_2$ are $0.001, 0.9$ and $0.999$ respectively.
+In this method, the stepsize then depends on $\delta, \vec{m}_t$ and $\vec{v}_t$.
 
-Below is a more detailed description of the approach.
+Below is a more detailed version of the attack.
 \begin{algorithm}[H]
-\caption{Proposed version of attack}
+\caption{Proposed version of attack with measuring}
 \begin{algorithmic}[1]
     \Require{Hawk parameter $n$, number of samples $t$, Hawk key pair $\mat{B}$, $\mat{Q}$}
     \State Collect $t$ signatures $\vec{w} = \mat{B}^{-1} \vec{x}$ \Comment{Optional - can also generate signatures continuously}
@@ -272,12 +282,12 @@ better comparison than random guessing. Random guessing in this case is assuming
 
 For reference, I ran a test using the closeness measure $ \mathsf{diff_{min}} = \mathsf{min} \{\lVert \lvert \vec{b}' \rvert - \lvert \vec{b}_i \rvert \rVert \ \mathbf{:} \ \vec{b}_i \in \pm \mat{B}^{-1}\}$ evaluation by fixing one private key $(\mat{B}^{-1})$, 
 and generating random keys $\mat{B}^{'-1}$ (which will serve as a random guess), to check if the attack on average gives better guesses than random
-guessing. The following table shows results of this.
+guessing. The following table shows results of this. This is the result of comparing a key with 100 random keys, and the result of 100 random starting points for the gradient search (both ascent and descent).
 
-\begin{table}[h]
+\begin{table}[H]
     \centering
     \caption{Closeness measure for Hawk attack}
-    \label{tab:hawk-parameters}
+    % \label{tab:hawk-parameters}
     \begin{tabular}{lcccc}
         \toprule
         \textbf{Type} & $\mathsf{diff_{min}}$ & $\mathsf{diff_{max}}$ & \textbf{Avg $\mathsf{diff_{min}}$} & \textbf{Avg $\mathsf{diff_{max}}$} \\
@@ -289,13 +299,31 @@ guessing. The following table shows results of this.
         Attack on Hawk 64 (1m samples) & 13.49 & 26.00 & 16.25 & 22.59 \\
         \midrule
         Key comparison degree 128 & 25.33 & 47.26 & 30.00 & 41.60 \\
-        Attack on Hawk 128 & something & something \\
+        Attack on Hawk 128(1m samples) & 24.27 & 46.91 & 29.61 & 46.91 \\
         \midrule
         Key comparison degree 256 & 56.33 & 82.34 & 61.02 & 75.02 \\
         Attack on Hawk 256 (10m samples) & something & something \\
         \bottomrule
     \end{tabular}
 \end{table}
+
+In the following table values for $\mu_4$ from samples are described
+
+\begin{table}[H]
+    \centering
+    \caption{Values for $\mu_4$}
+    % \label{t}
+    \begin{tabular}{lc}
+        \toprule
+        \textbf{Hawk degree} & $\mu_4$ \\
+        \midrule
+        256 & value \\
+        512 & value \\
+        1024 & value \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
 
 % \bibliographystyle{plain}  % Choose your desired style (plain, IEEE, etc.)
 \bibliographystyle{plain}
