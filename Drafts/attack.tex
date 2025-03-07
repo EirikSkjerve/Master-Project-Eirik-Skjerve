@@ -1,0 +1,303 @@
+
+
+\documentclass[12 pt]{article}        	%sets the font to 12 pt and says this is an article (as opposed to book or other documents)
+\usepackage{amsfonts, amssymb}					% packages to get the fonts, symbols used in most math
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\usepackage{amsthm}
+\usepackage{mathtools, nccmath}
+\DeclarePairedDelimiter{\nint}\lfloor\rceil
+
+\usepackage[integrals]{wasysym}
+\usepackage{latexsym}
+\DeclareRobustCommand{\VAN}[3]{#2}
+\usepackage{amssymb} 
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage[english]{babel}
+\usepackage{parskip}
+\usepackage{relsize}
+\usepackage{todonotes}
+\usepackage{booktabs}  % For professional table rules
+\usepackage{array}
+%\usepackage{setspace}               		% Together with \doublespacing below allows for doublespacing of the document
+
+\oddsidemargin=-0.5cm                 	% These three commands create the margins required for class
+\setlength{\textwidth}{6.5in}         	%
+\addtolength{\voffset}{-20pt}        		%
+\addtolength{\headsep}{25pt}
+
+\newcommand{\PP}[2][]{\mathcal{P}_{#1}(\mat{#2})}
+\newcommand{\mat}[1]{\mathbf{#1}}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\newcommand{\GLnR}{\mathcal{GL}_{n}(\mathbb{R})}
+\newcommand{\normdist}[2]{\mathcal{N}(#1, #2^2)}
+\newcommand{\dgdist}{\mathcal{D}_{2\bb{Z}+c, \sigma}}
+\newcommand{\bb}[1]{\mathbb{#1}}
+\newcommand{\dgd}{\mathcal{D}}
+\newcommand{\dgdi}{\widehat{\mathcal{D}}}
+\renewcommand{\dot}[2]{\langle \vec{#1}, \vec{#2} \rangle}
+\newcommand{\mom}[2]{mom_{#1, \mathbf{#2}}(\mathbf{w})}
+
+\DeclarePairedDelimiter{\round}\lfloor \rceil
+
+\begin{document}
+
+\title{Attack against Hawk report}
+\author{Eirik D. Skjerve}
+\maketitle
+\section{Notation and background}
+\subsection{Notation}
+$\vec{v}$ denotes a column vector \\
+$\mat{B}$ denotes a matrix
+
+\subsection{Hawk}
+A Hawk secret key denoted $\mat{B}$ is a $2n \times 2n$ matrix consisting of $n$ "shifts" of polynomials $f, g, F$ and $G$ which satisfy the NTRU-equation $fG - Fg = 1 \mod \bb{Z}[X]/(X^n +1)$. \\
+Let $\mathsf{vec}(f)$ denote the column vector of coefficients of $f$, such that 
+\[
+ \mathsf{vec}(f) = 
+    \begin{bmatrix}
+        f[0] \\
+        f[1] \\
+        \cdots \\
+        f[n-1]
+    \end{bmatrix}
+\]
+Explicitly, the secret key is then  
+\[
+    \mat{B} = 
+    \begin{bmatrix}
+        \mathsf{vec}(f) & \mathsf{vec}(fX) & \mathsf{vec}(fX^2) & \cdots & \mathsf{vec}(fX^{n-1}) & \mathsf{vec}(F) & \mathsf{vec}(FX) & \mathsf{vec}(FX^2) & \cdots & \mathsf{vec}(FX^{n-1}) \\
+        \mathsf{vec}(g) & \mathsf{vec}(gX) & \mathsf{vec}(gX^2) & \cdots & \mathsf{vec}(gX^{n-1}) & \mathsf{vec}(G) & \mathsf{vec}(GX) & \mathsf{vec}(GX^2) & \cdots & \mathsf{vec}(GX^{n-1}) \\
+
+    \end{bmatrix}
+\]
+
+A Hawk public key denoted $\mat{Q}$ is the matrix $\mat{Q} = \mat{B}^T\mat{B}$.
+
+A Hawk signature $\vec{s}$ is $\vec{s} = \frac{1}{2}(\vec{h} - \vec{w})$ where $\vec{w} = \mat{B}^{-1} \vec{x}$ where $\vec{s}$ is sampled according to the discrete Gaussian Distribution.
+In the experiments we run a version of Hawk signature generation that directly returns $\vec{w}$ instead of $\vec{s} = \frac{1}{2}(\vec{h} - \vec{w})$, as attacker/receiver can easily recompute $\vec{w}$ from $\vec{s}$ given message.
+
+\section{Attack}
+\subsection{Overview of method}
+Consider the Discrete Gaussian Distribution as described in \cite{HawkSpec24}. We use our implementation of Hawk to sample many points from the practical distribution based on tables.
+Let $\dgdi$ denote the practical discrete Gaussian distribution from sampled points.
+Let $\hat{\mu}$, $\hat{\sigma}^2$ be the expectation and variance of $\dgdi$.
+Assume we sample $t$ points from $\dgdi$ as $X = \{x_1, x_2, ..., x_t\}$. We estimate $\hat{\mu}$ and $\hat{\sigma}^2$ simply as $\hat{\mu} = \mathlarger{\frac{1}{t} \sum_{i=1}^{t} x_i}$ and $\hat{\sigma}^2 = \mathlarger{\frac{1}{t} \sum_{i=1}^{t}(x_i - \hat{\mu})^2}$.
+For simplicity, we can also assume $\hat{\mu} = 0$ as claimed in \cite{HawkSpec24}.
+To simplify later computations we also normalize our samples by computing $Z = \{z_1, z_2, ..., z_t\} = \{\frac{x_1}{\hat{\sigma}}, \frac{x_2}{\hat{\sigma}},..., \frac{x_t}{\hat{\sigma}}\}$ such that 
+$\bb{V}[z_i] = 1$.
+Now, denote by $\mu_4 = \bb{E}[z_i^4] = \mathlarger{\frac{1}{t} \sum_{i=1}^{n} z_i ^4}$. Assume observed signatures on the form $\vec{c} = \mat{C} \vec{z}$ where $\mat{C}$ is orthonormal (columns are unit vectors and pairwise orthogonal). 
+By rewriting the terms from the original HPP paper \cite{NR09} for this new, normalized, distribution $\dgdi$, we have that
+\[mom_{4, \mat{C}} (\vec{u}) = 3 \lVert \vec{u} \rVert ^4 + (\mu_4 - 3) \sum_{i=1}^{n} \langle c_i, \vec{u} \rangle^4 \]
+and
+\[\nabla mom_{4, \mat{C}} (\vec{u}) = 12 \lVert \vec{u} \rVert^2 \vec{u} + 4(\mu_4 - 3) \mathlarger{\sum_{i=1}^{n} \langle c_i, \vec{u}} \rangle^3 c_i\]
+where $\vec{u}$ is a vector on the unit sphere of $\bb{R}^{2n}$, i.e. $\lVert \vec{u} \rVert = 1$.
+This means that if the difference $(\mu_4 - 3)$ is big enough, one might be able to employ the same minimization technique as in the original attack to reveal a column of $\mat{C}$ 
+because $\langle c_i, \vec{u} \rangle^4 = 1$ if $\vec{u} = \pm c_i$ since $\langle c_i, c_i \rangle^4 = 1$.
+Note that if $(\mu_4 - 3) < 0$ we have the same case as in the original attack, where minimization of the entire term entails maximization of $\mathlarger{\sum_{i=1}^{n} \langle c_i, \vec{u} \rangle^4}$, which gives us a row of $\pm \mat{C}$.
+If $(\mu_4 - 3) > 0$, we need to maximize the entire term $3 \lVert \vec{u} \rVert ^4 + \mathlarger{\sum_{i=1}^{n} \langle c_i, \vec{u} \rangle^4}$, which is achieved by doing a gradient \textit{ascent} instead of a gradient \textit{descent}.
+
+\subsection{Covariance matrix and hypercube transformation}
+In the original HPP attack one has to estimate the matrix $\mat{G} \approx \mat{V} ^t \mat{V}$.
+For Hawk, the signatures are on the form $\vec{w} = \mat{B}^{-1} \vec{x}$. Then we would need to compute $\mat{G} = \mat{B}^{-1} \mat{B}^{-t}$ (the HPP paper uses row vectors while Hawk use columns vectors).
+However, the public key $\mat{Q} = \mat{B}^T \mat{B}$, enables us to skip this step.
+Recall that in the original attack one has to take Cholesky decomposition (or an equivalent decomposition) of the inverse of the covariance matrix such that $\mat{G}^{-1} = \mat{L}\mat{L}^T$. 
+For $\mat{G} = \mat{B}^{-1} \mat{B}^{-T}$, the inverse,
+$\mat{G}^{-1} = \mat{B}^t \mat{B} = \mat{Q}$. Therefore, we can simply take the Cholesky decomposition of $\mat{Q}$ to get $\mat{L} \text{ such that } \mat{Q} = \mat{L} \mat{L}^T$.
+By multiplying our samples $\vec{w}$ by $\mat{L}^T$ on the left, we have transformed our samples to the hidden hypercube as in the original attack. \\
+By taking $\mat{C} =  \mat{L}^T\mat{B}^{-1}$, we have that 
+\[\mat{C}^t \mat{C} = (\mat{L}^T \mat{B}^{-1})^T (\mat{L}^T \mat{B}^{-1}) = \mat{B}^{-T} \mat{L} \mat{L}^T \mat{B}^{-1} = \mat{B}^{-T} \mat{Q} \mat{B}^{-1} = \mat{B}^{-T} \mat{B}^{T} \mat{B} \mat{B}^{-1} = \mat{I}\]
+and
+\[\mat{C}\mat{C}^T = (\mat{L}^T \mat{B}^{-1})(\mat{L}^T \mat{B}^{-1})^T = \mat{L}^T \mat{B}^{-1} \mat{B}^{-T} \mat{L} =  \mat{L}^T \mat{Q}^{-1} \mat{L} = \mat{L}^T (\mat{L} \mat{L}^T)^{-1} \mat{L} = \mat{L}^T \mat{L}^{-T} \mat{L}^{-1} \mat{L} = \mat{I}\]
+Thus $\mat{C}$ is an orthonormal matrix.
+Since $\vec{w}$ is distributed according to $\dgdi$ over $\PP{\mat{B}^{-1}}$, by taking 
+$\vec{c} = \mat{L}^{T} \vec{w}$ we have $\vec{c} = \mat{L}^{T} \mat{B}^{-1} \vec{x} = \mat{C} \vec{x}$, $\vec{c}$ is distributed according to $\dgdi$ over $\PP{C}$.
+
+We summarize this step of the attack against Hawk in the following algorithm
+
+\begin{algorithm}
+\caption{Hawk Hypercube Transformation}
+\begin{algorithmic}[1]
+% \Procedure{Euclid}{$a,b$}\Comment{The g.c.d. of a and b}
+    \Require{Samples $\vec{w} = \mat{B}^{-1} \vec{x}$ and public key $\mat{Q}$}
+    \State Compute $\mat{L}$ s.t. $\mat{Q} = \mat{L}\mat{L}^T$ \Comment by Cholesky decomposition
+    \State Compute $\vec{c} = \mat{L}^T \vec{w}$
+    \State \Return{$\vec{c}$ and $\mat{L}^{-T}$}
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Gradient search overview}
+
+Now, given samples $\vec{c} \in \PP{C}$, we run a gradient search to minimize or maximize the fourth moment of one-dimensional projections onto $\vec{u}$, as in the original attack. In addition to multiplying the samples by $\mat{L}^t$, we also divide them by the scalar $\sigma$, to normalize the samples
+so each sample in the vector $\vec{c}$ has variance $1$. This also aligns with our theoretical analysis of $mom_{4,\mat{C}}(\vec{u})$. Even though the distribution $\dgdi$ is discrete, the shape of the samples $\vec{c} \in \PP{C}$ will still have a somewhat spherical shape.
+The hope is that the areas in the directions of the columns of $\pm \mat{C}$ will deviate just enough from a perfect spherical shape to give us a clear global minima/maxima in the gradient landscape.
+
+We evaluate the functions $mom_{4, \mat{C}}(\vec{u})$ as $\bb{E} [\langle \vec{c}, \vec{u} \rangle ^4]$ and $\nabla mom_{4,\mat{C}}(\vec{u})$ as $\bb{E} [\nabla \langle \vec{c}, \vec{u} \rangle ^4] = 4 \bb{E} [\langle \vec{c}, \vec{u} \rangle ^3 \vec{c}]$.
+These can be evaluated by precomputed samples $\{\vec{c}_1, \vec{c}_2, ..., \vec{c}_t\}$, or be evaluated continuously by generating one and one signature sample since we have access to the signature generation algorithm.
+This approach is much slower since one has to do one matrix transformation by $\mat{L}^T$ for each sample, but removes the need for much memory.
+
+Below, both gradient descent and gradient ascent is described as algorithms. Note that the only difference is in what direction to move and the condition for termination, on lines 4 and 6 respectively.
+\begin{algorithm}[H]
+    \caption{Gradient descent on $\PP{C}$}
+\begin{algorithmic}[1]
+    \Require{Samples on the form $\vec{c} = \mat{C}\vec{x}$, descent parameter $\delta$}
+    \State $\vec{w} \gets \text{ random vector on unit sphere in } \bb{R}^{2n}$
+    \Loop
+    \State $\vec{g} \gets \nabla \mom{4}{C}$
+    \State $\vec{w}_{new} = \vec{w} - \delta \vec{g}$
+    \State normalize $\vec{w}_{new}$ as $\frac{\vec{w}_{new}}{\lVert \vec{w}_{new} \rVert}$
+    \If{$mom_{4, \mat{C}}(\vec{w}_{new}) \geq mom_{4, \mat{C}(\vec{w})}$}
+    \State \Return{$\vec{w}$}
+    \Else 
+    \State $\vec{w} \gets \vec{w}_{new}$
+    \State go to step 3
+    \EndIf
+    \EndLoop
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+    \caption{Gradient ascent on $\PP{C}$}
+\begin{algorithmic}[1]
+    \Require{Samples on the form $\vec{c} = \mat{C}\vec{x}$, ascent parameter $\delta$}
+    \State $\vec{w} \gets \text{ random vector on unit sphere in } \bb{R}^{2n}$
+    \Loop
+    \State $\vec{g} \gets \nabla \mom{4}{C}$
+    \State $\vec{w}_{new} = \vec{w} + \delta \vec{g}$
+    \State normalize $\vec{w}_{new}$ as $\frac{\vec{w}_{new}}{\lVert \vec{w}_{new} \rVert}$
+    \If{$mom_{4, \mat{C}}(\vec{w}_{new}) \leq mom_{4, \mat{C}(\vec{w})}$}
+    \State \Return{$\vec{w}$}
+    \Else 
+    \State $\vec{w} \gets \vec{w}_{new}$
+    \State go to step 3
+    \EndIf
+    \EndLoop
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Practical method}
+
+Below is a basic description of the approach.
+\begin{algorithm}[H]
+\caption{Proposed basic version of attack}
+\begin{algorithmic}[1]
+    \State Collect signatures $\vec{w} = \mat{B}^{-1} \vec{x}$
+    \State Using public key $\mat{Q}$, find $\mat{L}$ s.t. $\mat{Q} = \mat{L} \mat{L}^t$
+    \State Transform samples s.t. $\vec{c} = \mat{L}^t \vec{w}$
+    \State Find columns of $\pm \mat{C}$ by doing gradient search over $\PP{C}$
+    \State Multiply columns of $\pm \mat{C}$ by $\mat{L}^{-t}$ on the left and round the result to get columns in $\pm \mat{B}^{-1}$
+\end{algorithmic}
+\end{algorithm}
+
+After having transformed the samples $\vec{w} \in \PP{\mat{B}^{-1}}$ to $\vec{c} \in \PP{\mat{C}}$ we want to recover columns of $\pm \mat{C}$ and transform them back to columns of $\pm \mat{B}^{-1}$ by multiplying by $\mat{L}^{-1}$ on the left.
+Due to the special structure of Hawk private keys, finding one column of $\mat{B}$ automatically gives $n$ columns.
+Unfortunately, since revealing a single column of $ \mat{B}^{-1}$ reveals a "shift" of either the two polynomials $G$ and $ g$ \textit{or} $F$ and $f$,
+this is not enough to disclose the entire matrix. If samples were on the form $\vec{w} = \mat{B} \vec{x}$, a single column would reveal $f$ and $g$, and one could simply reconstruct $F$ and $G$
+by solving the NTRU-equation as in the key generation step of Hawk.
+Nevertheless, if one finds two columns of $\mat{B}^{-1}$, it is easy to check if they are shifts of each other. If they are not, one has found shifts of all four polynomials in the secret key, 
+and by trying all combinations of shifts, of which there are $4 n^2$ (accounting for negative and positive sign), one can easily verify if a candidate $\mat{B'}$ is valid by 
+checking if $\mat{B'}^T \mat{B'} = \mat{Q}$. If so, one is able to forge signatures, and the attack is done.
+
+In experiments we have access to the correct secret key. After each gradient ascent and/or descent returns a possible solution $\vec{u}$, 
+we multiply it to the left as $\vec{b}' = \mat{L}^{-T} \vec{u}$ where $\vec{b}'$ is a possible column of $\pm \mat{B}^{-1}$ as $\vec{u}$ is a possible column of $\pm \mat{C} = \mat{L}^T \pm \mat{B}^{-1}$.
+Since we have the correct secret key, we simply check directly if $\mat{b}' \in \pm \mat{B}^{-1}$.
+In a real word attack however, one would, as described above, have to compute candidate $\mat{B}'$ and check if $\mat{B}'^T\mat{B}' = \mat{Q}$.
+
+Having access to the correct $\mat{B}^{-1}$ we can do measures on how close a proposed solution $\vec{b}'$ is to one of the columns of $\mat{B}^{-1}$.
+We can for example take the difference in length of $\lvert \vec{b}' \rvert $ and each vector in $\lvert \mat{B}^{-1}\rvert$, i.e. 
+$ \mathsf{diff_{min}} = \mathsf{min} \{\lVert \lvert \vec{b}' \rvert - \lvert \vec{b}_i \rvert \rVert \ \mathbf{:} \ \vec{b}_i \in \pm \mat{B}^{-1}\}$.
+A low value for this (this depends on the Hawk parameter $n$) would indicate a good guess, whereas a higher value indicates greater difference between the vectors, and thus a bad guess.
+One can also take the average of the difference of the entries in the vectors, i.e. $ \mathsf{diff_{min}} = \mathsf{min} \{\frac{1}{2n} | \vec{b}' - \vec{b}_i | \mathbf{:} \vec{b}_i \in \pm \mat{B}^{-1}\}$.
+Alternatively, one can count entrywise how many entries out of $2n$ that matches between $\vec{b}'$ and $\vec{b}_i$.
+
+A concern about the approach of attacking Hawk is the gradient search, as described in Algorithm 2 and 3. In the original HPP attack, they used a standard gradient descent with a constant stepsize/descent parameter $\delta$. This
+worked fine for attack on GGH and NTRU since the global minima (of which there are $2n$) of the gradient landscape was much more clear. In the gradient landscape of Hawk however, there is much more noise, and the global minima is
+not as clear, as it depends on the discrepancy $(\mu_4 - 3)$, which is quite small. Generally, a constant stepsize $\delta$ entails a tradeoff between slow convergence and the risk of "overshooting" the correct global extremum.  
+I have therefore researched alternative methods of gradient search, and found the method of ADAM-optimizer \cite{KB17}. This method, which is mostly used in machine learning and other optimization processes, dynamically changes the 
+stepsize $\delta$ iteratively though the gradient search, and they claim that their method works well for noisy gradient landscapes with high parameters/dimensions.
+
+I chose to implement my gradient ascent and gradient descent algorithms using the ADAM-optimizer method. 
+Generally the method changes $\delta$ to be greater in flat areas of the landscape, and $\delta$ to be lower in steep areas of the landscape, as it continuously calculates some information "around" the current point in the search.
+This method is more involved and sophisticated than the standard gradient search, but I thought this was a good idea to implement it, since finding a good $\delta$ for the standard gradient search was difficult. 
+
+Below is a description of the gradient search using ADAM-optimizer in our setting.
+
+\begin{algorithm}[H]
+    \caption{$\mathsf{gradient \ descent \ ADAM}$}
+\begin{algorithmic}[1]
+    \Require{signatures $\vec{w} = \mat{B}^{-1} \vec{x}$}
+    \Require{Stepsize $\delta$, decay rates $\beta_1, \beta_2$}
+    \State $\vec{u} \gets $ random vector on the unit sphere of $\bb{R}^{2n}$
+    \State $\vec{m}_0 \gets 0$ \Comment{Vector of 0's}
+    \State $\vec{v}_0 \gets 0$ \Comment{Vector of 0's}
+    \State $t \gets 0$ \Comment{Timestep}
+    \Loop
+    \State $t \gets t + 1$
+    \State $\vec{g}_t \gets \nabla \mom{4}{C}$
+    \State $\vec{m}_t \gets \beta_1 \cdot \vec{m}_{t-1} + (1 - \beta_1) \cdot \vec{g}_t$
+    \State $\vec{v}_t \gets \beta_2 \cdot \vec{v}_{t-1} + (1 - \beta_2) \cdot \vec{g}_t^2$
+    \State $\hat{\vec{m}}_t \gets \vec{m}_t / (1 - \beta_1 ^t) $
+    \State $\hat{\vec{v}}_t \gets \vec{v}_t / (1 - \beta_2 ^t) $
+    \State $\vec{u}_{new} \gets \vec{u} - \delta \cdot \hat{\vec{m}}_t / (\sqrt{\hat{\vec{v}} + \epsilon})$
+    \EndLoop
+\end{algorithmic}
+\end{algorithm}
+
+Below is a more detailed description of the approach.
+\begin{algorithm}[H]
+\caption{Proposed version of attack}
+\begin{algorithmic}[1]
+    \Require{Hawk parameter $n$, number of samples $t$, Hawk key pair $\mat{B}$, $\mat{Q}$}
+    \State Collect $t$ signatures $\vec{w} = \mat{B}^{-1} \vec{x}$ \Comment{Optional - can also generate signatures continuously}
+    \State Using public key $\mat{Q}$, compute $\mat{L}$ s.t. $\mat{Q} = \mat{L} \mat{L}^t$
+    \State Transform samples s.t. $\vec{c} = \mat{L}^t \vec{w}$
+    \Loop
+    \State Candidate $\vec{z}' \gets \mathsf{gradient \ search  \ ADAM}$ \Comment{Do both ascent and descent}
+    \State Candidate $\vec{b}' \gets \round{\mat{L}^{-T} \vec{z}'}$ \Comment{Entrywise rounding to nearest integer}
+    \State Check if $\vec{b}' \in \mat{B}^{-1}$
+    \State Measure $\mathsf{diff_{min}}(\vec{b}', \mat{B}^{-1})$
+    \EndLoop
+\end{algorithmic}
+\end{algorithm}
+
+The loop from line 4 can be run several times to get a new random starting point $\vec{u}$ for the gradient search.
+Line 6 rounds the candidate \textit{after} multiplying with $\mat{L}^{-T}$ to avoid rounding errors.
+Line 8 can also give which column of $\mat{B}^{-1}$ $\vec{b}'$ is closest to, so one can compare the vectors side by side.
+\subsection{Results}
+
+The method has not proven to work, as no correct key has been found in any of the runs. It seems that regardless of number of signatures (above a certain point, e.g. one million), the method cannot give candidate solutions with
+better comparison than random guessing. Random guessing in this case is assuming one knows what type of distribution the columns of a secret key is. One knows the distribution that $f, g$ follows, but $F$ and $G$ depends on $f$ and $g$.
+
+For reference, I ran a test using the closeness measure $ \mathsf{diff_{min}} = \mathsf{min} \{\lVert \lvert \vec{b}' \rvert - \lvert \vec{b}_i \rvert \rVert \ \mathbf{:} \ \vec{b}_i \in \pm \mat{B}^{-1}\}$ evaluation by fixing one private key $(\mat{B}^{-1})$, 
+and generating random keys $\mat{B}^{'-1}$ (which will serve as a random guess), to check if the attack on average gives better guesses than random
+guessing. The following table shows results of this.
+
+\begin{table}[h]
+    \centering
+    \caption{Closeness measure for Hawk attack}
+    \label{tab:hawk-parameters}
+    \begin{tabular}{lcccc}
+        \toprule
+        \textbf{Type} & $\mathsf{diff_{min}}$ & $\mathsf{diff_{max}}$ & \textbf{Avg $\mathsf{diff_{min}}$} & \textbf{Avg $\mathsf{diff_{max}}$} \\
+        \midrule
+        Key comparison degree 32 & 6.25 & 15.81 & 7.74 & 11.22 \\
+        Attack on Hawk 32 (1m samples) & 7.14 & 16.24 & 8.50 & 12.87 \\
+        \midrule
+        Key comparison degree 64 & 10.77 & 26.51 & 13.96 & 22.18 \\
+        Attack on Hawk 64 (1m samples) & 13.49 & 26.00 & 16.25 & 22.59 \\
+        \midrule
+        Key comparison degree 128 & 25.33 & 47.26 & 30.00 & 41.60 \\
+        Attack on Hawk 128 & something & something \\
+        \midrule
+        Key comparison degree 256 & 56.33 & 82.34 & 61.02 & 75.02 \\
+        Attack on Hawk 256 (10m samples) & something & something \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+% \bibliographystyle{plain}  % Choose your desired style (plain, IEEE, etc.)
+\bibliographystyle{plain}
+\bibliography{refs}        % This references the refs.bib file
+\end{document}
