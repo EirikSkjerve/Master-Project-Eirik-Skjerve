@@ -36,13 +36,13 @@ fn hawkkeygen_inner(
     if n == 256 || n == 512 || n == 1024 {
 
         if !(is_invertible(&f, 2) && is_invertible(&g, 2)) {
-            println!("Is not invertible");
+            // println!("Is not invertible");
             return None;
         }
 
         // check l2norm of f and g
         if ((l2norm(&f) + l2norm(&g)) as f64) <= 2.0 * (n as f64) * sigmakrsec.powi(2) {
-            println!("Too low norm");
+            // println!("Too low norm");
             return None;
         }
     }
@@ -62,7 +62,7 @@ fn hawkkeygen_inner(
 
     // check q00 invertibility mod p1 and p2
     if !(is_invertible(&q00, p1) && is_invertible(&q00, p2)) {
-        println!("not invertible...");
+        // println!("not invertible...");
         return None;
     }
 
@@ -71,7 +71,7 @@ fn hawkkeygen_inner(
 
     // check the constant term of 1/q00 is not too high
     if invq00[0] >= beta0 {
-        println!("Too high thing here");
+        // println!("Too high thing here");
         return None;
     }
 
