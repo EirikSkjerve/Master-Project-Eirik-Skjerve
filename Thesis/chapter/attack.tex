@@ -194,7 +194,7 @@ Below is a more detailed version of the entire attack/experiment.
     \State Transform samples s.t. $\vec{c} = \mat{L}^t \vec{w}$
     \Loop
     \State Candidate $\vec{z}' \gets \mathsf{gradient \ search  \ ADAM}$ \Comment{Do both ascent and descent}
-    \State Candidate $\vec{b}' \gets \mat{L}^{-T} \vec{z}'$ \Comment{Entrywise rounding to nearest integer}
+    \State Candidate $\vec{b}' \gets \lfloor \mat{L}^{-T} \vec{z}' \rceil$ \Comment{Entrywise rounding to nearest integer}
     \State Check if $\vec{b}' \in \mat{B}^{-1}$
     \State Measure $\mathsf{diff_{min}}(\vec{b}', \mat{B}^{-1})$
     \EndLoop
