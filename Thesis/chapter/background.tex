@@ -37,3 +37,44 @@ We denote by $\langle \cdot, \cdot \rangle$ the dot-product of two vectors of eq
 $\langle \vec{x}, \vec{y} \rangle = \vec{x}^t \vec{y} = \mathlarger{\sum_{i=0}^{n-1} x_i y_i}$
 \section{Probability Theory}
 \section{Gradient Search}
+\subsection{Overview}
+Used in this section: \cite{R17}
+Gradient descent is a widely used method in optimization and learning problems.
+
+The general method works by measuring the gradient of the target function $\nabla f (\theta) $ w.r.t. to its parameters $\theta$ to get the direction 
+in which $\theta$ $f(\theta)$ changes the most. 
+One then takes a "step" based on this direction (for a descent, one moves against the gradient, for an ascent, with the gradient), 
+influenced by the hyperparameter $\delta$, which determines the magnitude of the step.
+
+Before going more in depth of the methods, we quickly define the gradient of a function.
+\subsection{Gradients}
+Let $\theta = [\theta_1, \theta_2, \cdots, \theta_n]$
+The gradient of a multivariate function $f(\theta)$ is defined as the vector of partial derivatives evaluated at $\theta$
+
+\[ \nabla f(\theta) = 
+\begin{bmatrix}
+\frac{\partial f}{\partial \theta_1}(\theta) \\
+\frac{\partial f}{\partial \theta_2}(\theta) \\
+\cdots \\
+\frac{\partial f}{\partial \theta_n}(\theta) \\
+\end{bmatrix}
+\]
+
+
+\subsection{Gradient descent and optimization}
+In Algorithm \ref{VanillaGradientDescent} the so-called "vanilla" gradient descent is described.
+\begin{algorithm}[H]
+    \caption{Vanilla gradient descent} \label{VanillaGradientDescent}
+\begin{algorithmic}[1]
+    \Require{differentiable target function $f$}
+    \State initialize $\theta_0$ as a starting point
+    \While{$\theta_t$ is not optimal}
+    \State $\theta_t \gets \theta_{t-1} - \delta \cdot \nabla f_{\theta} (\theta_{t-1})$
+    \EndWhile
+\end{algorithmic}
+\end{algorithm}
+
+Note that for vanilla gradient descent as described in Algorithm \ref{VanillaGradientDescent}, to compute the gradient one needs the entire dataset for each iteration,
+which sometimes can be too large to fit in memory, or too large to be computationally efficient.
+
+Many optimization techniques are utilized in gradient descent today, which overcome this hurdle.

@@ -4,20 +4,20 @@
 
 \section{HPP}
 In this section we present the \textit{Learning a Parallelepiped} attack as described in \cite{NR09}. 
-Note that in this section $\vec{v}$ denotes a \textit{row}-vector to follow the same notation as in the original paper.
+Note that in this section bold lowercase $\vec{v}$ denotes a \textit{row}-vector to follow the same notation as in the original paper.
 \subsection{Setup and idealized version}
 Let $\mat{V} \in \mathcal{GL}(\bb{R})$ be a secret $n \times n$ unimodular matrix and $\PP{V}$ be a fundamental parallelepiped, defined as the set $\{\vec{x}\mat{V}: \vec{x} \in [-1, 1]^n\}$. 
 Let $\vec{v} = \vec{x} \mat{V}$. 
 The problem to solve is informally described below and visualized in figure \ref{hpp_parallelepiped_uniform}.
 
 \begin{hpp_problem_basic}\label{Basic HPP problem}
-Given enough vectors $\vec{v}$ (i.e. by observing a large enough subset of $\PP{V}$), where both $\vec{x}$ and $\mat{V}$ is unknown,
+    Given enough vectors $\vec{v} = \vec{x}\mat{V}$ (i.e. by observing a large enough subset of $\PP{V}$), where both $\vec{x}$ and $\mat{V}$ is unknown,
 recover rows of $\pm \mat{V}$
 \end{hpp_problem_basic}
-The following three steps are used to solve \ref{Basic HPP problem}:
+The following three steps are used to solve Problem \ref{Basic HPP problem}:
 \begin{enumerate}
     \item Estimate the covariance matrix $\mat{V}^t \mat{V}$
-    \item Transform samples $\vec{v} \in \PP{V}$ to $\vec{c} \in \PP{C}$ where $\PP{C}$ is a hypercube, i.e. $\mat{C} \mat{C}^t = \mat{I}$
+    \item Transform samples $\vec{v} \in \PP{V}$ to $\vec{c} \in \PP{C}$ where $\PP{C}$ is a hypercube, i.e. $\mat{C} \mat{C}^t = \mat{I}_n$
     \item Do gradient descent to minimize the fourth moment of one-dimensional projections and reveal a row of $\pm \mat{C}$ which finally can be transformed into a row of $\pm \mat{V}$
 \end{enumerate}
 In the following, each of these steps will be covered in detail.
@@ -30,8 +30,8 @@ In the following, each of these steps will be covered in detail.
     \label{hpp_parallelepiped_uniform}
 \end{figure}
 \subsection{Covariance matrix estimation}
-Given enough samples on the form $\vec{v} = \mat{V} \vec{x}$, we want to estimate the covariance matrix $\mat{G} \approx \mat{V}^t \mat{V}$.
-This is achieved as $\vec{v}^t \vec{v} = (\mat{V} \vec{x})^t(\mat{V} \vec{x}) = \mat{V}^t \vec{x}^t \vec{x} \mat{V}$.
+Given enough samples on the form $\vec{v} = \vec{x}\mat{V} $, we want to estimate the covariance matrix $\mat{G} \approx \mat{V}^t \mat{V}$.
+This is achieved as $\vec{v}^t \vec{v} = ( \vec{x}\mat{V})^t(\vec{x}\mat{V}) = \mat{V}^t \vec{x}^t \vec{x} \mat{V}$.
 % Remark that since $\vec{x}$ is a row vector, $\bb{E}[\vec{x}^t \vec{x}]$ will be an $n \times n$ matrix.
 Now, by taking the expectation of the inner term we get $\bb{E}[\vec{x}^t \vec{x}] = \mat{I}_n / 3$ where $\mat{I}_n$ is the $n \times n$ identity matrix because of the following:
 Since all $x_i \in \vec{x}$ are distributed according to the uniform distribution over $[-1, 1]$ and each $x_i$ are independent, 
@@ -67,8 +67,9 @@ Since $\mat{G}$ is symmetric positive definite we can do decomposition to get $\
     \item since entries in $\vec{x}$ are uniformly distributed, $\vec{c} = \mat{C} \vec{x}$ is uniformly distributed over $\PP{C}$
 \end{enumerate}
 
-By multiplying our samples $\vec{v}$ by $\mat{L}$ on the right, we transform them from the hidden parallelepiped to the hidden hypercube. If one finds
-the rows of $\pm \mat{C}$, one can simply multiply the result on the right by $\mat{L}^{-1}$ to obtain the solution for $\mat{V}$.
+By multiplying our samples $\vec{v}$ by $\mat{L}$ on the right, we transform them from the hidden parallelepiped to the hidden hypercube. 
+Therefore, the problem to solve now can be called the "Hidden Hypercube Problem".
+If one finds the rows of $\pm \mat{C}$, one can simply multiply the result on the right by $\mat{L}^{-1}$ to obtain the solution for $\mat{V}$.
 
 \begin{figure}[H]
     \centering
@@ -84,7 +85,7 @@ Let $mom_{k, \mat{C}}(\vec{w})$ be defined as the $k$-th moment of $\PP{C}$ proj
 $\bb{E}[\langle \vec{c}, \vec{w} \rangle ^k]$ where $\vec{c} = \vec{x} \mat{C}$ for $\vec{x}$ uniformly distributed and $\vec{w} \in \bb{R}^n$.
 Looking at the term $\langle \vec{c}, \vec{w} \rangle$, we have $\langle \vec{x} \mat{C}, \vec{w} \rangle = \langle \sum_{i=1}^{n} x_i c_i, \vec{w} \rangle$
 where $c_i$ is the $i$-th row of $\mat{C}$. Since $x_i$ is a scalar, we can move it out of the dot-product brackets. $\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle $ .
-Moving this inside the $\bb{E}[ \ ]$ we have $\bb{E}[\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle ^k ]$.
+Evaluating this inside the $\bb{E}[ \ ]$ we have $\bb{E}[\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle ^k ]$.
 We look at the two cases when $k = 2$ and $k=4$.
 \begin{itemize}
     \item $\mathbf{k = 2: }$
@@ -171,7 +172,8 @@ A simple gradient descent is described in the following algorithm:
         \EndIf
 \end{algorithmic}
 \end{algorithm}
-This procedure is repeated until all rows of $\pm \mat{C}$ is found. Each row is transformed by $\mat{L}^{-1}$ to get the row in $\mat{V}$.
+This procedure is repeated until all rows of $\pm \mat{C}$ is found. Each row is transformed by $\mat{L}^{-1}$ to get the row in $ \pm \mat{V}$.
+\todo{Should here acknowledge the computational impossibility of computing $n!$ possible candidates}
 \section{HPP against the Normal Distribution}
 
 Assume now that the signatures on the form $\vec{v} = \vec{x} \mat{V}$ where $x_i \sim \normdist{0}{\sigma}$. After converting $\PP{V}$ to $\PP{C}$, 
@@ -213,16 +215,15 @@ the fourth moment of $\PP{C}$ is constant over $\vec{w}$ on the unit circle.
         mom_{4, \mat{C}}(\vec{w}) = 3\sigma^4 \sum_{i} \sum_{j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2
     \]
 
-    \[
-        mom_{4, \mat{C}}(\vec{w}) = 3\sigma^4 \sum_{i} \sum_{j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2
-    \]
+    % \[
+    %     mom_{4, \mat{C}}(\vec{w}) = 3\sigma^4 \sum_{i} \sum_{j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2
+    % \]
 
     \[
-        mom_{4, \mat{C}}(\vec{w}) = 3\sigma^4 (\lVert \vec{w} \rVert ^2 ) ^2
+        mom_{4, \mat{C}}(\vec{w}) = 3\sigma^4 (\lVert \vec{w} \rVert ^2 ) ^2 = 3 \sigma ^4
     \]
 
     Since $mom_{4, \mat{C}}(\vec{w})$ is constant for $\vec{w}$ on the unit sphere regardless of $\sigma^2$, the term no longer depends on the secret matrix $\mat{C}$ and the attack will not work.
-
 
     \begin{figure}[H]
     \centering
