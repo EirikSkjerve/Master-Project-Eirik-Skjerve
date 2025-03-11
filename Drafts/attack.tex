@@ -84,7 +84,7 @@ Assume we sample $t$ points from $\dgdi$ as $X = \{x_1, x_2, ..., x_t\}$. We est
 For simplicity, we can also assume $\hat{\mu} = 0$ as claimed in \cite{HawkSpec24}.
 To simplify later computations we also normalize our samples by computing $Z = \{z_1, z_2, ..., z_t\} = \{\frac{x_1}{\hat{\sigma}}, \frac{x_2}{\hat{\sigma}},..., \frac{x_t}{\hat{\sigma}}\}$ such that 
 $\bb{V}[z_i] = 1$.
-Now, denote by $\mu_4 = \bb{E}[z_i^4] = \mathlarger{\frac{1}{t} \sum_{i=1}^{n} z_i ^4}$. 
+Now, denote by $\mu_4 = \bb{E}[z^4] = \mathlarger{\frac{1}{t} \sum_{i=1}^{n} z_i ^4}$. 
 
 Assume observed signatures on the form $\vec{c} = \mat{C} \vec{z}$ where $\mat{C}$ is orthonormal (columns are unit vectors and pairwise orthogonal). 
 By rewriting the terms from the original HPP paper \cite{NR09} for this new, normalized, distribution $\dgdi$, we have that
@@ -93,12 +93,12 @@ and
 \[\nabla mom_{4, \mat{C}} (\vec{u}) = 12 \lVert \vec{u} \rVert^2 \vec{u} + 4(\mu_4 - 3) \mathlarger{\sum_{i=1}^{n} \langle c_i, \vec{u}} \rangle^3 c_i\]
 where $\vec{u}$ is a vector on the unit sphere of $\bb{R}^{2n}$, i.e. $\lVert \vec{u} \rVert = 1$.
 This means that if the difference $(\mu_4 - 3)$ is big enough, one might be able to employ the same minimization technique as in the original attack to reveal a column of $\mat{C}$ 
-because $\langle c_i, \vec{u} \rangle^4 = 1$ if $\vec{u} = \pm c_i$ since $\langle c_i, c_i \rangle^4 = 1$.
+because $\langle c_i, \vec{u} \rangle^4 = 1$ if $\vec{u} = \pm c_i$ since $\langle c_i, \pm c_i \rangle^4 = 1$.
 Note that if $(\mu_4 - 3) < 0$ we have the same case as in the original attack, where minimization of the entire term entails maximization of $\mathlarger{\sum_{i=1}^{n} \langle c_i, \vec{u} \rangle^4}$, which gives us a row of $\pm \mat{C}$.
 If $(\mu_4 - 3) > 0$, we need to maximize the entire term $3 \lVert \vec{u} \rVert ^4 + \mathlarger{\sum_{i=1}^{n} \langle c_i, \vec{u} \rangle^4}$, which is achieved by doing a gradient \textit{ascent} instead of a gradient \textit{descent}.
 
 \subsection{Covariance matrix and hypercube transformation}
-In the original HPP attack one has to estimate the matrix $\mat{G} \approx \mat{V} ^t \mat{V}$.
+In the original HPP attack one has to estimate the matrix $\mat{G} \approx \mat{V} ^T \mat{V}$.
 For Hawk, the signatures are on the form $\vec{w} = \mat{B}^{-1} \vec{x}$. Then we would need to compute $\mat{G} = \mat{B}^{-1} \mat{B}^{-T}$ (the HPP paper uses row vectors while Hawk use columns vectors).
 However, the public key $\mat{Q} = \mat{B}^T \mat{B}$, enables us to skip this step.
 Recall that in the original attack one has to take Cholesky decomposition (or an equivalent decomposition) of the inverse of the covariance matrix such that $\mat{G}^{-1} = \mat{L}\mat{L}^T$. 
@@ -128,7 +128,7 @@ We summarize this step of the attack against Hawk in the following algorithm
 
 \subsection{Gradient search overview}
 
-Now, given samples $\vec{c} \in \PP{C}$, we run a gradient search to minimize or maximize the fourth moment of one-dimensional projections onto $\vec{u}$, as in the original attack. In addition to multiplying the samples by $\mat{L}^t$, we also divide them by the scalar $\sigma$, to normalize the samples
+Now, given samples $\vec{c} \in \PP{C}$, we run a gradient search to minimize or maximize the fourth moment of one-dimensional projections onto $\vec{u}$, as in the original attack. In addition to multiplying the samples by $\mat{L}^T$, we also divide them by the scalar $\sigma$, to normalize the samples
 so each sample in the vector $\vec{c}$ has variance $1$. This also aligns with our theoretical analysis of $mom_{4,\mat{C}}(\vec{u})$. Even though the distribution $\dgdi$ is discrete, the shape of the samples $\vec{c} \in \PP{C}$ will still have a somewhat spherical shape.
 The hope is that the areas in the directions of the columns of $\pm \mat{C}$ will deviate just enough from a perfect spherical shape to give us a clear global minima/maxima in the gradient landscape.
 
@@ -181,8 +181,8 @@ Below is a basic description of the approach.
 \caption{Proposed basic version of attack}
 \begin{algorithmic}[1]
     \State Collect signatures $\vec{w} = \mat{B}^{-1} \vec{x}$
-    \State Using public key $\mat{Q}$, find $\mat{L}$ s.t. $\mat{Q} = \mat{L} \mat{L}^t$
-    \State Transform samples s.t. $\vec{c} = \mat{L}^t \vec{w}$
+    \State Using public key $\mat{Q}$, find $\mat{L}$ s.t. $\mat{Q} = \mat{L} \mat{L}^T$
+    \State Transform samples s.t. $\vec{c} = \mat{L}^T \vec{w}$
     \State Find columns of $\pm \mat{C}$ by doing gradient search over $\PP{C}$
     \State Multiply columns of $\pm \mat{C}$ by $\mat{L}^{-T}$ on the left and round the result to get columns in $\pm \mat{B}^{-1}$
 \end{algorithmic}
@@ -206,17 +206,20 @@ Having access to the correct $\mat{B}^{-1}$ we can do measures on how close a pr
 We can for example take the difference in length of $\lvert \vec{b}' \rvert $ and each vector in $\lvert \mat{B}^{-1}\rvert$, i.e. 
 $ \mathsf{diff_{min}} = \mathsf{min} \{\lVert \lvert \vec{b}' \rvert - \lvert \vec{b}_i \rvert \rVert \ \mathbf{:} \ \vec{b}_i \in \pm \mat{B}^{-1}\}$.
 A low value for this (this depends on the Hawk parameter $n$) would indicate a good guess, whereas a higher value indicates greater difference between the vectors, and thus a bad guess.
-One can also take the average of the difference of the entries in the vectors, i.e. $ \mathsf{diff_{min}} = \mathsf{min} \{\frac{1}{2n} | \vec{b}' - \vec{b}_i | \mathbf{:} \vec{b}_i \in \pm \mat{B}^{-1}\}$.
-Alternatively, one can count entrywise how many entries out of $2n$ that matches between $\vec{b}'$ and $\vec{b}_i$.
+% One can also take the average of the difference of the entries in the vectors, i.e. $ \mathsf{diff_{min}} = \mathsf{min} \{\frac{1}{2n} | \vec{b}' - \vec{b}_i | \mathbf{:} \vec{b}_i \in \pm \mat{B}^{-1}\}$.
+Alternatively, one can count entrywise how many entries out of $2n$ that matches between $\vec{b}'$ and $\vec{b}_i$, or use some other suitable measurement.
 
 A concern about this approach of attacking Hawk is the gradient search, as described in Algorithm 2 and 3. In the original HPP attack, they used a standard gradient descent with a constant stepsize/descent parameter $\delta$. This
-worked fine for attack on GGH and NTRU when the global minima (of which there are $2n$) of the gradient landscape was very obvious. In the gradient landscape of Hawk however, there is much more noise, and the global minima is
-not as clear, as it depends on the discrepancy $(\mu_4 - 3)$, which is quite small. Generally, a constant stepsize $\delta$ entails a tradeoff between slow convergence and the risk of "overshooting" the correct global extremum.  
+worked fine for attack on GGH and NTRU when the global minima (of which there are $2n$) of the gradient landscape was very obvious in a sense, where $mom_{4, \mat{C}}(\vec{u}) = \frac{1}{5}$ at the global minima. 
+In the gradient landscape of Hawk however, there is much more noise, and the global minima is
+not as clear, as it depends on the discrepancy $(\mu_4 - 3)$, which is quite small. 
+
+Generally, a constant stepsize $\delta$ entails a tradeoff between slow convergence and the risk of "overshooting" the correct global extremum.  
 I have therefore researched alternative methods of gradient search, and found the method of ADAM-optimizer \cite{KB17}. This method, which is mostly used in machine learning and other optimization processes, dynamically changes the 
 stepsize $\delta$ iteratively though the gradient search, and they claim that their method works well for noisy gradient landscapes with high parameters/dimensions.
 
 I chose to implement my gradient ascent and gradient descent algorithms using the ADAM-optimizer method. 
-Generally the method changes $\delta$ to be greater in flat areas of the landscape, and $\delta$ to be lower in steep areas of the landscape.
+The method changes $\delta$ to be greater in flat areas of the landscape, and $\delta$ to be lower in steep and noisy areas of the landscape.
 This method is more involved and sophisticated than the standard gradient search, but I thought this was a good idea to implement it, since finding a good $\delta$ for the standard gradient search was difficult. 
 
 Below is a description of the gradient search using ADAM-optimizer in our setting.
@@ -253,7 +256,7 @@ and proposed good values for $\delta, \beta_1$ and $\beta_2$ are $0.001, 0.9$ an
 In this method, the stepsize then depends on $\delta, \vec{m}_t$ and $\vec{v}_t$.
 Explanation of variables:
 \begin{itemize}
-    \item $\vec{m}_t$ estimates an average of previous gradients, as to make movement in one iteration partially depend on the direction of previous iterations.
+    \item $\vec{m}_t$ estimates an average of previous gradients, as to make movement in one iteration partially depend on the direction and magnitude of previous iterations.
     \item $\vec{v}_t$ estimates the variance of the previous gradients. Larger variance will reduce the stepsize to not overshoot possible extremum, while lower variance will increase the stepsize to speed up convergence.
     \item $\hat{\vec{m}}_t$ and $\hat{\vec{v}}_t$ is bias-correction, so that the first iterations are not biased towards 0.
 \end{itemize}
@@ -308,7 +311,7 @@ One thing to note is that Hawk does not specify parameters (such as width $\sigm
         \midrule
 
         Key comparison degree 256 & 56.33 & 82.34 & 61.02 & 75.02 \\
-        Attack on Hawk 256 (1m samples) & something & something \\ 
+        Attack on Hawk 256 (1m samples) & 54.50 & 84.07 & 59.20 & 71.09 \\ 
         Attack on Hawk 256 (10m samples) & 57.72 & 77.54 & 62.37 & 77.54 \\
         \bottomrule
     \end{tabular}
@@ -326,7 +329,7 @@ We then get that
 \subsection{Conclusion}
 In conclusion, I think the reason the method has not worked is because of the small value of $(\mu_4 - 3)$, but importantly also because of the noisy nature of the distribution $\dgdi$. 
 The noise introduces too many "false" local minima/maxima in the gradient landscape such that it is difficult to find the correct \textit{global} minima/maxima.
-I do not claim that it is impossible, but my experiments show that it seems infeasible for this particular approach.
+I do not claim that it is impossible, but my experiments show that it seems difficult for this particular approach.
 
 % \bibliographystyle{plain}  % Choose your desired style (plain, IEEE, etc.)
 \bibliographystyle{plain}
