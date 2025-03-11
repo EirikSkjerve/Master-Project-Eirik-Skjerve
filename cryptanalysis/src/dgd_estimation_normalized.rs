@@ -19,9 +19,9 @@ use rayon::prelude::*;
 use prettytable::{color, Attr, Cell, Row, Table};
 
 pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
-    let ns = vec![256, 512, 1024];
+    // let ns = vec![256, 512, 1024];
     // let ns = vec![512];
-    // let ns = vec![256];
+    let ns = vec![256];
 
     let precision = 20;
 

@@ -115,7 +115,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     while retries < MAX_RETRIES {
         // increment counter
         retries += 1;
-
+        println!("On iteration {retries}");
         // initialize empty result vector
         let mut res: Option<DVector<f64>> = None;
 
@@ -140,7 +140,7 @@ pub fn run_hpp_attack(t: usize, n: usize) {
         // check directly if solution is in the actual secret key
         if vec_in_key(&solution, &binv) {
             println!("FOUND! Result is in key based on direct checking");
-            return;
+            // return;
         }
 
 
@@ -151,12 +151,12 @@ pub fn run_hpp_attack(t: usize, n: usize) {
 
         if min < tot_min { tot_min = min}
         if max > tot_max { tot_max = max}
-        println!(
-            "Norm of res from gradient search: {}",
-            solution.map(|x| x as f64).norm()
-        );
-        println!("Norm of col0: {}", col0.map(|x| x as f64).norm());
-        println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
+        // println!(
+        //     "Norm of res from gradient search: {}",
+        //     solution.map(|x| x as f64).norm()
+        // );
+        // println!("Norm of col0: {}", col0.map(|x| x as f64).norm());
+        // println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
         println!("Result not in key... \n");
     }
     println!("Avg min: {avg_min} \n Avg max: {avg_max}");
