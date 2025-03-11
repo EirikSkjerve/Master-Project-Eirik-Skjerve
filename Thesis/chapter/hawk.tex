@@ -1,8 +1,8 @@
 \section{Hawk}
 In this section we introduce the digital signature scheme Hawk \cite{HawkSpec24}, which will later be the target for our cryptanalysis.
 As mentioned in the introduction, Hawk is a lattice based signature scheme that shares some key points with that of NTRU-sign \cite{HHPSW03}, the target for the original HPP attack.
-The first part of this chapter/section will give an introduction to how the Hawk scheme works on a high level. After this, the implementation of Hawk will be described, where much more detail about 
-specific parts of the procedures will be given.
+The first part of this chapter/section will give an introduction on how the Hawk scheme works on a high level. After this, the implementation of Hawk will be described, where more detail about 
+specific subroutines and parts of the procedures will be given.
 
 In this section, quite a few parts of Hawk as described in \cite{HawkSpec24} are left out due to the focus of this thesis. For example, Hawk utilizes compression of keys and signatures 
 (which influence the key generation and signature generation procedures),
@@ -27,9 +27,19 @@ the \textit{One More Shortest Vector Problem}), which, again, is not the focus o
 % \]
 \subsection{Overview}
 In Hawk, polynomials are defined over the cyclotomic number field $\mathcal{K}_n = \bb{Q}[X]/(X^n +1)$ which has the corresponding ring of integers
-$\bb{Z}[X] / (X^n + 1)$. Such a polynomial $f \in \mathcal{K}_n$ can also be represented by a (column) vector of its coefficients in $\bb{Q}^n$, denoted $\mathsf{vec}(f)$, where the index of 
-each coefficient corresponds to its power of $X$ in $f$. 
+$\bb{Z}[X] / (X^n + 1)$. Such a polynomial $f \in \mathcal{K}_n$ can also be represented by a (column) vector of its coefficients in $\bb{Q}^n$ (in practical setting, coefficients are in $\bb{Z}^{n}$), 
+denoted $\mathsf{vec}(f)$, where the index of each coefficient corresponds to its power of $X$ in $f$. 
 \footnote{This is a polynomial representation that is frequent in programming implementations when a dedicated algebra library is not used.}
+Explicitly, if $f = a_0 X^0 + a_1 X^1 + \cdots + a_{n-1} X^{n-1}$
+\[
+    \mathsf{vec}(f) = 
+    \begin{bmatrix}
+        a_0 \\
+        a_1 \\
+        \cdots \\
+        a_{n-1} \\
+    \end{bmatrix}
+\] 
 We define a mapping 
 \[\mathsf{rot:} \mathcal{K}_n \rightarrow \bb{Q}^{n \times n}, \mathsf{rot}(f) = 
 \begin{bmatrix} 
@@ -37,11 +47,14 @@ We define a mapping
 \end{bmatrix}    
 \]
 \todo{This should maybe be in the background section...}
-which enables one to construct a matrix in $\bb{Q}^{n \times n}$ from a single polynomial in $\mathcal{K}_n$.
+which enables one to construct a matrix in $\bb{Q}^{n \times n}$ from a single polynomial in $\mathcal{K}_n$. A vector $\mathsf{vec}(fX^k)$ to any power $k$ will 
+henceforth be referred to as a "shift" of $f$, since all entries with powers $X^{n-t}$ for $n-t + k  < n-1$ are shifted $k$ times, 
+and entries with powers $X^{n-s}$ where $n-s + k \geq n$ will "go around" and be negated as $- X^{n-s +k \mod n}$.
+\todo{Should probably describe this a bit better}
 \todo{Define the integer polynomial ring $\bb{Z}[X] / (X^n +1)$}
 
 The hash function used in Hawk is SHAKE256, an extendable output function (XOF) which enables arbitrary output length, unlike hash functions like SHA256 which 
-has a static output size of 256 bits (as eight 32-bit words). This property is useful since SHAKE256 can be used in all three degrees of Hawk.
+has a static output size of 256 bits. This property is useful since SHAKE256 can be used in all three degrees of Hawk.
 
 \subsection{Parameters}
 Below is the parameters for Hawk degree 256, 512, and 1024. Note that this list only contains the relevant parameters for this thesis, and that many parameters relevant to 
@@ -130,8 +143,11 @@ We can also define $\mathsf{rot}$ on a matrix as the mapping
     \end{bmatrix}
 \]
 
-$\mathsf{rot}(\mat{B})$ serves as a basis for the private lattice in which a (digest of a) message will be signed in the signature generation step.
-A simplified version of the key generation algorithm is described in the following algorithm:
+Note that when working with $\mathsf{rot}(\mat{B})$ instead of $\mat{B}$, the Hermitian adjoint $\mat{B}^*$ corresponds to the transpose of $\mathsf{rot}(\mat{B})$, as 
+$\mathsf{rot}(\mat{B}^*) = \mat{B}^T$.
+
+$\mathsf{rot}(\mat{B})$ serves as a basis for the private lattice in which a (hash digest of a) message will be signed in the signature generation step.
+A simplified version of the key generation is described in the following algorithm:
 \begin{algorithm}[H]\label{Simplified Hawk Key Generation}
 \caption{Simplified Hawk Key Generation}
 \begin{algorithmic}[1]
@@ -158,7 +174,7 @@ The Probability Density Function (PDF) of $\dgd_{2\bb{Z} + c, \sigma }$ is defin
     \text{Pr[X = x] } = \frac{\rho_{\sigma}(x)}{\mathlarger{\sum_{y \in 2\bb{Z} + c} \rho_{\sigma}(y)}}
 \]
 For $z \geq 0$ we define the function $P_c(z) = \text{Pr}[ |X| \geq z ]$ when $X \sim \dgd_{2\bb{Z}+c, \sigma}$.
-Using this function for $c \in {0, 1}$, we compute two Cumulative Distribution Tables (CDT) $T_0$ and $T_1$
+Using this function for $c \in \{0, 1\}$, one computes two Cumulative Distribution Tables (CDT) $T_0$ and $T_1$
 such that $T_0[k] = P_0(2+2k)$ and $T_1[k] = P_1(3+2k)$ where $T_c[k]$ denotes the $k$-th index in the table.
 In practice, to avoid using floating point numbers, the entries in the table is scaled by $2^{78}$ such that 
 entries are integers with a high enough precision. For this overview, however, we only consider the unscaled version.
@@ -168,8 +184,8 @@ Using the tables, we can define a procedure $\mathsf{sample}$ given by the follo
 % \caption{Simplified, unscaled sampling from $\dgd_{2\bb{Z}+c, \sigma}$ }
 \caption{$\mathsf{sample}$}
 \begin{algorithmic}[1]
-    \Require{parameter $c \in {0, 1}$}
-    \State $q \gets$ uniformly sampled from $[-1, 1] \in \bb{R}$
+    \Require{parameter $c \in \{0, 1\}$}
+    \State $q \gets$ uniformly sampled from $[-1, 1] \in \bb{Q}$
     \State $z \gets 0$
     \While{$T_c[z] \neq 0$}
     \If{$|q| \leq T_c[z]$}
@@ -190,7 +206,7 @@ We can extend this to generate vectors of length $n$ where each entry is distrib
 \begin{algorithm}[H]
 \caption{Sample vector of length n according to $\dgd_{2\bb{Z}+c, \sigma}$}
 \begin{algorithmic}[1]
-    \Require{Binary vector $\vec{t}$ with entries uniformly distributed from ${0,1}$}
+    \Require{Binary vector $\vec{t}$ with entries uniformly distributed from $\{0,1\}$}
     \State $\vec{x} \gets$ empty vector of length $2n$
     \For{$i = 0,1,..., 2n -1$}
     \State $\vec{x}[i] \gets \mathsf{sample}(\vec{t}[i])$
@@ -199,15 +215,15 @@ We can extend this to generate vectors of length $n$ where each entry is distrib
 \end{algorithmic}
 \end{algorithm}
 
-In this manner, one can sample a lattice point $\vec{x}$ which is "close" to a target lattice point $\vec{t}$, which will be used in the signature generation step.
+In this manner, one can sample a lattice point $\vec{x}$ which is relatively close to a target lattice point $\vec{t}$, which will be used in the signature generation step.
 
 \subsection{Hawk signature generation}
-To generate a Hawk signature of a message $\vec{m}$, one computes a hash digest $\vec{h}$ of the message, and samples a point $\vec{x}$ from $\dgd_{2\bb{Z}^{2n} + c, \sigma_{sign}}$ that is close to $\vec{h}$ in the 
+To generate a Hawk signature of a message $\vec{m}$, one computes a hash digest $\vec{h}$ of the message, and samples a point $\vec{x}$ from $\dgd_{2\bb{Z}^{2n} + \vec{t}, \sigma_{sign}}$ that is close to $\vec{h}$ in the 
 private lattice generated by $\mathsf{rot}(\mat{B})$. By transforming the point $\vec{x}$ back to the lattice $\bb{Z}^{2n}$ via $\mat{B}^{-1}$ one has a signature that can be verified 
 by anyone that has access to the public key $\mat{Q}$.
-Below is the (simplified) procedure formulated as an algorithm:
+Below is the (simplified) procedure formulated in Algorithm \ref{simple_hawksign}:
 \begin{algorithm}
-\caption{Simplified Hawk Signature Generation}
+    \caption{Simplified Hawk Signature Generation}\label{simple_hawksign}
 \begin{algorithmic}[1]
     \Require{Message $\vec{m}$, private key $\mat{B}$}
     \State $M \gets H(\vec{m})$ \Comment{H is a hash function}
@@ -225,12 +241,12 @@ Below is the (simplified) procedure formulated as an algorithm:
 \end{algorithmic}
 \end{algorithm}
 \subsection{Hawk signature verification}
-To verify a Hawk signature, one simply recomputes the vector $\vec{h}$ and in turn the vector $\vec{w}$, and check if the $\mat{Q}$-norm of $\vec{w}$,
+To verify a Hawk signature, one simply recomputes the vector $\vec{h}$ from $\vec{m}$ and $\mathsf{salt}$ and in turn the vector $\vec{w}$, and check if the $\mat{Q}$-norm of $\vec{w}$,
 $\lVert \vec{w} \rVert_{\mat{Q}}^2$ is not too high. A signature with $\mat{Q}$-norm of appropriately short length will be considered valid.
-A summary of the simplified procedure is given in the following algorithm:
+A summary of the simplified procedure is given in Algorithm \ref{simple_hawkver}:
 
-\begin{algorithm}
-\caption{Simplified Hawk Signature Verification}
+\begin{algorithm}[H]
+    \caption{Simplified Hawk Signature Verification}\label{simple_hawkver}
 \begin{algorithmic}[1]
     \Require{Signature $\vec{s}$, message $\vec{m}$, salt $\mathsf{salt}$, public key $\mat{Q}$ }
     \State $M \gets H(\vec{m})$ 
@@ -255,6 +271,8 @@ As defined,
 \[
     \text{since } \vec{w} = \mat{B}^{-1} \vec{x} \implies \lVert \mat{B} \vec{w} \rVert ^2 = \lVert \mat{B} \mat{B}^{-1} \vec{x} \rVert ^2 = \lVert \vec{x} \rVert ^2
 \]
-In conclusion, a signature is only valid if the length of $\vec{x}$ is appropriately short in the lattice generated by $\mat{B}$, which requires knowledge of $\mat{B}$.
+This shows that by knowing $\mat{Q}$, one can measure the length of vectors in the secret lattice generated by $\mat{B}$. To find vectors close to a target vector $\vec{t}$ 
+in the private lattice, however, requires knowledge about $\mat{B}$.
+% In conclusion, a signature is only valid if the length of $\vec{x}$ is appropriately short in the lattice generated by $\mat{B}$, which requires knowledge of $\mat{B}$.
 \subsection{Hawk security}
 \section{Implementation of Hawk}
