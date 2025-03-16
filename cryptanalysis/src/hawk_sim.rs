@@ -4,6 +4,7 @@ use hawklib::utils::rot_key;
 use hawklib::hawksign::sample;
 
 use rand::{thread_rng, Rng};
+use rand::seq::SliceRandom;
 use rand::distributions::Uniform;
 use nalgebra::*;
 use rand_distr::{Bernoulli, Distribution};
@@ -22,13 +23,19 @@ pub fn hawk_sim_keygen(n: usize) -> ((DMatrix<i64>, DMatrix<i64>), DMatrix<i64>)
     }
 }
 
-
+fn random_uniform_vector(n: usize) -> DVector<i64> {
+    let mut rng = rand::thread_rng();
+    let values: Vec<i64> = (0..n).map(|_| rng.gen_range(-15..15)).collect();
+    DVector::from_vec(values)
+}
 pub fn hawk_sim_sign(n: usize, binv: &DMatrix<i64>) -> DVector<i64> {
     let seed = get_random_bytes(20);
     let mut t = get_random_bytes(2*n);
     t = t.iter().map(|&x| x % 2).collect();
     let x = DVector::<i64>::from_vec(sample(&seed, t, n));
 
+    // as a test, use a uniform distribution here instead 
+    // let x = random_uniform_vector(2*n);
     let w = binv * x;
     w
 }

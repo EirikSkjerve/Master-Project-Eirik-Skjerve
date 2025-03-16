@@ -14,10 +14,76 @@ use peak_alloc::PeakAlloc;
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 static EPSILON: f64 = 1e-10;
-static TOLERANCE: f64 = 1e-4;
+// static TOLERANCE: f64 = 1e-4;
 static BETA1: f64 = 0.9;
 static BETA2: f64 = 0.999;
 static DELTA: f64 = 0.001;
+static VANILLA_DELTA: f64 = 0.7;
+
+pub fn gradient_descent_vanilla(u: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
+    let n = u.nrows();
+    let seed = rand::random::<u64>();
+
+    let mut rng = StdRng::seed_from_u64(seed);
+
+    let mut w = get_rand_w(n, &mut rng);
+
+    let mut mom4_w = mom4_par(&w, &u);
+
+    let mut t = 0;
+    loop {
+        t += 1;
+        println!("Inner iteration {t}");
+        let g = grad_mom4_par(&w, &u);
+        let wnew = &w - (VANILLA_DELTA * g);
+        let wnew = wnew.normalize();
+
+        let mom4_wnew = mom4_par(&wnew, &u);
+        println!("Mom4(w):    {mom4_w}");
+        println!("Mom4(wnew): {mom4_wnew}");
+
+        if mom4_wnew >= mom4_w {
+            println!("Mom4 started increasing. Returning");
+            return Some(w);
+        }
+        w = wnew;
+        mom4_w = mom4_wnew;
+    }
+    return None;
+}
+
+pub fn gradient_ascent_vanilla(u: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
+    let n = u.nrows();
+    let seed = rand::random::<u64>();
+
+    let mut rng = StdRng::seed_from_u64(seed);
+
+    let mut w = get_rand_w(n, &mut rng);
+
+    let mut mom4_w = mom4_par(&w, &u);
+
+    let mut t = 0;
+    let mut inner_retries = 0;
+    loop {
+        t += 1;
+        println!("Inner iteration {t}");
+        let g = grad_mom4_par(&w, &u);
+        let wnew = &w + (delta * g);
+        let wnew = wnew.normalize();
+
+        let mom4_wnew = mom4_par(&wnew, &u);
+        println!("Mom4(w):    {mom4_w}");
+        println!("Mom4(wnew): {mom4_wnew}");
+
+        if mom4_wnew <= mom4_w {
+            println!("Mom4 started increasing. Returning");
+            return Some(w);
+        }
+        w = wnew;
+        mom4_w = mom4_wnew;
+    }
+    return None;
+}
 
 fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<f64>>) -> Option<DVector<f64>> {
     // perform gradient descent if parameter <descent> is set to true
@@ -77,19 +143,21 @@ fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<
         let mom4_diff = mom4_wnew - mom4_w;
         let w_diff = (&w - &wnew).norm();
 
-        // println!("Mom4(w)    : {mom4_w}");
-        // println!("Mom4(w_new): {mom4_wnew}");
+        println!("Mom4(w)    : {mom4_w}");
+        println!("Mom4(w_new): {mom4_wnew}");
         // println!("Diff       : {mom4_diff}");
 
         // in the case of gradient descent
         if descent && mom4_wnew > mom4_w {
             println!("Possibly at an extremum: mom4 started increasing. \n");
+            // return Some(w.map(|x| x.round()));
             return Some(w);
         }
 
         // in the case of gradient ascent
         if !descent && mom4_wnew < mom4_w {
             println!("Possibly at an extremum: mom4 started decreasing. \n");
+            // return Some(w.map(|x| x.round()));
             return Some(w);
         }
 
@@ -141,7 +209,6 @@ fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
     let uw3: DVector<f64> = (samples.transpose() * w).map(|x| x.powi(3));
     let uw3u = DMatrix::from_fn(n, t, |i, j| uw3[j] * samples[(i, j)]);
     let g = 4.0 * uw3u.column_mean();
-    // println!("Max memory usage: {} GB", PEAK_ALLOC.peak_usage_as_gb());
     g
 }
 
@@ -155,9 +222,6 @@ fn grad_mom4_par(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
         .map(|j| samples.column(j).dot(w).powi(3))
         .collect();
 
-    // Compute uw^3 for each column
-    // let uw3: Vec<f64> = uw.par_iter().map(|x| x.powi(3)).collect();
-
     // Compute the gradient in parallel
     let mut g = Arc::new(Mutex::new(DVector::zeros(n)));
     (0..n).into_par_iter().for_each(|i| {
@@ -165,7 +229,7 @@ fn grad_mom4_par(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
         for j in 0..t {
             sum += uw3[j] * samples[(i, j)];
         }
-        g.lock().unwrap()[i] = 4.0 * sum / (t as f64);
+        g.lock().unwrap()[i] = 4.0 * sum / t as f64;
     });
 
     // println!("Max memory usage: {} GB", PEAK_ALLOC.peak_usage_as_gb());
@@ -186,7 +250,7 @@ fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
     // define uniform distribution
     let dist1 = Normal::new(0.0, 5.0).unwrap();
     let dist2 = Normal::new(0.0, sigma).unwrap();
-    let dist3 = Uniform::from(-10.0..10.0);
+    let dist3 = Uniform::from(-1.0..1.0);
 
     // initialize empty vector to store the samples
     let mut rnd_bytes: Vec<f64> = Vec::with_capacity(n);

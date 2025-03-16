@@ -14,8 +14,8 @@ use std::time::{Duration, Instant};
 use prettytable::{color, Attr, Cell, Row, Table};
 
 pub fn estimate_mem_all(t: usize, store_file: bool) {
-    let ns = vec![256, 512, 1024];
-    // let ns = vec![256];
+    // let ns = vec![256, 512, 1024];
+    let ns = vec![256];
 
     let precision = 8;
 
@@ -130,8 +130,11 @@ pub fn estimate_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
         let temp: i64 = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry)
             .iter()
             .sum();
-        mu += temp as f64 / (t * 2 * n) as f64;
+        // mu += temp as f64 / (t * 2 * n) as f64;
+        mu += temp as f64
     }
+
+    mu /= (t*2*n) as f64;
 
     println!("");
 
@@ -148,9 +151,14 @@ pub fn estimate_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
         let tempvar: f64 = temp.iter().map(|&x| (x as f64 - mu).powi(2)).sum();
         let tempkur: f64 = temp.iter().map(|&x| (x as f64 - mu).powi(4)).sum();
 
-        var += tempvar / (t * 2 * n) as f64;
-        kur += tempkur / (t * 2 * n) as f64;
+        // var += tempvar / (t * 2 * n) as f64;
+        // kur += tempkur / (t * 2 * n) as f64;
+        var += tempvar;
+        kur += tempkur;
     }
+
+    var /= (t*2*n) as f64;
+    kur /= (t*2*n) as f64;
 
     let end = start.elapsed();
 

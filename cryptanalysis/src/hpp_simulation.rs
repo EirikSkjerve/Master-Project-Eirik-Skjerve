@@ -1,5 +1,5 @@
 use crate::file_utils::read_vectors_from_file;
-use crate::gradient_search::{gradient_ascent, gradient_descent};
+use crate::gradient_search::{gradient_ascent, gradient_descent, gradient_descent_vanilla, gradient_ascent_vanilla};
 use crate::hpp_attack::measure_res;
 use nalgebra::*;
 
@@ -28,7 +28,7 @@ use peak_alloc::PeakAlloc;
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 static TOLERANCE: f64 = 1e-12;
 static SIGMA: f64 = 2.02;
-static MAX_RETRIES: usize = 100;
+static MAX_RETRIES: usize = 1000;
 
 pub fn run_hpp_sim(t: usize, n: usize) {
     // runs the HPP attack against Hawk
@@ -67,7 +67,7 @@ pub fn run_hpp_sim(t: usize, n: usize) {
     // let mut rng = StdRng::seed_from_u64(rand::random::<u64>());
     (0..t).into_par_iter().for_each(|_|{
         let sig = hawk_sim_sign(n, &binv);
-        signatures.lock().unwrap().push(hawk_sim_sign(n, &binv));
+        signatures.lock().unwrap().push(sig);
         pb.inc(1);
     });
 
@@ -139,18 +139,11 @@ pub fn run_hpp_sim(t: usize, n: usize) {
         // initialize empty result vector
         let mut res: Option<DVector<f64>> = None;
 
-        // do both ascent and descent
-        // Im desperado
-        // if kurtosis is less than 3 we need to minimize
-        if retries%2==0{
-            println!("\nDoing gradient descent...");
-            res = gradient_descent(&samples, correct_solution.as_ref());
+        if (kurtosis - 3.0) >= 0.0 {
+            res = gradient_ascent_vanilla(&samples, (kurtosis-3.0));
         }
-
-        // if kurtosis is greater than 3 we need to maximize
-        if retries%2==1 {
-            println!("\nDoing gradient ascent...");
-            res = gradient_ascent(&samples, correct_solution.as_ref());
+        if (kurtosis - 3.0) < 0.0 {
+            res = gradient_descent_vanilla(&samples, (kurtosis-3.0));
         }
 
         // multiply result vector with L inverse on the left to obtain solution as row in B
@@ -162,7 +155,6 @@ pub fn run_hpp_sim(t: usize, n: usize) {
             println!("FOUND! Result is in key based on direct checking");
             return;
         }
-
 
         // do a measurement of the result vector up against secret key if it was not the correct one
         let (min, max) = measure_res(&solution, &binv.map(|x| x as i32));
@@ -212,7 +204,8 @@ fn hypercube_transformation(
 
     // this method is fast but nalgebra matrix multiplication makes an extra allocation
     // for the matrices involved
-    *samples = ((&l.l().transpose() / SIGMA) * &*samples);
+    *samples = ((&l.l().transpose()) * &*samples) / SIGMA;
+    // *samples = ((&l.l().transpose()) * &*samples) / 15.0;
 
     let c = &l.l().transpose() * skey.map(|x| x as f64);
 

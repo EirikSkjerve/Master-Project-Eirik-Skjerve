@@ -33,7 +33,7 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
                   i-> "Num\nVectors",
                   i->"Mu",
                   i->"Var\n(Exp(X^2))",
-                  i->"Est. Sigma",
+                  i->"Sigma",
                   i->"Norm.\nvar",
                   i->"Mu4",
                   i->"Mu4-3",
@@ -59,11 +59,11 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
         FG->n.to_string(),
         FW->(t).to_string(),
         FM->format!("{}", mu),
-        FB->format!("{:.1$}", var, precision),
-        Fc->format!("{:.1$}", var.sqrt(), precision),
+        FB->format!("{}", var),
+        Fc->format!("{}", var.sqrt()),
         Fy->format!("{}", normvar),
-        FR->format!("{:.1$}", normkur, precision),
-        Fy->format!("{:.1$}", (normkur - 3.0), precision),
+        FR->format!("{}", normkur),
+        Fy->format!("{}", (normkur - 3.0)),
         Fw->format!("{:?}", time)
         ]);
     }
@@ -98,8 +98,8 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
     let (privkey, _) = hawkkeygen(n);
     let start = Instant::now();
 
-    let mu = 0.0;
     // thread safe variable
+    let mut mu: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
     let mut var: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
 
     // make progressbar with style
@@ -113,16 +113,41 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
 
     // sample x-vectors in parallel
     (0..t).into_par_iter().for_each(|i| {
-        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(20), n, true);
-        let tempvar: f64 = temp.iter().map(|&x| (x as f64).powi(2)).sum();
-        // divide to get the mean
-        // *var.lock().unwrap() += tempvar / (t * 2 * n) as f64;
-        *var.lock().unwrap() += tempvar;
+        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(50), n, true);
+        let tempmu: f64 = temp.iter().map(|&x| (x as f64)).sum();
+
+        *mu.lock().unwrap() += tempmu;
+
         // increment progress bar
         pb.inc(1);
     });
 
+    let mu = *mu.lock().unwrap() / (2*t*n) as f64;
+
     pb.finish_with_message("Mu estimation completed");
+
+    // remake progressbar
+    let pb = ProgressBar::new(t as u64);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({per_sec})")
+            .unwrap()
+            .progress_chars("#>-"),
+    );
+
+    // sample x-vectors in parallel
+    (0..t).into_par_iter().for_each(|i| {
+        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(50), n, true);
+        // possibly subtract mu from x
+        let tempvar: f64 = temp.iter().map(|&x| (x as f64 - mu).powi(2)).sum();
+
+        *var.lock().unwrap() += tempvar;
+
+        // increment progress bar
+        pb.inc(1);
+    });
+
+    pb.finish_with_message("Sigma^2 estimation completed");
 
     // remake progressbar
     let pb = ProgressBar::new(t as u64);
@@ -143,12 +168,13 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
 
     // sample x-vectors in parallel
     (0..t).into_par_iter().for_each(|_| {
-        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(20), n, true);
+        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(50), n, true);
 
         let (tempvar, tempkur): (f64, f64) = temp
             .iter()
             .map(|&x| {
-                let normalized = (x as f64) / sigma;
+                let normalized = (x as f64 - mu) / sigma;
+                // possibly subtract mu from x
                 let squared = normalized.powi(2);
                 let fourth = normalized.powi(4);
                 (squared, fourth)
@@ -157,9 +183,10 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
                 (sum_var + squared, sum_kur + fourth)
             });
 
-        // divide to get the mean
+        // update terms
         *normvar.lock().unwrap() += tempvar;
         *normkur.lock().unwrap() += tempkur;
+
         // increment progress bar
         pb.inc(1);
     });
@@ -169,7 +196,6 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
     let end = start.elapsed();
 
     // unpack the thread-safe variables into normal variables to return them
-    // let res_mu = *mu.lock().unwrap();
     let res_var = *var.lock().unwrap() / (2*t*n) as f64;
     let res_normvar = *normvar.lock().unwrap() / (2*t*n) as f64;
     let res_normkur = *normkur.lock().unwrap() / (2*t*n) as f64;

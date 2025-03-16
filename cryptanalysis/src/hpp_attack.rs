@@ -239,8 +239,8 @@ pub fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) -> (f64, f64){
     });
 
     let comb = DMatrix::from_columns(&[res.column(0), binv.column(min_index)]);
-    // eprintln!("{comb}");
-    // println!("Min norm of diff: {min} \nMax norm of diff: {max}");
+    eprintln!("{comb}");
+    println!("Min norm of diff: {min} \nMax norm of diff: {max}");
     (min, max)
 }
 
