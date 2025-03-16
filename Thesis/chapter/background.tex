@@ -1,21 +1,57 @@
+\newcommand{\privkey}{\mathcal{K}_{\mathsf{priv}}}
+\newcommand{\pubkey}{\mathcal{K}_{\mathsf{pub}}}
+\newcommand{\enc}[1]{\mathsf{ENC}_{\privkey}(#1)}
+\newcommand{\encpub}[1]{\mathsf{ENC}_{\pubkey}(#1)}
+\newcommand{\dec}[1]{\mathsf{DEC}_{\privkey}(#1)}
+
 \chapter{Background}
-In this chapter, the field of cryptology will be introduced, with an emphasis on digital signatures and cryptanalysis.  
+\section{Overview}
+In this chapter, the field of cryptography and cryptanalysis will be introduced, with an emphasis on digital signatures and cryptanalysis.  
 We also introduce some necessary facts and notions related to linear algebra and lattices, as well as probability theory and distributions.
 Lastly, we introduce the notion of \textit{Gradient Search} and ADAM-optimizers, which will be a central tool in this thesis.
 
-\section{Cryptology}
-For this section, \cite{KL20} will be used.
-\subsection{Cryptography}
-\subsection{Cryptanalysis}
+\section{Cryptography}
+Cryptography is the study of tools and techniques that enable secure and, in part, reliable communication. For centuries, this entailed creative systems of codes and techniques used predominantly by military and governments,
+and the creation and breaking of such systems were considered an art, based on creativity and \todo{Find a source that backs the linguistics claim} linguistics, as cryptography then were used mostly on natural language. 
+From the 1970s and onwards, however, mathematics increasingly becomes the backbone of cryptography, as mathematical theory provides provable security (and insecurity) of cryptographic systems. 
+In the recent 50 years or so, cryptography has become an enabler of secure communication, verification, and integrity of information, all of which are integral parts of our digital world. \cite{KL20}
+
+Symmetric key cryptography that enables secure communication between two parties utilizes a shared secret key, denoted $\privkey$. The system defines two functions,
+$\enc{\mathcal{M}}$ and $\dec{\mathcal{C}}$ that encrypt and decrypt a message, respectively. These functions depend on the input message and the secret key. 
+For a proper system these functions are inverse of each other, i.e. $\dec{\enc{\mathcal{M}}} = \mathcal{M}$. Anyone without knowledge of $\privkey$ should be unable to
+extract any meaningful information about either $\privkey$ or $\mathcal{M}$ based only on observing $\mathcal{C}$.
+
+Asymmetric key cryptography on the other hand utilizes two related, but distinct keys; one private and one public, denoted $\privkey$ and $\pubkey$.
+Anyone with access to $\pubkey$ can encrypt a message $\mathcal{M}$ as $\mathcal{C} = \encpub{\mathcal{M}}$, rendering it unreadable. Only the holder of $\privkey$ is able to decrypt the message
+as $\mathcal{M} = \dec{\mathcal{C}}$. A crucial security property of such a system is that one should not be able to somehow deduce what $\privkey$ is if one has access only to $\pubkey$.
+
+Important applications for asymmetric cryptography includes:
+\begin{itemize}
+    \item \textbf{Secret key distribution:} the issue of exchanging secret keys for symmetric cryptography has long been a hurdle. As a sender, by encrypting a secret (symmetric) key using a public key,
+        a receiver can decrypt the (symmetric) key using his or her own (asymmetric) private key. Now that both parties are in possession of the same symmetric private key, they can resume communication using symmetric cryptography, which
+        is generally much more efficient in encrypting and decrypting large messages.
+    \item \textbf{Verification of sender:} analogous to digital signatures (which will be explained more thoroughly in section 2.4), by computing an encrypted version of a message using an asymmetric private key, anyone with knowledge of the public key
+        is able to decrypt the message. Importantly, the receiver is now able to verify that the intended message was encrypted with the private key related to the publicly available one. If the sender encrypted the message 
+        with another private key, the recipient would quickly realize that the sender is not in possession of the "correct" secret key. This is a gross oversimplification of how
+        such systems work, but as we will see later, this property of asymmetric cryptography, alongside other cryptographic primitives such as hash functions, create a strong foundation for digital signatures.
+    \todo{Rewrite this entire point}
+\end{itemize}
+
+\section{Cryptanalysis}
+Cryptanalysis is the study of analyzing and breaking cryptographic systems, and plays an important role in strengthening the cryptography we use today.
+By analyzing a system and exposing potential flaws and weaknesses, the designers of such as system can make suitable changes to (or even discard) it to further increase its security against adversaries with malicious intent.
 
 \section{Digital Signatures}
 \subsection{Hash-and-Sign}
+\subsection{Security of Digital Signatures}
 \subsection{GGH}
 \subsection{NTRU}
+
 \section{Algebra}
 \subsection{Polynomials}
 \subsection{Polynomial rings}
 \subsection{Number fields}
+
 \section{Linear Algebra and Lattices}
 Denote by $\vec{v}$ an $n \times 1$ column vector on the form 
 \[ \vec{v} = \begin{bmatrix} v_0 \\ v_1 \\ ... \\ v_{n-1} \end{bmatrix}\] and by $\mat{B}$ an $n \times m$ matrix on the form 
@@ -60,7 +96,6 @@ The gradient of a multivariate function $f(\theta)$ is defined as the vector of 
 \end{bmatrix}
 \]
 
-
 \subsection{Gradient descent and optimization}
 In Algorithm \ref{VanillaGradientDescent} the so-called "vanilla" gradient descent is described.
 \begin{algorithm}[H]
@@ -75,6 +110,6 @@ In Algorithm \ref{VanillaGradientDescent} the so-called "vanilla" gradient desce
 \end{algorithm}
 
 Note that for vanilla gradient descent as described in Algorithm \ref{VanillaGradientDescent}, to compute the gradient one needs the entire dataset for each iteration,
-which sometimes can be too large to fit in memory, or too large to be computationally efficient.
+which sometimes can be too large to fit in memory or be computationally efficient.
 
 Many optimization techniques are utilized in gradient descent today, which overcome this hurdle.

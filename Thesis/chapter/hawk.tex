@@ -26,8 +26,8 @@ the \textit{One More Shortest Vector Problem}), which, again, is not the focus o
 %     \end{bmatrix}
 % \]
 \subsection{Overview}
-In Hawk, polynomials are defined over the cyclotomic number field $\mathcal{K}_n = \bb{Q}[X]/(X^n +1)$ which has the corresponding ring of integers
-$\bb{Z}[X] / (X^n + 1)$. Such a polynomial $f \in \mathcal{K}_n$ can also be represented by a (column) vector of its coefficients in $\bb{Q}^n$ (in practical setting, coefficients are in $\bb{Z}^{n}$), 
+In Hawk, we work with polynomials defined over the cyclotomic number field $\mathcal{K}_n = \bb{Q}[X]/(X^n +1)$ and its corresponding ring of integers
+$\bb{Z}[X] / (X^n + 1)$. Such a polynomial $f \in \mathcal{K}_n$ can also be represented by a (column) vector of its coefficients in $\bb{Q}^n$ (in practical setting, coefficients are in $\bb{Z}$ instead of $\bb{Q}$), 
 denoted $\mathsf{vec}(f)$, where the index of each coefficient corresponds to its power of $X$ in $f$. 
 \footnote{This is a polynomial representation that is frequent in programming implementations when a dedicated algebra library is not used.}
 Explicitly, if $f = a_0 X^0 + a_1 X^1 + \cdots + a_{n-1} X^{n-1}$
@@ -48,10 +48,8 @@ We define a mapping
 \]
 \todo{This should maybe be in the background section...}
 which enables one to construct a matrix in $\bb{Q}^{n \times n}$ from a single polynomial in $\mathcal{K}_n$. A vector $\mathsf{vec}(fX^k)$ to any power $k$ will 
-henceforth be referred to as a "shift" of $f$, since all entries with powers $X^{n-t}$ for $n-t + k  < n-1$ are shifted $k$ times, 
+henceforth be referred to as a "negacyclic shift" of $f$, since all entries with powers $X^{n-t}$ for $n-t + k  < n-1$ are shifted $k$ times, 
 and entries with powers $X^{n-s}$ where $n-s + k \geq n$ will "go around" and be negated as $- X^{n-s +k \mod n}$.
-\todo{Should probably describe this a bit better}
-\todo{Define the integer polynomial ring $\bb{Z}[X] / (X^n +1)$}
 
 The hash function used in Hawk is SHAKE256, an extendable output function (XOF) which enables arbitrary output length, unlike hash functions like SHA256 which 
 has a static output size of 256 bits. This property is useful since SHAKE256 can be used in all three degrees of Hawk.
@@ -94,7 +92,7 @@ A Hawk private key is represented by the matrix
     \end{bmatrix}
     \in \mathcal{K}_{n}^{2 \times 2}
 \]
-Here, entries are chosen such that $f$ and $g$ have small coefficients, and the equation $fG - Fg = 1 \mod X^{n} + 1$ holds, and consequently $\det(\mat{B}) = 1$, making $\mat{B}$ invertible.
+Here, entries are chosen such that $f$ and $g$ have small coefficients, and the equation $fG - Fg = 1 \mod X^{n} + 1$ holds, and consequently $\det(\mat{B}) = 1$, making $\mat{B}$ invertible over $\mathcal{K}_{n}^{2 \times 2}$.
 The inverse of $\mat{B}$ is 
 \[
     \mat{B}^{-1} =
@@ -144,9 +142,11 @@ We can also define $\mathsf{rot}$ on a matrix as the mapping
 \]
 
 Note that when working with $\mathsf{rot}(\mat{B})$ instead of $\mat{B}$, the Hermitian adjoint $\mat{B}^*$ corresponds to the transpose of $\mathsf{rot}(\mat{B})$, as 
-$\mathsf{rot}(\mat{B}^*) = \mat{B}^T$.
+$\mathsf{rot}(\mat{B}^*) = \mathsf{rot}(\mat{B})^T$. This is easy to show by observing that the first row of $\mathsf{rot}(\mat{B}^T)$ is equal to the first column of $\mathsf{rot}(\mat{B}^*)$, and so on. \todo{Maybe prove this better?}
+There is also an isomorphism going on here that needs to be shown.
+$\mathsf{rot}(\mat{Q}) = \mathsf{rot}(\mat{B}^* \mat{B}) = \mathsf{rot}(\mat{B}^*) \mathsf{rot}(\mat{B}) = \mathsf{rot}(\mat{B})^T \mathsf{rot}(\mat{B})$ due to $\mathsf{rot}()$ being an isomorphism.
 
-$\mathsf{rot}(\mat{B})$ serves as a basis for the private lattice in which a (hash digest of a) message will be signed in the signature generation step.
+The secret key $\mat{B}$ serves as a good basis for the private lattice in which a (hash digest of a) message will be signed in the signature generation step.
 A simplified version of the key generation is described in the following algorithm:
 \begin{algorithm}[H]\label{Simplified Hawk Key Generation}
 \caption{Simplified Hawk Key Generation}
@@ -158,6 +158,8 @@ A simplified version of the key generation is described in the following algorit
     \State \Return private key $\mat{B}$, public key $\mat{Q}$
 \end{algorithmic}
 \end{algorithm}
+Polynomials $f$ and $g$ are sampled from a centered binomial distribution with $\eta$ depending on Hawk degree (see table \ref{tab:hawk-parameters})
+
 \subsection{Solving the NTRU-equation}
 An important point in the key generation process is finding proper polynomials $F$ and $G$ that satisfy the NTRU-equation $fG - Fg = 1 \mod \bb{Z}[X] / (X^n + 1)$.
 Importantly, coefficients of $F$ and $G$ need to be rather small, and the procedure of solving the equation is a time-consuming part of the key generation process. 

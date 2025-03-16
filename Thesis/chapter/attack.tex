@@ -57,7 +57,7 @@ We summarize this step of the attack against Hawk in the following algorithm
 \section{Gradient search overview}
 
 Now, given samples $\vec{c} \in \PP{C}$, we run a gradient search to minimize or maximize the fourth moment of one-dimensional projections onto $\vec{u}$, as in the original attack. In addition to multiplying the samples by $\mat{L}^T$, we also divide them by the scalar $\sigma$, to normalize the samples
-so each sample in the vector $\vec{c}$ has variance $1$. This also aligns with our theoretical analysis of $mom_{4,\mat{C}}(\vec{u})$. Even though the distribution $\dgdi$ is discrete, the shape of the samples $\vec{c} \in \PP{C}$ will still have a somewhat spherical shape,
+so their variance is $1$. This also aligns with our theoretical analysis of $mom_{4,\mat{C}}(\vec{u})$. Even though the distribution $\dgdi$ is discrete, the shape of the samples $\vec{c} \in \PP{C}$ will still have a somewhat spherical shape,
 as illustrated in figures \ref{parallelepiped_normal_discrete} and \ref{hypercube_normal_discrete}.
 The hope is that the areas in the directions of the columns of $\pm \mat{C}$ will deviate just enough from a perfect spherical shape to give us a clear global minima/maxima in the gradient landscape.
 
@@ -136,8 +136,8 @@ Having access to the correct $\mat{B}^{-1}$ we can do measures on how close a pr
 We can for example take the difference in length of $\lvert \vec{b}' \rvert $ and each vector in $\lvert \mat{B}^{-1}\rvert$, i.e. 
 $ \mathsf{diff_{min}} = \mathsf{min} \{\lVert \lvert \vec{b}' \rvert - \lvert \vec{b}_i \rvert \rVert \ \mathbf{:} \ \vec{b}_i \in \pm \mat{B}^{-1}\}$.
 A low value for this (this depends on the Hawk parameter $n$) would indicate a good guess, whereas a higher value indicates greater difference between the vectors, and thus a bad guess.
-One can also take the average of the difference of the entries in the vectors, i.e. $ \mathsf{diff_{min}} = \mathsf{min} \{\frac{1}{2n} | \vec{b}' - \vec{b}_i | \mathbf{:} \vec{b}_i \in \pm \mat{B}^{-1}\}$.
-Alternatively, one can count entrywise how many entries out of $2n$ that matches between $\vec{b}'$ and $\vec{b}_i$.
+% One can also take the average of the difference of the entries in the vectors, i.e. $ \mathsf{diff_{min}} = \mathsf{min} \{\frac{1}{2n} | \vec{b}' - \vec{b}_i | \mathbf{:} \vec{b}_i \in \pm \mat{B}^{-1}\}$.
+Alternatively, one can count entrywise how many entries out of $2n$ that matches between $\vec{b}'$ and $\vec{b}_i$, or use some other suitable measurement.
 
 A concern about this approach of attacking Hawk is the gradient search, as described in Algorithm 2 and 3. In the original HPP attack, they used a standard gradient descent with a constant stepsize/descent parameter $\delta$. This
 worked fine for attack on GGH and NTRU when the global minima (of which there are $2n$) of the gradient landscape was very obvious. In the gradient landscape of Hawk however, there is much more noise, and the global minima is
@@ -234,7 +234,7 @@ One thing to note is that Hawk does not specify parameters (such as width $\sigm
         \midrule
 
         Key comparison degree 256 & 56.33 & 82.34 & 61.02 & 75.02 \\
-        Attack on Hawk 256 (1m samples) & something & something \\ 
+        Attack on Hawk 256 (1m samples) & 54.50 & 84.07 & 59.20 & 71.09 \\ 
         Attack on Hawk 256 (10m samples) & 57.72 & 77.54 & 62.37 & 77.54 \\
         \bottomrule
     \end{tabular}
