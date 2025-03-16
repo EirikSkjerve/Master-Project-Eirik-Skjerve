@@ -17,6 +17,27 @@
 
 }
 
+@article{RSA78,
+author = {Rivest, R. L. and Shamir, A. and Adleman, L.},
+title = {A method for obtaining digital signatures and public-key cryptosystems},
+year = {1983},
+issue_date = {Jan. 1983},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {26},
+number = {1},
+issn = {0001-0782},
+url = {https://doi.org/10.1145/357980.358017},
+doi = {10.1145/357980.358017},
+abstract = {An encryption method is presented with the novel property that publicly revealing an encryption key does not thereby reveal the corresponding decryption key. This has two important consequences:
+Couriers or other secure means are not needed to transmit keys, since a message can be enciphered using an encryption key publicly revealed by the intended recipient. Only he can decipher the message, since only he knows the corresponding decryption key.A message can be “signed” using a privately held decryption key. Anyone can verify this signature using the corresponding publicly revealed encryption key. Signatures cannot be forged, and a signer cannot later deny the validity of his signature. This has obvious applications in “electronic mail” and “electronic funds transfer” systems. A message is encrypted by representing it as a number M, raising M to a publicly specified power e, and then taking the remainder when the result is divided by the publicly specified product, n, of two large secret prime numbers p and q. Decryption is similar; only a different, secret, power d is used, where e * d = 1(mod (p - 1) * (q - 1)). The security of the system rests in part on the difficulty of factoring the published divisor, n.},
+journal = {Commun. ACM},
+month = jan,
+pages = {96–99},
+numpages = {4},
+keywords = {authentication, cryptography, digital signatures, electronic funds transfer, electronic mail, factorization, message-passing, prime number, privacy, public-key cryptosystems, security}
+}
+
 @techreport{HHPSW03,
     author = {Jeffrey Hoffstein, Nick Howgrave-Graham, Jill Pipher, Joseph H. Silverman, William Whyte},
     title = {NTRUSign: Digital Signatures Using the NTRU Lattice},

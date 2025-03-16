@@ -25,17 +25,21 @@ Asymmetric key cryptography on the other hand utilizes two related, but distinct
 Anyone with access to $\pubkey$ can encrypt a message $\mathcal{M}$ as $\mathcal{C} = \encpub{\mathcal{M}}$, rendering it unreadable. Only the holder of $\privkey$ is able to decrypt the message
 as $\mathcal{M} = \dec{\mathcal{C}}$. A crucial security property of such a system is that one should not be able to somehow deduce what $\privkey$ is if one has access only to $\pubkey$.
 
-Important applications for asymmetric cryptography includes:
-\begin{itemize}
-    \item \textbf{Secret key distribution:} the issue of exchanging secret keys for symmetric cryptography has long been a hurdle. As a sender, by encrypting a secret (symmetric) key using a public key,
-        a receiver can decrypt the (symmetric) key using his or her own (asymmetric) private key. Now that both parties are in possession of the same symmetric private key, they can resume communication using symmetric cryptography, which
-        is generally much more efficient in encrypting and decrypting large messages.
-    \item \textbf{Verification of sender:} analogous to digital signatures (which will be explained more thoroughly in section 2.4), by computing an encrypted version of a message using an asymmetric private key, anyone with knowledge of the public key
-        is able to decrypt the message. Importantly, the receiver is now able to verify that the intended message was encrypted with the private key related to the publicly available one. If the sender encrypted the message 
-        with another private key, the recipient would quickly realize that the sender is not in possession of the "correct" secret key. This is a gross oversimplification of how
-        such systems work, but as we will see later, this property of asymmetric cryptography, alongside other cryptographic primitives such as hash functions, create a strong foundation for digital signatures.
-    \todo{Rewrite this entire point}
-\end{itemize}
+The security of asymmetric cryptography is usually based on hard mathematical problems for which an effective algorithm to solve is unknown. 
+For example, to decrypt a message encrypted in the RSA scheme \cite{RSA78} without possession of the secret key, one would need to find two large prime numbers $p$ and $q$ such that 
+$p \cdot q = n$, where $n$ is the RSA modulus used for encryption. This is generally a hard problem for classical computers,
+
+% An important application for asymmetric cryptography includes:
+% \begin{itemize}
+%     \item \textbf{Secret key distribution:} the issue of exchanging secret keys for symmetric cryptography has long been a challenge. To overcome this challenge, one of two members in a party can encrypt a secret (symmetric) key using a public key,
+%         and the other party member can decrypt the (symmetric) key using his or her own (asymmetric) private key. Now that both members of the party are in possession of the same symmetric private key, they can resume communication using symmetric cryptography, which
+%         is generally much more efficient in encrypting and decrypting large messages.
+%     \item \textbf{Verification of sender:} analogous to digital signatures (which will be explained more thoroughly in section 2.4), by computing an encrypted version of a message using an asymmetric private key, anyone with knowledge of the public key
+%         is able to decrypt the message. Importantly, the receiver is now able to verify that the intended message was encrypted with the private key related to the publicly available one. If the sender encrypted the message 
+%         with another private key, the recipient would quickly realize that the sender is not in possession of the "correct" secret key. This is a gross oversimplification of how
+%         such systems work, but as we will see later, this property of asymmetric cryptography, alongside other cryptographic primitives such as hash functions, create a strong foundation for digital signatures.
+%     \todo{Rewrite this entire point}
+% \end{itemize}
 
 \section{Cryptanalysis}
 Cryptanalysis is the study of analyzing and breaking cryptographic systems, and plays an important role in strengthening the cryptography we use today.
