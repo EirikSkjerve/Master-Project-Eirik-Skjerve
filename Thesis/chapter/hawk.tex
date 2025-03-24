@@ -182,24 +182,25 @@ In practice, to avoid using floating point numbers, the entries in the table is 
 entries are integers with a high enough precision. For this overview, however, we only consider the unscaled version.
 Using the tables, we can define a procedure $\mathsf{sample}$ given by the following algorithm:
 
-\begin{algorithm}[H]
+\begin{algorithm}[H]\label{sample}
 % \caption{Simplified, unscaled sampling from $\dgd_{2\bb{Z}+c, \sigma}$ }
 \caption{$\mathsf{sample}$}
 \begin{algorithmic}[1]
     \Require{parameter $c \in \{0, 1\}$}
-    \State $q \gets$ uniformly sampled from $[-1, 1] \in \bb{Q}$
+    \State $q \gets$ uniformly random from $[-1, 1] \in \bb{Q}$
     \State $z \gets 0$
+    \State $v \gets 0$
     \While{$T_c[z] \neq 0$}
     \If{$|q| \leq T_c[z]$}
-    \State $z \gets z + 1$
-    \Else
-    \State $z \gets 2z + c$
-    \If{$q < 0$}
-    \State $z \gets -z$
+    \State $v \gets v + 1$
     \EndIf
+    \State $z \gets z + 1$
+    \State $v \gets 2v + c$
+    \If{$q < 0$}
+    \State $v \gets -v$
     \EndIf
     \EndWhile
-    \State \Return $z$
+    \State \Return $v$
 \end{algorithmic}
 \end{algorithm}
 
