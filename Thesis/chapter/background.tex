@@ -7,16 +7,16 @@
 \chapter{Background}
 \section{Overview}
 In this chapter, the field of cryptography and cryptanalysis will be introduced, with an emphasis on digital signatures and cryptanalysis.  
-We also introduce some necessary facts and notions related to linear algebra and lattices, as well as probability theory and distributions.
-Lastly, we introduce the notion of \textit{Gradient Search} and ADAM-optimizers, which will be a central tool in this thesis.
+The chapter will also introduce some necessary facts and notions related to algebra, linear algebra and lattices, and probability theory and statistics.
+Lastly, we introduce the notion of Gradient Descent, which will be a central tool in this thesis.
 
 \section{Cryptography}
 Cryptography is the study of tools and techniques that enable secure and, in part, reliable communication. For centuries, this entailed creative systems of codes and techniques used predominantly by military and governments,
-and the creation and breaking of such systems were considered an art, based on creativity and \todo{Find a source that backs the linguistics claim} linguistics, as cryptography then were used mostly on natural language. 
+and the creation and breaking of such systems were considered an art. % based on creativity and \todo{Find a source that backs the linguistics claim} linguistics, as cryptography then were used mostly on natural language. 
 From the 1970s and onwards, however, mathematics increasingly becomes the backbone of cryptography, as mathematical theory provides provable security (and insecurity) of cryptographic systems. 
-In the recent 50 years or so, cryptography has become an enabler of secure communication, verification, and integrity of information, all of which are integral parts of our digital world. \cite{KL20}
+In the recent 50 years or so, cryptography has become an enabler of secure communication, verification, and integrity of information, all of which are integral \todo{find better word than 'parts' here}parts of our digital world. \cite{KL20}
 
-Symmetric key cryptography that enables secure communication between two parties utilizes a shared secret key, denoted $\privkey$. The system defines two functions,
+Symmetric key cryptography enables secure communication between two parties and utilizes a shared secret key, denoted $\privkey$. The system defines two functions,
 $\enc{\mathcal{M}}$ and $\dec{\mathcal{C}}$ that encrypt and decrypt a message, respectively. These functions depend on the input message and the secret key. 
 For a proper system these functions are inverse of each other, i.e. $\dec{\enc{\mathcal{M}}} = \mathcal{M}$. Anyone without knowledge of $\privkey$ should be unable to
 extract any meaningful information about either $\privkey$ or $\mathcal{M}$ based only on observing $\mathcal{C}$.
@@ -25,9 +25,15 @@ Asymmetric key cryptography on the other hand utilizes two related, but distinct
 Anyone with access to $\pubkey$ can encrypt a message $\mathcal{M}$ as $\mathcal{C} = \encpub{\mathcal{M}}$, rendering it unreadable. Only the holder of $\privkey$ is able to decrypt the message
 as $\mathcal{M} = \dec{\mathcal{C}}$. A crucial security property of such a system is that one should not be able to somehow deduce what $\privkey$ is if one has access only to $\pubkey$.
 
-The security of asymmetric cryptography is usually based on hard mathematical problems for which an effective algorithm to solve is unknown. 
+The security of asymmetric cryptography is usually based on hard mathematical problems for which an effective algorithm to solve is unknown to exist, or is proven not to exist. 
 For example, to decrypt a message encrypted in the RSA scheme \cite{RSA78} without possession of the secret key, one would need to find two large prime numbers $p$ and $q$ such that 
-$p \cdot q = n$, where $n$ is the RSA modulus used for encryption. This is generally a hard problem for classical computers,
+$p \cdot q = n$, where $n$ is the RSA modulus used for encryption. For specific and large enough values of $n$, this is considered a hard problem. \cite{ENCYCLOPEDIA}
+Other asymmetric cryptography schemes may utilize different hard problems as a basis for their security, such as the Discrete Logarithm Problem, Closest Vector Problem, and Learning With Errors, to name a few.
+
+
+One of the main applications of asymmetric cryptography are digital signatures. A digital signature $\mathcal{S}$ computed from a message $\mathcal{M}$ enable a receiver of the 
+message-signature pair $(\mathcal{M}, \mathcal{S})$ to mathematically verify that the sender is in possession of the private key $\privkey$ that relates to the receivers public key $\pubkey$.
+In addition, a signature $\mathcal{S}$ provides a way to ensure that the original message $\mathcal{M}$ is intact and has not changed since the computation of $\mathcal{S}$.
 
 % An important application for asymmetric cryptography includes:
 % \begin{itemize}
@@ -44,6 +50,12 @@ $p \cdot q = n$, where $n$ is the RSA modulus used for encryption. This is gener
 \section{Cryptanalysis}
 Cryptanalysis is the study of analyzing and breaking cryptographic systems, and plays an important role in strengthening the cryptography we use today.
 By analyzing a system and exposing potential flaws and weaknesses, the designers of such as system can make suitable changes to (or even discard) it to further increase its security against adversaries with malicious intent.
+
+An important consideration when designing or analyzing the security of an asymmetric cryptosystem, is that the entire scheme is only as strong as its weakest part. \todo{Maybe find some direct source for this?}
+What this means in practice is that even if the scheme is based on a mathematically provably hard problem, there may be other components of the scheme that renders it unsafe.
+As we will see in more detail later in this thesis, the NTRU-sign digital signature scheme is based upon the (??CVP or SVP??). Nevertheless, each generated signature leaks some information about the secret key, which led to the demise of
+NTRU-sign. These issues have later been dealt with.
+\todo{Example of this??}
 
 \section{Digital Signatures}
 \subsection{Hash-and-Sign}

@@ -20,16 +20,15 @@ In 2016, the \gls{nist} announced a process for selecting new standard schemes f
 digital signatures that are resilient against quantum attacks (https://www.nist.gov/pqcrypto). Many of the submissions to this process, including KRYSTALS-Dilithium which is to be standardized, 
 are based on lattice problems that are believed to be hard to solve for both classical and quantum computers.
 
-Cryptographic schemes based on lattice problems are not an entirely new phenomenon, however. NTRU-Sign \cite{HHPSW03}, the signature counterpart of the NTRU crypto-system,
-is a digital signature scheme based on the hardness of the \gls{cvp}, a well known lattice problem (source?).
-The original scheme was broken by Phong. Q. Nguyen \& Oded Regev in 2006 \cite{NR09}; not by solving the \gls{cvp}, but by retrieving a secret key by observing enough signatures.
-In other words, each signature leaks some information about the secret key.
-The title of their paper and the name of the attack is \textit{Learning a Parallelepiped}, and the problem to solve in this attack will henceforth be denoted as the \gls{hpp} as one tries to \textit{learn} a parallelepiped.
-Countermeasures for this attack was proposed, but ultimately broken again in 2012 due to a more advanced extension of the original attack \cite{DN12}.
+Asymmetric cryptographic schemes based on lattice problems are not an entirely new phenomenon, however. NTRU-Sign \cite{HHPSW03}, the signature counterpart of the NTRU crypto-system,
+is a digital signature scheme based upon the hardness of solving the \gls{cvp} \cite{ENCYCLOPEDIA}.
+The original scheme was broken by Phong. Q. Nguyen \& Oded Regev in 2006 \cite{NR09}; not by solving the \gls{cvp}, but by observing that each signature leaks some information about the secret key.
+The title of their paper and the name of the attack is \textit{Learning a Parallelepiped}, and the problem to solve in this attack will henceforth be denoted as the \gls{hpp}. % as one tries to \textit{learn} a parallelepiped.
+Countermeasures for this attack was proposed, but ultimately broken again in 2012 due to a more advanced extension of the original attack \cite{DN12}. \todo{Not quite sure about this}
 
 Hawk \cite{HawkSpec24} is a digital signature scheme submitted to NIST's standardization process and is a viable candidate for standardization
 due to its speed and small signature- and keysizes. It is also a lattice-based signature scheme akin to NTRU-sign, but with some significant changes, and a different underlying hard problem on which its security is based upon. 
-This thesis will investigate if a method based on \gls{hpp} can be aimed at Hawk to retrieve information about the secret key, and ultimately break the scheme.
+This thesis will investigate if the \textit{Learning a Parallelepiped} attack can be modified and aimed at Hawk to retrieve information about the secret key, and ultimately break the scheme.
 
 \section{Objectives}
 The objective of this thesis consists of two main parts:
@@ -42,11 +41,14 @@ The objective of this thesis consists of two main parts:
 
 
 \item \textbf{Cryptanalysis and experimentation}. The second part of this thesis is cryptanalysis of Hawk. The goal is to use the \textit{Learning a parallelepiped} attack and do suitable modifications to attack Hawk. 
-    This requires both theoretical and practical work, and experiments will, like the Hawk implementation itself, be implemented in Rust.
+    This requires both theoretical and practical work, and experiments will, like the Hawk implementation itself, be implemented in Rust (unless stated otherwise).
 \end{itemize}
 \section{Thesis outline}
 Chapter 2 will introduce important notions and mathematical background used in this thesis. Chapter 3 will introduce Hawk and its implementation, and the \textit{Learning a Parallelepiped} attack.
 In Chapter 4 the cryptanalysis of Hawk is presented. The final chapter will discuss results and future work.
+
+\section{Scope and Limitations}
+Hawk has three different parameter sets, where one is a so-called "Challenge" parameter. This will mainly be the target for our cryptanalysis.
 
 \section{Detailed tentative roadmap}
 \begin{enumerate}
