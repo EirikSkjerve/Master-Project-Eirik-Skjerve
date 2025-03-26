@@ -17,10 +17,10 @@ static EPSILON: f64 = 1e-10;
 // static TOLERANCE: f64 = 1e-4;
 static BETA1: f64 = 0.9;
 static BETA2: f64 = 0.999;
-static DELTA: f64 = 0.001;
-static VANILLA_DELTA: f64 = 0.7;
+static DELTA: f64 = 0.7;
+static VANILLA_DELTA: f64 = 0.1;
 
-pub fn gradient_descent_vanilla(u: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
+pub fn gradient_descent_vanilla(u: &DMatrix<f64>) -> Option<DVector<f64>> {
     let n = u.nrows();
     let seed = rand::random::<u64>();
 
@@ -33,14 +33,13 @@ pub fn gradient_descent_vanilla(u: &DMatrix<f64>, delta: f64) -> Option<DVector<
     let mut t = 0;
     loop {
         t += 1;
-        println!("Inner iteration {t}");
+        println!("Iteration {t}");
         let g = grad_mom4_par(&w, &u);
         let wnew = &w - (VANILLA_DELTA * g);
         let wnew = wnew.normalize();
 
         let mom4_wnew = mom4_par(&wnew, &u);
         println!("Mom4(w):    {mom4_w}");
-        println!("Mom4(wnew): {mom4_wnew}");
 
         if mom4_wnew >= mom4_w {
             println!("Mom4 started increasing. Returning");
@@ -66,9 +65,9 @@ pub fn gradient_ascent_vanilla(u: &DMatrix<f64>, delta: f64) -> Option<DVector<f
     let mut inner_retries = 0;
     loop {
         t += 1;
-        println!("Inner iteration {t}");
+        println!("Iteration {t}");
         let g = grad_mom4_par(&w, &u);
-        let wnew = &w + (delta * g);
+        let wnew = &w + (VANILLA_DELTA * g);
         let wnew = wnew.normalize();
 
         let mom4_wnew = mom4_par(&wnew, &u);
@@ -76,7 +75,7 @@ pub fn gradient_ascent_vanilla(u: &DMatrix<f64>, delta: f64) -> Option<DVector<f
         println!("Mom4(wnew): {mom4_wnew}");
 
         if mom4_wnew <= mom4_w {
-            println!("Mom4 started increasing. Returning");
+            println!("Mom4 started decreasing. Returning");
             return Some(w);
         }
         w = wnew;

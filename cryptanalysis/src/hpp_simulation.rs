@@ -44,6 +44,7 @@ pub fn run_hpp_sim(t: usize, n: usize) {
 
     println!("Running HPP attack with {t} samples against Hawk{n} simulation");
     let ((b, binv), q) = hawk_sim_keygen(n); 
+    let bt = b.transpose();
     println!("Key generated");
     // eprintln!("B: {b}");
     // STEP 0: Generate samples
@@ -75,12 +76,18 @@ pub fn run_hpp_sim(t: usize, n: usize) {
 
     let signatures = Arc::try_unwrap(signatures).expect("").into_inner().unwrap();
     let samples = DMatrix::from_columns(&signatures);
+    // let samp_min = samples.iter().min().unwrap();
+    // let samp_max = samples.iter().max().unwrap();
+    // println!("Min: {samp_min}");
+    // println!("Max: {samp_max}");
+    // println!("Clipping values");
+    // let mut samples: DMatrix<f64> = rectangular_clipping(&samples, SIGMA, n as f64).map(|x| x as f64);
     let mut samples: DMatrix<f64> = samples.map(|x| x as f64);
 
     // STEP 1: estimate covariance matrix. We use Q=BtB for this
 
     let (linv, c) =
-        hypercube_transformation(&mut samples, q.map(|x| x as f64), &binv.map(|x| x as i32));
+        hypercube_transformation(&mut samples, q.map(|x| x as f64), &bt.map(|x| x as i32));
 
     // do some measuring of moments
     let total_num_elements = (samples.nrows() * samples.ncols()) as f64;
@@ -139,39 +146,45 @@ pub fn run_hpp_sim(t: usize, n: usize) {
         // initialize empty result vector
         let mut res: Option<DVector<f64>> = None;
 
-        if (kurtosis - 3.0) >= 0.0 {
-            res = gradient_ascent_vanilla(&samples, (kurtosis-3.0));
-        }
-        if (kurtosis - 3.0) < 0.0 {
-            res = gradient_descent_vanilla(&samples, (kurtosis-3.0));
-        }
+        let res = gradient_descent_vanilla(&samples);
+
+        // if (kurtosis - 3.0) >= 0.0 {
+        //     println!("Doing gradient ascent");
+        //     res = gradient_ascent_vanilla(&samples, (kurtosis-3.0));
+        //     // res = gradient_ascent(&samples, None);
+        // }
+        // if (kurtosis - 3.0) < 0.0 {
+        //     println!("Doing gradient descent");
+        //     res = gradient_descent_vanilla(&samples, (kurtosis-3.0));
+        //     // res = gradient_descent(&samples, None);
+        // }
 
         // multiply result vector with L inverse on the left to obtain solution as row in B
         // inverse
         let solution = (&linv * res.unwrap()).map(|x| x.round() as i32);
 
         // check directly if solution is in the actual secret key
-        if vec_in_key(&solution, &binv.map(|x| x as i32)) {
+        if vec_in_key(&solution, &bt.map(|x| x as i32)) {
             println!("FOUND! Result is in key based on direct checking");
             return;
         }
 
         // do a measurement of the result vector up against secret key if it was not the correct one
-        let (min, max) = measure_res(&solution, &binv.map(|x| x as i32));
+        let (min, max) = measure_res(&solution, &bt.map(|x| x as i32));
         avg_min += min / MAX_RETRIES as f64;
         avg_max += max / MAX_RETRIES as f64;
         if min < tot_min { tot_min = min}
         if max > tot_max { tot_max = max}
-        println!(
-            "Norm of res from gradient search: {}",
-            solution.map(|x| x as f64).norm()
-        );
-        println!("Norm of col0: {}", col0.map(|x| x as f64).norm());
-        println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
+        // println!(
+        //     "Norm of res from gradient search: {}",
+        //     solution.map(|x| x as f64).norm()
+        // );
+        // println!("Norm of col0: {}", col0.map(|x| x as f64).norm());
+        // println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
         println!("Result not in key... \n");
     }
-    println!("Avg min: {avg_min} \n Avg max: {avg_max}");
-    println!("Total min: {tot_min} \nTotal max: {tot_max}");
+    // println!("Avg min: {avg_min} \n Avg max: {avg_max}");
+    // println!("Total min: {tot_min} \nTotal max: {tot_max}");
 }
 
 fn hypercube_transformation(
@@ -186,8 +199,8 @@ fn hypercube_transformation(
 
     // get theoretical sigma here for scaling
 
-    // compute L = Cholesky decomposition of Q
-    let l = Cholesky::new(q).expect("Couldn't do Cholesky decomposition of ginv");
+    // compute L = Cholesky decomposition of Q^-1
+    let l = Cholesky::new(q.clone().try_inverse().expect("Could not take inverse")).expect("Couldn't do Cholesky decomposition of qinv");
 
     // compute inverse of Lt for later transformation back to parallelepiped
     let linv = l
@@ -204,12 +217,106 @@ fn hypercube_transformation(
 
     // this method is fast but nalgebra matrix multiplication makes an extra allocation
     // for the matrices involved
+
+    *samples = q * &*samples;
+    // now samples are on the form w = B^T x
     *samples = ((&l.l().transpose()) * &*samples) / SIGMA;
-    // *samples = ((&l.l().transpose()) * &*samples) / 15.0;
+    // let min_value = samples.iter().cloned().min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+    // let max_value = samples.iter().cloned().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+    // println!("Min: {min_value}");
+    // println!("Max: {max_value}");
+
+    let threshold = 6.0;
+    *samples = rectangular_clipping(&samples, threshold);
+
+    // println!("Before: {}", samples.ncols());
+    //
+    // // *samples = &*samples / threshold;
+    // //
+    // // // remove outlier samples to create a more cubic shape of the samples
+    // *samples = norm_shaving(samples, threshold) / max_value;
+    // println!("After: {}", samples.ncols());
+   
+    // *samples = ((&l.l().transpose()) * &*samples) / 10.0;
 
     let c = &l.l().transpose() * skey.map(|x| x as f64);
+    // let ctc = &c.transpose()*&c;
+    // let cct = &c*&c.transpose();
+    // eprintln!("{ctc:.2}");
+    // eprintln!("{cct:.2}");
 
     (linv, c)
+}
+
+fn norm_shaving(samples: &DMatrix<f64>, threshold: f64) -> DMatrix<f64> {
+    let mut result = Vec::new();
+
+    for c in 0..samples.ncols() {
+        let col = samples.column(c);  // Get the c-th column
+        if col.norm() <= threshold {
+            result.push(col.clone());  // If the norm is less than or equal to threshold, keep the column
+        }
+    }
+
+    // Convert the result into a new matrix
+    DMatrix::from_columns(&result)
+}
+/// Clips points to enforce a hypercubic shape in n-dimensional space.
+/// Removes any column vector where any coordinate exceeds k * std.
+///
+/// # Arguments
+/// * `w` - A DMatrix<i64> where each column is a point in n-dimensional space.
+/// * 'threshold' - A float determining the upper and lower limit for which a vector should be
+/// retained
+///
+/// # Returns
+/// A DMatrix<i64> containing only the retained column vectors.
+fn rectangular_clipping(w: &DMatrix<f64>, threshold: f64) -> DMatrix<f64> {
+
+    // Collect columns that satisfy the threshold condition
+    let retained_columns: Vec<_> = (0..w.ncols())
+        .filter(|&j| w.column(j).iter().all(|&val| (val.abs() as f64) < threshold))
+        .flat_map(|j| w.column(j).iter().copied().collect::<Vec<f64>>())
+        .collect();
+
+    // Convert retained columns back to a DMatrix<i64>
+    if retained_columns.is_empty() {
+        return DMatrix::<f64>::zeros(w.nrows(), 0); // Return empty matrix if nothing remains
+    }
+    
+    let num_rows = w.nrows();
+    let num_cols = retained_columns.len() / num_rows;
+    DMatrix::from_vec(num_rows, num_cols, retained_columns)
+}
+
+/// Clips points based on Z-scores.
+fn z_score_clipping(w: &DMatrix<f64>, k: f64) -> DMatrix<f64> {
+    let mut retained_columns = Vec::new();
+
+    for j in 0..w.ncols() {
+        let mut valid = true;
+
+        // Check each dimension of the column (each point)
+        for i in 0..w.nrows() {
+            let z_score = (w[(i, j)] - 0.0) / 2.0*SIGMA;
+
+            if z_score.abs() > k {
+                valid = false;
+                break;
+            }
+        }
+
+        // If the point is valid (within the Z-score threshold), keep it
+        if valid {
+            let column = w.column(j).clone_owned();
+            retained_columns.push(column);
+        }
+    }
+
+    // Construct a new matrix with the valid columns
+    let num_rows = w.nrows();
+    let num_cols = retained_columns.len();
+    DMatrix::from_columns(&retained_columns)
 }
 
 fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
@@ -222,8 +329,8 @@ fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
     as_column || as_column_neg
 }
 
-// gives a measure of the difference between two matrices
 fn mat_dist(a_mat: &DMatrix<f64>, b_mat: &DMatrix<f64>) {
+    // gives a measure of the difference between two matrices
     let mut num_diff = 0;
     let mut sum_diff: f64 = 0.0;
     for i in 0..a_mat.nrows() {

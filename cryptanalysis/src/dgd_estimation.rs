@@ -10,6 +10,7 @@ use std::fs::File;
 use std::io::{stdout, Write};
 use std::path::Path;
 use std::time::{Duration, Instant};
+use std::collections::HashMap;
 
 use prettytable::{color, Attr, Cell, Row, Table};
 
@@ -120,6 +121,8 @@ pub fn estimate_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
 
     println!("");
 
+    let mut frequency: HashMap<i64, usize> = HashMap::new();
+
     // estimating mu
     let mut mu: f64 = 0.0;
     for i in 0..t {
@@ -127,12 +130,21 @@ pub fn estimate_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
         print!("\r{} %", (((i + 1) as f64 / t as f64) * 100.0).abs() as u8);
 
         // sample x-vector of length 2n given a random vector
-        let temp: i64 = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry)
-            .iter()
-            .sum();
+        // let temp: i64 = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry)
+        //     .iter()
+        //     .sum();
+        let sig = hawksign_x_only(&privkey, &get_random_bytes(100), n, no_retry);
+        for s in sig.iter() {
+            *frequency.entry(*s).or_insert(0) += 1;
+        }
         // mu += temp as f64 / (t * 2 * n) as f64;
-        mu += temp as f64
+        // mu += temp as f64
     }
+    // Convert to relative frequencies
+    for value in frequency.values_mut() {
+        *value /= (t*2*n);
+    }
+    println!("Frequencies: {:?}", frequency);
 
     mu /= (t*2*n) as f64;
 

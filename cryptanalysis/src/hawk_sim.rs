@@ -25,11 +25,11 @@ pub fn hawk_sim_keygen(n: usize) -> ((DMatrix<i64>, DMatrix<i64>), DMatrix<i64>)
 
 fn random_uniform_vector(n: usize) -> DVector<i64> {
     let mut rng = rand::thread_rng();
-    let values: Vec<i64> = (0..n).map(|_| rng.gen_range(-15..15)).collect();
+    let values: Vec<i64> = (0..n).map(|_| rng.gen_range(-6..6)).collect();
     DVector::from_vec(values)
 }
 pub fn hawk_sim_sign(n: usize, binv: &DMatrix<i64>) -> DVector<i64> {
-    let seed = get_random_bytes(20);
+    let seed = get_random_bytes(40);
     let mut t = get_random_bytes(2*n);
     t = t.iter().map(|&x| x % 2).collect();
     let x = DVector::<i64>::from_vec(sample(&seed, t, n));

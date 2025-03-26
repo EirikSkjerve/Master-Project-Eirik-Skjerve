@@ -1,5 +1,5 @@
 use crate::file_utils::read_vectors_from_file;
-use crate::gradient_search::{gradient_ascent, gradient_descent};
+use crate::gradient_search::{gradient_ascent, gradient_descent, gradient_descent_vanilla};
 
 use crate::collect_signatures::collect_signatures_par;
 
@@ -119,19 +119,21 @@ pub fn run_hpp_attack(t: usize, n: usize) {
         // initialize empty result vector
         let mut res: Option<DVector<f64>> = None;
 
+        res = gradient_descent_vanilla(&samples);
+
         // if kurtosis is less than 3 we need to minimize
         // if kurtosis < 3.0 {
-        if retries % 2 == 0 {
-            println!("\nDoing gradient descent...");
-            res = gradient_descent(&samples, correct_solution.as_ref());
-        }
-
-        // if kurtosis is greater than 3 we need to maximize
-        // if kurtosis > 3.0 {
-        if retries % 2 == 1 {
-            println!("\nDoing gradient ascent...");
-            res = gradient_ascent(&samples, correct_solution.as_ref());
-        }
+        // if retries % 2 == 0 {
+        //     println!("\nDoing gradient descent...");
+        //     res = gradient_descent(&samples, correct_solution.as_ref());
+        // }
+        //
+        // // if kurtosis is greater than 3 we need to maximize
+        // // if kurtosis > 3.0 {
+        // if retries % 2 == 1 {
+        //     println!("\nDoing gradient ascent...");
+        //     res = gradient_ascent(&samples, correct_solution.as_ref());
+        // }
 
         // multiply result vector with L inverse on the left to obtain solution as row in B
         // inverse
@@ -159,8 +161,8 @@ pub fn run_hpp_attack(t: usize, n: usize) {
         // println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
         println!("Result not in key... \n");
     }
-    println!("Avg min: {avg_min} \n Avg max: {avg_max}");
-    println!("Total min: {tot_min} \nTotal max: {tot_max}");
+    // println!("Avg min: {avg_min} \n Avg max: {avg_max}");
+    // println!("Total min: {tot_min} \nTotal max: {tot_max}");
 }
 
 fn hypercube_transformation(
@@ -239,8 +241,8 @@ pub fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) -> (f64, f64){
     });
 
     let comb = DMatrix::from_columns(&[res.column(0), binv.column(min_index)]);
-    eprintln!("{comb}");
-    println!("Min norm of diff: {min} \nMax norm of diff: {max}");
+    // eprintln!("{comb}");
+    // println!("Min norm of diff: {min} \nMax norm of diff: {max}");
     (min, max)
 }
 

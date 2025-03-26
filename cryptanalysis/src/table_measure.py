@@ -240,19 +240,23 @@ def pdf(x, n):
     if abs(x) == 1:
         return Decimal(1/4)*Decimal(1 - T[0])
 
+    if abs(x)-c == len(T)*2:
+        return Decimal(1/4)*Decimal(T[round(((abs(x)-c)/2)) - 1])
+
+
     return Decimal(1/4)*Decimal(T[round(((abs(x)-c)/2)) - 1] - T[round((abs(x)-c)/2)])
 
 
 def expectation_x(n):
     match n:
         case 256:
-            interval = 2*10
+            interval = 2*10 + 1
         case 512:
-            interval = 2*13
+            interval = 2*13 + 1
         case 1024:
-            interval = 2*13
+            interval = 2*13 + 1
     res = Decimal(0)
-    for x in range(-interval+1, interval):
+    for x in range(-interval, interval + 1):
         temp = Decimal(x)*pdf(x, n)
         res += temp
     return res
@@ -261,13 +265,13 @@ def expectation_x(n):
 def variance_x(n):
     match n:
         case 256:
-            interval = 2*10
+            interval = 2*10 + 1
         case 512:
-            interval = 2*13
+            interval = 2*13 + 1
         case 1024:
-            interval = 2*13
+            interval = 2*13 + 1
     res = Decimal(0)
-    for x in range(-interval + 1, interval):
+    for x in range(-interval, interval + 1):
         temp = Decimal(x**2)*pdf(x, n)
         res += temp
     return res
@@ -280,13 +284,13 @@ def sigma_x(n):
 def kurtosis_x(n):
     match n:
         case 256:
-            interval = 2*10
+            interval = 2*10 + 1
         case 512:
-            interval = 2*13
+            interval = 2*13 + 1
         case 1024:
-            interval = 2*13
+            interval = 2*13 + 1
     res = Decimal(0)
-    for x in range(-interval + 1, interval):
+    for x in range(-interval, interval + 1):
         temp = Decimal(x**4)*pdf(x, n)
         res += temp
     return res
@@ -311,13 +315,13 @@ def kurtosis_z(n, sig4):
 def mom_k_x(n, k):
     match n:
         case 256:
-            interval = 2*10
+            interval = 2*10 + 1
         case 512:
-            interval = 2*13
+            interval = 2*13 + 1
         case 1024:
-            interval = 2*13
+            interval = 2*13 + 1
     res = Decimal(0)
-    for x in range(-interval + 1, interval):
+    for x in range(-interval, interval + 1):
         temp = Decimal(x**k)*pdf(x, n)
         res += temp
     return res
@@ -329,30 +333,28 @@ def mom_k_z(n, k, sig_x):
 
 if __name__ == "__main__":
 
-    # exp_x = expectation_x(1024)
+    exp_x = expectation_x(256)
     sigma_x = sigma_x(256)
     var_x = variance_x(256)
-    # kur_x = kurtosis_x(256)
-
-    # exp_z = expectation_z(256)
-    # sigma_z = sigma_z(256)
-    # var_z = variance_z(256)
+    kur_x = kurtosis_x(256)
+    exp_z = expectation_z(256)
+    sigma_z = sigma_z(256)
+    var_z = variance_z(256)
     kur_z = kurtosis_z(256, sigma_x**Decimal(4))
-    print(kur_z)
-    eight_z = mom_k_z(256, 8, sigma_x)
 
-    print(eight_z)
+    # print(kur_z)
+    # print()
     # print(kur_z - Decimal(3))
-
-    # print((Decimal(1.96)/Decimal(0.00008))**Decimal(2))
-
-    sum = Decimal(0)
-    for x in range(-19, 20):
-        sum += pdf(x, 256)
-
 
     # print(f"\nExp x: {exp_x}\nSigma x: {sigma_x/Decimal(2)}\nVar x: {var_x}\nKur x: {kur_x}")
     # print(f"\nExp z: {exp_z}\nSigma z: {sigma_z}\nVar z: {var_z}\nKur z: {kur_z}")
+
+    
+    num = Decimal(0.68)*(Decimal(96)**Decimal(1/2))
+    den = Decimal(10)**Decimal(-14)
+
+    n = (num/den)**Decimal(2)
+    print(f"Required number of samples: {round(n)}")
 
 
     # num_samples = 1000000

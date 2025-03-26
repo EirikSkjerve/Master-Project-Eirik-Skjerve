@@ -12,6 +12,7 @@ use std::io::{stdout, Write};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+use std::collections::HashMap;
 
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
@@ -98,9 +99,25 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
     let (privkey, _) = hawkkeygen(n);
     let start = Instant::now();
 
+    // let mut min: i64 = 100;
+    // let mut max: i64 = -100;
+    //
+    // for i in 0..t {
+    //     let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(50), n, true);
+    //     for tp in temp {
+    //         if tp < min  { min = tp}
+    //         if tp > max { max = tp}
+    //     }
+    // }
+
+    // println!("Min: {min} \nMax: {max}");
+
+
     // thread safe variable
     let mut mu: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
     let mut var: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
+
+    let mut frequencies: Arc<Mutex<HashMap<i64, f64>>>= Arc::new(Mutex::new(HashMap::new()));
 
     // make progressbar with style
     let pb = ProgressBar::new(t as u64);
@@ -111,9 +128,15 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
             .progress_chars("#>-"),
     );
 
+
+
     // sample x-vectors in parallel
     (0..t).into_par_iter().for_each(|i| {
         let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(50), n, true);
+        temp.clone().into_iter().for_each(|x| {
+            let mut freq_map = frequencies.lock().unwrap();
+            *freq_map.entry(x).or_insert(0.0) += 1.0;
+        });
         let tempmu: f64 = temp.iter().map(|&x| (x as f64)).sum();
 
         *mu.lock().unwrap() += tempmu;
@@ -121,6 +144,26 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
         // increment progress bar
         pb.inc(1);
     });
+
+        // Normalize frequencies (convert counts to relative frequencies)
+    {
+        let mut freq_map = frequencies.lock().unwrap();
+        for value in freq_map.values_mut() {
+            *value /= (2*t*n) as f64;
+        }
+    }
+        // Sort by key before printing
+    let mut sorted_frequencies: Vec<(i64, f64)> = {
+        let freq_map = frequencies.lock().unwrap();
+        let mut vec: Vec<_> = freq_map.iter().map(|(&k, &v)| (k, v)).collect();
+        vec.sort_by_key(|&(k, _)| k); // Sort by key (integer value)
+        vec
+    };
+
+    // Print sorted relative frequencies
+    for (key, value) in sorted_frequencies {
+        println!("{}: {:.10}", key, value);
+    }
 
     let mu = *mu.lock().unwrap() / (2*t*n) as f64;
 
