@@ -1,0 +1,180 @@
+\documentclass[12 pt]{article}        	%sets the font to 12 pt and says this is an article (as opposed to book or other documents)
+\usepackage{amsfonts, amssymb}					% packages to get the fonts, symbols used in most math
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\usepackage{amsthm}
+\usepackage{mathtools, nccmath}
+\DeclarePairedDelimiter{\nint}\lfloor\rceil
+
+\usepackage[integrals]{wasysym}
+\usepackage{latexsym}
+\DeclareRobustCommand{\VAN}[3]{#2}
+\usepackage{amssymb} 
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage[english]{babel}
+\usepackage{parskip}
+\usepackage{relsize}
+\usepackage{todonotes}
+\usepackage{booktabs}  % For professional table rules
+\usepackage{array}
+%\usepackage{setspace}               		% Together with \doublespacing below allows for doublespacing of the document
+
+\oddsidemargin=-0.5cm                 	% These three commands create the margins required for class
+\setlength{\textwidth}{6.5in}         	%
+\addtolength{\voffset}{-20pt}        		%
+\addtolength{\headsep}{25pt}
+
+\newcommand{\PP}[2][]{\mathcal{P}_{#1}(\mat{#2})}
+\newcommand{\mat}[1]{\mathbf{#1}}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\newcommand{\GLnR}{\mathcal{GL}_{n}(\mathbb{R})}
+\newcommand{\normdist}[2]{\mathcal{N}(#1, #2^2)}
+\newcommand{\dgdist}{\mathcal{D}_{2\bb{Z}+c, \sigma}}
+\newcommand{\bb}[1]{\mathbb{#1}}
+\newcommand{\dgd}{\mathcal{D}}
+\newcommand{\dgdi}{\widehat{\mathcal{D}}}
+\renewcommand{\dot}[2]{\langle \vec{#1}, \vec{#2} \rangle}
+\newcommand{\mom}[2]{mom_{#1, \mathbf{#2}}(\mathbf{w})}
+
+\DeclarePairedDelimiter{\round}\lfloor \rceil
+
+\begin{document}
+
+
+In Hawk paper, tables are given scaled by $2^{78}$. Using a high precision package in Python, we downscale the entries to get
+Table \ref{downscaled_disttable}. The displayed numbers in table \ref{downscaled_disttable} are cut off at the 20th decimal place, but in the Python program we still have access to all 78 decimal points.
+
+The entries in the tables are as follows: 
+\begin{itemize}
+    \item $T_0[k] = Pr(|X| \geq 2 + 2k)$ when $X \sim \dgd_{2\bb{Z}, \sigma}$
+    \item $T_1[k] = Pr(|X| \geq 3 + 2k)$ when $X \sim \dgd_{2\bb{Z} + 1, \sigma}$
+\end{itemize}
+Trivially, $Pr(|X| \geq 0) = 1$ when $X \sim \dgd_{2\bb{Z}, \sigma}$ and $Pr(|X| \geq 1) = 1$ when $X \sim \dgd_{2\bb{Z} + 1, \sigma}$.
+Using these entries, we can define the probability mass function of the distribution:
+
+\[
+    Pr(X=x) = 
+\begin{cases}
+    1 - T_0[0] & \text{if } x = 0 \\
+    \frac{1}{2} (1 - T_1[0]) & \text{if } \lvert x \rvert = 1 \\
+    \frac{1}{2}\mathlarger{(T_c[\frac{\lvert x \rvert - c}{2} - 1] - T_c[\frac{\lvert x \rvert - c}{2}])} & \text{if } \lvert x \rvert > c
+\end{cases}
+\]
+
+% The probability of a random variable being equal to some $x$ first depends on input parameter $c$ which is $0$ or $1$ with probability $\frac{1}{2}$.
+The probability of a random variable $X \sim \dgd_{2\bb{Z} + c}$ being equal to some $x \in 2\bb{Z} + c$ is the probability that $X$ is greater than or equal to $x$, minus the probability that $X$ is greater than or equal to $x + 2$.
+These values can be retrieved from the tables, and we have that $Pr(|X| = |x|) = Pr(|X| \geq |x|) - Pr(|X| \geq |x+2|)$, which can be looked up in the table as $Pr(|X| \geq |x|) = \mathlarger{T_c[\frac{\lvert x \rvert - c}{2} - 1]}$
+and $Pr(|X| \geq |x+2|) = \mathlarger{T_c[\frac{\lvert x \rvert - c}{2}]}$.
+
+The scaling by $\frac{1}{2}$ is to account for negative/positive sign. 
+We can define the probability mass function for "combined" $\dgd_{2\bb{Z}, \sigma}$ and $\dgd_{2\bb{Z} + 1, \sigma}$ as $\dgd_{\bb{Z}, \sigma}$ as given by sampling algorithm. 
+Since the parameter $c$ which is 0 or 1 with probability $\frac{1}{2}$, 
+
+\[
+    Pr(X=x) = \frac{1}{2}
+\begin{cases}
+    1 - T_0[0] & \text{if } x = 0 \\
+    \frac{1}{2} (1 - T_1[0]) & \text{if } \lvert x \rvert = 1 \\
+    \frac{1}{2}\mathlarger{(T_c[\frac{\lvert x \rvert - c}{2} - 1] - T_c[\frac{\lvert x \rvert - c}{2}])} & \text{if } \lvert x \rvert > c
+\end{cases}
+\]
+
+% By implementing this PDF in Python, it is easy to check that $\mathlarger{\sum_{x = -20}^{20} x \cdot f(x) }$ for degree 256 and $\mathlarger{\sum_{x = -26}^{26} x \cdot f(x) }$ for degree 512 and 1024 all sum to 1.
+
+Denote now by $f(x) = Pr(X = x)$.
+We can compute $\sigma^2 = \bb{E}[X^2] - \bb{E}[X]^2$ as $\mathlarger{\sum_{x} x^2 \cdot f(x) } - 0$ and then $\sigma = \sqrt{\sigma^2}$. Note that we sum over all $x$ that has a corresponding non-zero entry in the table. So for Hawk256 we sum from 
+$x = -20$ to $x = 20$ since $Pr(X = -20) = Pr(X = 20) = \frac{1}{4} (T_0[\frac{20}{2} -1] - T_0[\frac{20}{2}]) = \frac{1}{4} (T_0[9] - T_0[10]) = \frac{1}{4} (T_0[9] - 0) $, since entry 9 in $T_0$ is the last non-zero entry in the tables.
+Similarly, for Hawk 512 and Hawk 1024 we sum from $x = -26$ to $x = 26$ since there are 13 entries in the tables.
+
+Below are the moments for X
+\begin{table}[H]
+    \centering
+    \caption{Moments of $X$}
+    \label{x moments}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Degree} & $\bb{E}[X^2]$ & $\bb{E}[X^4]$ \\
+        \midrule
+        256 & 4.08040000000000212758 & 49.948992479999702471611 \\
+        \midrule
+        512 & 6.53313599999999999999 & 128.04559798348799999938 \\
+        \midrule
+        1024 & 6.74960399999999999999 & 136.671462470447999999396  \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Now, let $Z = \frac{X}{\sigma}$ such that $\bb{V}[Z] = \bb{E}[Z^2] - \bb{E}[Z]^2 = \bb{E}[\frac{X^2}{\sigma ^2}] - 0 = \frac{\sigma ^2}{\sigma ^2} = 1$. 
+Then $\bb{E}[Z^4] = \mathlarger{\bb{E}[(\frac{X}{\sigma})^4] = \frac{\bb{E}[X^4]}{\sigma ^4}}$.
+Explicitly, the values for $\bb{E}[Z^4]$ are:
+
+\begin{table}[H]
+    \centering
+    \caption{Values for $\bb{E}[Z^4]$}
+    \label{z4 values}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Degree} & $\bb{E}[Z^4]$ & $\bb{E}[Z^4] - 3$ \\
+        \midrule
+        256 & 2.999999999999979001575261935069... & -2.099842473806493023232033185539 $\cdot 10^{-14}$ \\
+        \midrule
+        512 & 2.999999999999999999986268406268... & -1.373159373148697609358990321080 $\cdot 10^{-20}$ \\
+        \midrule
+        1024 & 2.999999999999999999987558603578... & -1.244139642155725628841431806681 $\cdot 10^{-20}$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \caption{Distribution tables for Hawk}
+    \label{downscaled_disttable}
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Degree} & \textbf{Index} & $T_{0}$ & $T_{1}$\\
+        \midrule
+        256 & 0 & 0.60500764458817746227 & 0.30112171978068869027 \\
+                 & 1 & 0.12111379328095156493 & 0.03890258577957197982 \\
+                 & 2 & 0.00990366124775658544 & 0.00198867578314904092 \\
+                 & 3 & 0.00031404023074329352 & 0.00003892746532120486 \\
+                 & 4 & 3.78338918128274943781 $\cdot 10^{-6}$ & 2.88107957977879477782 $\cdot 10^{-7}$ \\
+                 & 5 & 1.71827120294345768175 $\cdot 10^{-8}$ & 8.023717250487003858304 $\cdot 10^{-10}$ \\
+                 & 6 & 2.93316557610652772623 $\cdot 10^{-11}$ & 8.39327557089857137278 $\cdot 10^{-13}$ \\
+                 & 7 & 1.87989625626860808692 $\cdot 10^{-14}$ & 3.29554767989818261073 $\cdot 10^{-16}$ \\
+                 & 8 & 4.52170671790477090613 $\cdot 10^{-18}$ & 4.85555019568627245149 $\cdot 10^{-20}$ \\
+                 & 9 & 4.06972861376089616036 $\cdot 10^{-22}$ & 0 \\
+        \midrule
+        512 & 0 & 0.68783859123519186518 & 0.421675779498657365973\\ 
+                 & 1 & 0.22815616423571508097 & 0.108153239403719514388\\                                                                                                                                                                       
+                 & 2 & 0.04466972048333950340 & 0.016009985460413485996\\ 
+                 & 3 & 0.00496451451795861930 & 0.001328983098277643562\\
+                 & 4 & 0.00030663435548965438 & 6.090716513454281783989 $\cdot 10^{-5}$\\
+                 & 5 & 1.04060485623348598200 $\cdot 10^{-5} $ & 1.528258073493337080883 $\cdot 10^{-6}$\\
+                 & 6 & 1.92840254421950117664 $\cdot 10^{-7} $ & 2.089966808432780626525 $\cdot 10^{-8}$\\
+                 & 7 & 1.94496525936032772231 $\cdot 10^{-9} $ & 1.553939815681894418655 $\cdot 10^{-10}$\\
+                 & 8 & 1.06572930907894827110 $\cdot 10^{-11} $ & 6.273446376434910793387 $\cdot 10^{-13}$\\
+                 & 9 & 3.16941999635792541820 $\cdot 10^{-14} $ & 1.374181145812213128399 $\cdot 10^{-15}$\\
+                 & 10 & 5.11306475526383081512 $\cdot 10^{-17} $ & 1.632596448828560085561 $\cdot 10^{-18}$\\
+                 & 11 & 4.47306188044175245463 $\cdot 10^{-20} $ & 1.048865016717239091736 $\cdot 10^{-21}$\\
+                 & 12 & 1.98523347012726641969 $\cdot 10^{-23} $ & 0\\
+        \midrule 
+        1024 & 0 & 0.69288508052237884893 & 0.42962686546922340680 \\
+                 & 1 & 0.23617193265906574750 & 0.11428308553940400016 \\
+                 & 2 & 0.04842133601191184882 & 0.01789248535056067734 \\
+                 & 3 & 0.00574920368926730516 & 0.00160288957145916094 \\ 
+                 & 4 & 0.00038713254406289563 & 8.09018865846981160986 $\cdot 10^{-5}$ \\
+                 & 5 & 1.46156213735215806631  $\cdot 10^{-5}$ & 2.28113759483951792305 $\cdot 10^{-6}$ \\
+                 & 6 & 3.07433006382663749701  $\cdot 10^{-7}$ & 3.57649723218357077527 $\cdot 10^{-8}$ \\
+                 & 7 & 3.59052157753520911942  $\cdot 10^{-9}$ & 3.11001989345370333228 $\cdot 10^{-10}$ \\ 
+                 & 8 & 2.32386383797340793425  $\cdot 10^{-11}$ & 1.49779523761119320525 $\cdot 10^{-12}$ \\ 
+                 & 9 & 8.32631949511072616142  $\cdot 10^{-14}$ & 3.99196058657956792236 $\cdot 10^{-15}$ \\
+                 & 10 & 1.65056413522219193150  $\cdot 10^{-16}$ & 5.88541321937194339148 $\cdot 10^{-18}$ \\
+                 & 11 & 1.80970574414351394708  $\cdot 10^{-19}$ & 4.79764755280756051425 $\cdot 10^{-21}$ \\
+                 & 12 & 1.09187840856999653083 $\cdot 10^{-22}$ & 0 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\end{document}

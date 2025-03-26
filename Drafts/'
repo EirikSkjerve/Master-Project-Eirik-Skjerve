@@ -1,0 +1,70 @@
+\documentclass[12 pt]{article}        	%sets the font to 12 pt and says this is an article (as opposed to book or other documents)
+\usepackage{amsfonts, amssymb}					% packages to get the fonts, symbols used in most math
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\usepackage{amsthm}
+\usepackage{mathtools, nccmath}
+\DeclarePairedDelimiter{\nint}\lfloor\rceil
+
+\usepackage[integrals]{wasysym}
+\usepackage{latexsym}
+\DeclareRobustCommand{\VAN}[3]{#2}
+\usepackage{amssymb} 
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage[english]{babel}
+\usepackage{parskip}
+\usepackage{relsize}
+\usepackage{todonotes}
+\usepackage{booktabs}  % For professional table rules
+\usepackage{array}
+%\usepackage{setspace}               		% Together with \doublespacing below allows for doublespacing of the document
+
+\oddsidemargin=-0.5cm                 	% These three commands create the margins required for class
+\setlength{\textwidth}{6.5in}         	%
+
+\renewcommand{\baselinestretch}{1.5} 
+\addtolength{\voffset}{-20pt}        		%
+\addtolength{\headsep}{25pt}
+
+\newcommand{\PP}[2][]{\mathcal{P}_{#1}(\mat{#2})}
+\newcommand{\mat}[1]{\mathbf{#1}}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\newcommand{\GLnR}{\mathcal{GL}_{n}(\mathbb{R})}
+\newcommand{\normdist}[2]{\mathcal{N}(#1, #2^2)}
+\newcommand{\dgdist}{\mathcal{D}_{2\bb{Z}+c, \sigma}}
+\newcommand{\bb}[1]{\mathbb{#1}}
+\newcommand{\dgd}{\mathcal{D}}
+\newcommand{\dgdi}{\widehat{\mathcal{D}}}
+\renewcommand{\dot}[2]{\langle \vec{#1}, \vec{#2} \rangle}
+\newcommand{\mom}[2]{mom_{#1, \mathbf{#2}}(\mathbf{w})}
+
+\DeclarePairedDelimiter{\round}\lfloor \rceil
+
+\begin{document}
+
+We have computed $\mu_4$, i.e. the 4th moment of Z to be 2.999..., and that the difference ($\mu_4 - 3$) is about $2.1 \cdot 10^{-14}$ for parameter 256.
+Let us now compute how many samples one would need to successfully distinguish $mom_{4, \mat{C}}(\vec{u})$ when $\vec{u} \in \pm \mat{C}$ and when $\vec{u} \not\in\pm\mat{C}$.
+$mom_{4, \mat{C}}(\vec{u}) = \bb{E}[(\langle \vec{u}, \mat{C}\vec{x} \rangle ^4] = 3 + (\mu_4 - 3) \mathlarger{\sum_{i=1}^{n} \langle \vec{u}, \vec{c}_i \rangle ^4}$.
+If $\vec{u} = \vec{c}_i$, the entire expression is $3 + (\mu_4 - 3)\cdot 1 = \mu_4$ because $\langle \vec{c}_i, \vec{c}_i \rangle = 1$ and $\langle \vec{c}_i, \vec{c}_j \rangle = 0$ for $i \neq j$. 
+Otherwise, the sum $\mathlarger{\sum_{i=1}^{n} \langle \vec{u}, \vec{c}_i \rangle ^4} < 1$.
+Say one wants to distinguish $mom_{4, \mat{C}}(\vec{c}_i)$ and $mom_{4, \mat{C}}(\vec{u})$ for $\vec{u} \not\in\pm\mat{C}$.
+Let $y = \langle \vec{u}, \mat{C} \vec{x} \rangle$ and assume $y$ follows a standard normal distribution.
+Then we approximate the variance $\sigma^2$ and standard deviation $\sigma$ for $\bb{E}[(\langle \vec{u}, \mat{C}\vec{x} \rangle ^4]$ as $\bb{E}[y^8] - \bb{E}[y^4]^2$.
+Then $\sigma^2 = 105 - 9 = 96$ and $\sigma = \sqrt{96} \approx 9.79796$.
+
+Now, to estimate number of samples we use formula for confidence intervals and Central Limit Theorem, we have that 
+\[
+    s \geq \mathlarger{(\frac{Z_{\alpha/2} \cdot \sigma}{\mathsf{err}})^2}
+\]
+Now, we want $\mathsf{err}$ to be smaller than $2.1 \cdot 10^{-14}$ for parameter 256.
+If we set $\mathsf{err}$ to be $10^{-14}$, and we want to determine a difference with, say, 75 \% confidence, we get:
+
+\[
+    s \geq (\frac{0.68 \cdot 9.79796}{10^{-14}})^2 = 443904000000000063778315961828 
+\]
+
+which is way beyond the limit of transcript size, which for parameter 256 is $2^32$ and for parameters 512 and 1024 is $2^64$.
+
+\end{document}
