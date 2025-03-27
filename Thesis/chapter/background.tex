@@ -25,7 +25,7 @@ Asymmetric key cryptography on the other hand utilizes two related, but distinct
 Anyone with access to $\pubkey$ can encrypt a message $\mathcal{M}$ as $\mathcal{C} = \encpub{\mathcal{M}}$, rendering it unreadable. Only the holder of $\privkey$ is able to decrypt the message
 as $\mathcal{M} = \dec{\mathcal{C}}$. A crucial security property of such a system is that one should not be able to somehow deduce what $\privkey$ is if one has access only to $\pubkey$.
 
-The security of asymmetric cryptography is usually based on hard mathematical problems for which an effective algorithm to solve is unknown to exist, or is proven not to exist. 
+The security of asymmetric cryptography is usually based on hard mathematical problems for which an effective algorithm to solve is either unknown to exist, or proven \textit{not} to exist. 
 For example, to decrypt a message encrypted in the RSA scheme \cite{RSA78} without possession of the secret key, one would need to find two large prime numbers $p$ and $q$ such that 
 $p \cdot q = n$, where $n$ is the RSA modulus used for encryption. For specific and large enough values of $n$, this is considered a hard problem. \cite{ENCYCLOPEDIA}
 Other asymmetric cryptography schemes may utilize different hard problems as a basis for their security, such as the Discrete Logarithm Problem, Closest Vector Problem, and Learning With Errors, to name a few.
@@ -34,6 +34,7 @@ Other asymmetric cryptography schemes may utilize different hard problems as a b
 One of the main applications of asymmetric cryptography are digital signatures. A digital signature $\mathcal{S}$ computed from a message $\mathcal{M}$ enable a receiver of the 
 message-signature pair $(\mathcal{M}, \mathcal{S})$ to mathematically verify that the sender is in possession of the private key $\privkey$ that relates to the receivers public key $\pubkey$.
 In addition, a signature $\mathcal{S}$ provides a way to ensure that the original message $\mathcal{M}$ is intact and has not changed since the computation of $\mathcal{S}$.
+Section 2.4 will go in further detail about the building blocks for digital signature schemes, and what constitutes a secure or insecure scheme.
 
 % An important application for asymmetric cryptography includes:
 % \begin{itemize}
@@ -48,14 +49,20 @@ In addition, a signature $\mathcal{S}$ provides a way to ensure that the origina
 % \end{itemize}
 
 \section{Cryptanalysis}
-Cryptanalysis is the study of analyzing and breaking cryptographic systems, and plays an important role in strengthening the cryptography we use today.
-By analyzing a system and exposing potential flaws and weaknesses, the designers of such as system can make suitable changes to (or even discard) it to further increase its security against adversaries with malicious intent.
+Cryptanalysis is the study of analyzing and breaking cryptographic systems, and it plays an important role in strengthening the cryptography we use today.
+By analyzing a system and exposing potential flaws and weaknesses, the designers of such as system can make suitable changes to (or even discard) it to further 
+increase its security against adversaries with malicious intent, or altogether avoid the release of an insecure piece of technology.
 
-An important consideration when designing or analyzing the security of an asymmetric cryptosystem, is that the entire scheme is only as strong as its weakest part. \todo{Maybe find some direct source for this?}
-What this means in practice is that even if the scheme is based on a mathematically provably hard problem, there may be other components of the scheme that renders it unsafe.
-As we will see in more detail later in this thesis, the NTRU-sign digital signature scheme is based upon the (??CVP or SVP??). Nevertheless, each generated signature leaks some information about the secret key, which led to the demise of
-NTRU-sign. These issues have later been dealt with.
-\todo{Example of this??}
+The notion of a cryptanalytic \textit{attack} refers to an attempt of retrieving secret information from an instance of a cryptographic scheme.
+This can be either attempting to recover parts of, or the entire, secret key, observe some information about the encrypted message, or somehow produce 
+some information as if one possesses the secret key. Generally, if any degree of the mentioned points is possible for a scheme, the scheme should be considered insecure, and the attack successful.
+
+An important consideration when designing and analyzing the security of an asymmetric crypto-system, is that a scheme is generally only as strong as its weakest part. \todo{Maybe find some direct source for this?}
+What this means in practice is that even if the scheme is based on a provably hard problem, there may be other components of the scheme that renders it unsafe.
+As an example, (and which we will see in much more detail later in section 3), the security of the NTRU-sign digital signature scheme is based upon the CVP. 
+In practice this means that without possession of the secret key, forging a signature would require one to solve an instance of CVP. 
+However, as we will see, each generated signature leaks some information about the secret key, which ultimately enables signature forgeries, regardless of whether one can 
+solve the CVP or not. 
 
 \section{Digital Signatures}
 \subsection{Hash-and-Sign}

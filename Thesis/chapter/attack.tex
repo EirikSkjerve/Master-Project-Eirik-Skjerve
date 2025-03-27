@@ -51,8 +51,9 @@ Then $n = (\frac{1.96 \cdot \hat{\sigma}} {10^{-5}})^2$
 The probability that one can discern $mom_{4, \mat{C}}(\vec{u})$ when $\vec{u} \in \pm \mat{C}$ and when $\vec{u} \not\in \pm \mat{C}$ ultimately depends on the value of $\mu_4$ and the number of signature samples one has available.
 % If we can upper estimate the variance of $mom_{4, \mat{C}}(\vec{u})$ and $\nabla mom_{4, \mat{C}}(\vec{u})$ one can get an idea of how many samples one needs to do this distinguishment.
 
-For implementation of Hawk, they provide tables which along with an algorithm determines the distribution $\dgdi$. Based on this one can reconstruct a Probability Density Function (PDF) $Pr(X = x)$ for $X \sim \dgdi$.
-The PDF of $\dgdi$ from tables is:
+For implementation of Hawk, they provide tables which along with an algorithm determines the distribution $\dgdi_{2\bb{Z} + c, \sigma}$. Based on the tables one can reconstruct a 
+Probability Mass Function (PMF) $Pr(X = x)$ for $X \sim \dgdi_{\bb{Z}, \sigma$.
+    The PMF of $\dgdi_{\bb{Z}, \sigma$ from tables is:
 \[
     Pr(X=x) = \frac{1}{2} \cdot
 \begin{cases}
@@ -62,22 +63,30 @@ The PDF of $\dgdi$ from tables is:
 \]
 Here, $c = \lvert x \rvert \mod{2}$ that determines which table ($T_0$ or $T_1$) is used. \todo{Explain this stuff a bit better maybe}
 
-Given the PDF we can define the moments of $X$ as $\bb{E}[X^k] = \mathlarger{\sum_x x^k \cdot Pr(X = x)}$. Since there are a finite number of entries in the tables, we can easily compute these moments.
-By using a package designed for high accuracy and precision (we use the Decimal module \cite{Decimal} in Python) we can be certain that the results are correct, and that we do not get e.g. floating point errors when summing.
+Given the PMF we can compute the moments of $X$ as $\bb{E}[X^k] = \mathlarger{\sum_x x^k \cdot Pr(X = x)}$, as there is a finite number of entries in the tables.
+More specifically, for the 256 parameter set, there are 10 entries in $T_0$ and $T_1$. Therefore we sum from $x = -20$ to $x = 20$.
+When $|x| = 20$, $Pr(\lvert X \rvert \geq 20) = \frac{1}{4} \cdot (T_0 [9] - T_0[10])$, where $T_0[9]$ is the last non-zero entry, and so all successive entries will yield 0.
+Similarly, for parameters 512 and 1024 we sum from $x = -26$ to $x = 26$, since there are 13 entries in $T_0$ and $T_1$.
+
+By using the Decimal module in Python \cite{Decimal}, a module designed for high precision when working with decimal numbers, we can be confident that the computed results are correct, 
+and that we do not get e.g. floating point errors when summing, since we are dealing with very small numbers.
 
 We compute $\mu_4$ as $\mu_4 = \bb{E}[Z^4] = \bb{E}[(\frac{X}{\sigma})^4] = \frac{1}{\sigma^4}\bb{E}[X^4]$.
+In table \ref{z4 values} we show the value of $\mu_4$ and $\mu_4 - 3$ rounded at 25 and 39 decimal points, respectively, for all three Hawk degrees.
 
 \begin{table}[H]
     \centering
     \caption{Measure of $\mu_4$}
-    % \label{tab:hawk-parameters}
-    \begin{tabular}{lcccc}
+    \label{z4 values}
+    \begin{tabular}{lcc}
         \toprule
-        \textbf{Degree} & $\mu_4$ & $(\mu_4 - 3)$\\
+        \textbf{Degree} & $\bb{E}[Z^4]$ & $\bb{E}[Z^4] - 3$ \\
         \midrule
-        256 & 2.9999... & \\
-        512 & 2.9999... \\
-        1024 & 2.999... \\
+        256 & 2.9999999999999790015752619 & -2.0998424738064930232320331 $\cdot 10^{-14}$ \\
+        \midrule
+        512 & 2.9999999999999999999862684 & -1.3731593731486976093589903 $\cdot 10^{-20}$ \\
+        \midrule
+        1024 & 2.999999999999999999987558 & -1.2441396421557256288414318 $\cdot 10^{-20}$ \\
         \bottomrule
     \end{tabular}
 \end{table}

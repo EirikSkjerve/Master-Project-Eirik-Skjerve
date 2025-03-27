@@ -1,3 +1,4 @@
+
 \newcommand{\PP}[2][]{\mathcal{P}_{#1}(\mat{#2})}
 \newcommand{\mat}[1]{\mathbf{#1}}
 \renewcommand{\vec}[1]{\mathbf{#1}}
@@ -12,10 +13,12 @@
 
 \chapter{Introduction}
 \section{Context and motivation}
-Digital signatures are an integral part of secure communication today. They enable a receiver of a digital message to mathematically verify the sender is who they say they are. 
+Digital signatures are an integral part of secure communication today, as they enable communicating parties to mathematically verify that each party is indeed who they say they are,
+and that messages communicated between them have not been changed during transit. 
 The widely used \gls{dsa} and the \gls{rsa} 
-signature scheme are in peril due to the potential emergence of quantum computers which can break the hard problems \gls{dsa} and \gls{rsa}-sign are based upon.
-Whether practical quantum computers with these powers will emerge any time soon is debatable. However, measures against the looming threat has already begun. 
+signature scheme are in peril due to the potential emergence of quantum computers which can easily solve the hard problems \gls{dsa} and \gls{rsa}-sign are based upon.
+
+Whether practical quantum computers with these powers will emerge any time soon is debatable. Nevertheless, measures against the looming threat has already begun. 
 In 2016, the \gls{nist} announced a process for selecting new standard schemes for \gls{kems} and 
 digital signatures that are resilient against quantum attacks (https://www.nist.gov/pqcrypto). Many of the submissions to this process, including KRYSTALS-Dilithium which is to be standardized, 
 are based on lattice problems that are believed to be hard to solve for both classical and quantum computers.
@@ -24,19 +27,19 @@ Asymmetric cryptographic schemes based on lattice problems are not an entirely n
 is a digital signature scheme based upon the hardness of solving the \gls{cvp} \cite{ENCYCLOPEDIA}.
 The original scheme was broken by Phong. Q. Nguyen \& Oded Regev in 2006 \cite{NR09}; not by solving the \gls{cvp}, but by observing that each signature leaks some information about the secret key.
 The title of their paper and the name of the attack is \textit{Learning a Parallelepiped}, and the problem to solve in this attack will henceforth be denoted as the \gls{hpp}. % as one tries to \textit{learn} a parallelepiped.
-Countermeasures for this attack was proposed, but ultimately broken again in 2012 due to a more advanced extension of the original attack \cite{DN12}. \todo{Not quite sure about this}
+Countermeasures in light of this attack were proposed, but these countermeasures were attacked in 2012 by a more advanced extension of the original attack \cite{DN12}. \todo{Formulate more exactly what zonotope method does}
 
 Hawk \cite{HawkSpec24} is a digital signature scheme submitted to NIST's standardization process and is a viable candidate for standardization
 due to its speed and small signature- and keysizes. It is also a lattice-based signature scheme akin to NTRU-sign, but with some significant changes, and a different underlying hard problem on which its security is based upon. 
-This thesis will investigate if the \textit{Learning a Parallelepiped} attack can be modified and aimed at Hawk to retrieve information about the secret key, and ultimately break the scheme.
+This thesis will investigate if the \textit{Learning a Parallelepiped} attack can be modified and aimed at Hawk to retrieve information about the secret key, and possibly break the scheme.
 
 \section{Objectives}
 The objective of this thesis consists of two main parts:
 \begin{itemize}
-    \item \textbf{Implementation of Hawk in Rust}. As the first part of this thesis I implement the Hawk digital signature scheme according to \cite{HawkSpec24} in the Rust programming language.
+    \item \textbf{Implementation of Hawk in Rust}. As the first part of this thesis I implement the Hawk digital signature scheme according to the Hawk specification paper \cite{HawkSpec24} in the Rust programming language.
         \footnote{Disclaimer: this implementation is not meant to be comparable with the Hawk teams implementation for real life usage, as it is not highly optimized and not all formal requirements are met.}
-    Implementing a scheme and its algorithms is a good way to more deeply learn how it works. I chose to do the implementation in Rust for the sake of becoming more adept at this programming language as a personal bonus objective of the thesis.
-    Moreover, having ones own implementation of a scheme makes it easier to experiment on, run simulations with, adjust, and modify it to ones need. It would in any case be challenging to understand and work with dense, long, 
+    Implementing a scheme and its algorithms is a good way to more deeply learn how it works. I chose to do the implementation in Rust for the sake of becoming more adept at this particular programming language as a personal bonus objective of the thesis.
+    Moreover, having ones own implementation of a scheme makes it easier to experiment on, run simulations with, adjust, and modify to ones need. It would in any case be challenging to understand and work with dense, long, 
     and complicated source code someone else has written. For the Hawk teams source code in C and a reference implementation in Python see https://github.com/hawk-sign.
 
 
@@ -48,6 +51,9 @@ Chapter 2 will introduce important notions and mathematical background used in t
 In Chapter 4 the cryptanalysis of Hawk is presented. The final chapter will discuss results and future work.
 
 \section{Scope and Limitations}
+Even though quantum computing and quantum algorithms like Shor's algorithm is the main reason lattice based cryptography is being developed, nothing related 
+to quantum computing will be considered in this thesis, as all computations, algorithms, analyses and attacks are done in the domain of classical computing.
+
 Hawk has three different parameter sets, where one is a so-called "Challenge" parameter. This will mainly be the target for our cryptanalysis.
 
 \section{Detailed tentative roadmap}
