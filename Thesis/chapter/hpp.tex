@@ -153,7 +153,7 @@ The key observation is that by minimizing $mom_{4, \mat{C}(\vec{w})}$ one has to
 $ \mathlarger{-\frac{2}{15}\sum_{i=1}^{n}} \langle c_i, \vec{w} \rangle ^4$. Since $c_i$ and $\vec{w}$ are both on the unit circle, and
 all $c_i$ are orthogonal to each other, the term is maximized whenever $\vec{w} = c_i$ since $\langle c_i, \pm c_i \rangle = \langle \vec{w}, \pm \vec{w} \rangle = 1$.
 Using this observation, we can run a gradient descent to minimize $mom_{4, \mat{C}}(\vec{w})$ and find rows of $\pm \mat{C}$.
-A simple gradient descent is described in the following algorithm:
+A simple gradient descent in this setting is described in the following algorithm:
 
 \begin{algorithm}
 \caption{Gradient descent}
@@ -173,7 +173,11 @@ A simple gradient descent is described in the following algorithm:
 \end{algorithmic}
 \end{algorithm}
 This procedure is repeated until all rows of $\pm \mat{C}$ is found. Each row is transformed by $\mat{L}^{-1}$ to get the row in $ \pm \mat{V}$.
-\todo{Should here acknowledge the computational impossibility of computing $n!$ possible candidates}
+
+If all rows of $\mat{C}$ are independent of each other, one has to find the correct combination of the rows that constitutes $\mat{C}$. This requires at most $2 \cdot n!$ attempts, which quickly becomes an impossibly large number as $n$ grows. 
+The secret key of the prey for the HPP-attack, NTRU-sign, however, does not have independent rows. In fact, finding any one row of $\mat{C}$ reveals the remaining rows with a polynomial number of different combinations.
+As we will show, this is in part also the case for Hawk.
+
 \section{HPP against the Normal Distribution}
 
 Assume now that the signatures on the form $\vec{v} = \vec{x} \mat{V}$ where $x_i \sim \normdist{0}{\sigma}$. After converting $\PP{V}$ to $\PP{C}$, 
@@ -223,18 +227,30 @@ the fourth moment of $\PP{C}$ is constant over $\vec{w}$ on the unit circle.
         mom_{4, \mat{C}}(\vec{w}) = 3\sigma^4 (\lVert \vec{w} \rVert ^2 ) ^2 = 3 \sigma ^4
     \]
 
-    Since $mom_{4, \mat{C}}(\vec{w})$ is constant for $\vec{w}$ on the unit sphere regardless of $\sigma^2$, the term no longer depends on the secret matrix $\mat{C}$ and the attack will not work.
+    Since $mom_{4, \mat{C}}(\vec{w})$ is constant for $\vec{w}$ on the unit sphere (depending only on $\sigma$), the term no longer depends on the secret matrix $\mat{C}$ and the attack will not work.
 
     \begin{figure}[H]
     \centering
-    \begin{minipage}{0.45\textwidth}
+    % \begin{minipage}{0.45\textwidth}
         \centering
         \includegraphics[width=0.9\textwidth]{hpp_parallelepiped_normal.png} % first figure itself
-        \caption{Hidden parallelepiped problem in dimension 2 for normal distribution}
-    \end{minipage}\hfill
-    \begin{minipage}{0.45\textwidth}
+        \caption{HPP in dimension 2 for normal distribution}
+        \medskip 
+    % \end{minipage}\hfill
+\end{figure}
+\begin{figure}[H]
+    % \begin{minipage}{0.45\textwidth}
         \centering
         \includegraphics[width=0.9\textwidth]{hpp_normal_cube.png} % second figure itself
         \caption{Hidden hypercube problem in dimension 2 for normal distribution}
-    \end{minipage}
+        \medskip 
+    % \end{minipage}
 \end{figure}
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[scale=0.5]{hpp_parallelepiped_normal_discrete.png}
+%     \caption{Hidden parallelepiped in dimension 2 for discrete Gaussian distribution ($\sigma = 2.02$)}
+% 	% \hspace*{15pt}\hbox{\scriptsize Credit: Acme company makes everything \url{https://acme.com/}}
+%     \label{parallelepiped_normal_discrete}
+% \end{figure}
+

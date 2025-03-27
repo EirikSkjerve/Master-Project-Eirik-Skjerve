@@ -53,9 +53,10 @@ Cryptanalysis is the study of analyzing and breaking cryptographic systems, and 
 By analyzing a system and exposing potential flaws and weaknesses, the designers of such as system can make suitable changes to (or even discard) it to further 
 increase its security against adversaries with malicious intent, or altogether avoid the release of an insecure piece of technology.
 
-The notion of a cryptanalytic \textit{attack} refers to an attempt of retrieving secret information from an instance of a cryptographic scheme.
-This can be either attempting to recover parts of, or the entire, secret key, observe some information about the encrypted message, or somehow produce 
-some information as if one possesses the secret key. Generally, if any degree of the mentioned points is possible for a scheme, the scheme should be considered insecure, and the attack successful.
+The notion of a cryptanalytic \textit{attack} refers to a methodical attempt of retrieving secret information from an instance of a cryptographic scheme.
+This can be either attempting to recover parts of, or the entire, secret key, deduce some information about an encrypted message, or somehow produce 
+some information (e.g. creating a valid digital signature) as if one possesses the secret key. Generally, if any degree of the mentioned points is possible for a scheme, 
+the scheme should be considered insecure (or broken), and the attack can be considered successful.
 
 An important consideration when designing and analyzing the security of an asymmetric crypto-system, is that a scheme is generally only as strong as its weakest part. \todo{Maybe find some direct source for this?}
 What this means in practice is that even if the scheme is based on a provably hard problem, there may be other components of the scheme that renders it unsafe.

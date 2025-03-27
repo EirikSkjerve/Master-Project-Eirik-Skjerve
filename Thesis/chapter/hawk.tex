@@ -178,8 +178,8 @@ The Probability Density Function (PDF) of $\dgd_{2\bb{Z} + c, \sigma }$ is defin
 For $z \geq 0$ we define the function $P_c(z) = \text{Pr}[ |X| \geq z ]$ when $X \sim \dgd_{2\bb{Z}+c, \sigma}$.
 Using this function for $c \in \{0, 1\}$, one computes two Cumulative Distribution Tables (CDT) $T_0$ and $T_1$
 such that $T_0[k] = P_0(2+2k)$ and $T_1[k] = P_1(3+2k)$ where $T_c[k]$ denotes the $k$-th index in the table.
-In practice, to avoid using floating point numbers, the entries in the table is scaled by $2^{78}$ such that 
-entries are integers with a high enough precision. For this overview, however, we only consider the unscaled version.
+In practice, to avoid using floating point numbers, the entries in the table are scaled by $2^{78}$ such that 
+entries are integers with a high enough precision. For this overview and later theoretical analysis, however, we only consider the unscaled version.
 Using the tables, we can define a procedure $\mathsf{sample}$ given by the following algorithm:
 
 \begin{algorithm}[H]\label{sample}
