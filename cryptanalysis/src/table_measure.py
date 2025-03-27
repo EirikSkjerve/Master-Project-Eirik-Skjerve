@@ -1,4 +1,3 @@
-
 Hawk256_T0 = [
     0x26B871FBD58485D45050,
     0x07C054114F1DC2FA7AC9,
@@ -105,10 +104,10 @@ from collections import Counter
 import numpy as np
 from decimal import Decimal, getcontext
 import math
-
+from mpl_toolkits.mplot3d import Axes3D
 
 def rho(x, sigma):
-    return math.e**(-(x**2)/(2*(sigma**2)))
+    return math.e ** (-(x**2) / (2 * (sigma**2)))
 
 
 def pr(x, sigma):
@@ -133,7 +132,7 @@ def sample(c):
         if z == len(T):
             break
 
-    v = 2*v + c
+    v = 2 * v + c
     if q < 0:
         v = -v
     return v
@@ -154,7 +153,7 @@ def barchart(x):
 
     # Extract values for plotting
     x_values = list(freqs.keys())
-    y_values = [x/num_samples for x in list(freqs.values())]
+    y_values = [x / num_samples for x in list(freqs.values())]
     print(sum(y_values))
 
     # Plot the bar chart
@@ -173,11 +172,12 @@ def barchart(x):
 
 def scatterplot():
     num_samples = 100000
-    V = np.array([[3, 1],
-             [2, 2]])
+    V = np.array([[3, 1], [2, 2]])
 
     l = np.linalg.cholesky(np.linalg.inv(V.T @ V))
     C = l.T @ V.T
+    # C = np.array([[1, 0],
+    #              [0, 1]])
     print(V)
     print(C)
     ws = []
@@ -192,17 +192,121 @@ def scatterplot():
     x = points[:, 0]
     y = points[:, 1]
 
-    plt.scatter(x, y)
+    v1 = C[0, :]  # First column
+    v2 = C[1, :]  # Second column
+
+    # u = np.array([0.8944, 0.4472])
+    # u /= np.linalg.norm(u)
+    # print(np.mean(((points / 2.02) @ u)**4))
+
+    plt.scatter(x, y, color="black", s=0.1, label='transformed signature sample')
+
+    plt.arrow(
+        0,
+        0,
+        v1[0],
+        v1[1],
+        head_width=0.1,
+        width=0.05,
+        length_includes_head=True,
+        color="red",
+    )
+
+    plt.arrow(
+        0,
+        0,
+        v2[0],
+        v2[1],
+        head_width=0.1,
+        width=0.05,
+        length_includes_head=True,
+        color="blue",
+    )
 
     # Optionally, add labels and title
     plt.xlabel("X")
     plt.ylabel("Y")
-    plt.title("Scatter Plot of 2D Points")
+    # Legg til et kjapt lite “hack” for å vise ‘label’ i legend
+    # ved å “tegne” en usynlig linje og kalle den 'label'
+    plt.plot([], [], "r-", label="C column 1")
+    plt.plot([], [], "b-", label="C column 2")
+    plt.legend()
+
+    plt.axis('equal')
 
     plt.grid(True)
     # Show the plot
     plt.show()
 
+
+def scatterplot_3d():
+    num_samples = 10000
+
+    # Example 3x3 matrix (adapt as needed)
+    V = np.array([
+        [3, 1, 1],
+        [2, 2, 1],
+        [1, 1, 3]
+    ])
+
+    # Cholesky-based transformation, analogous to your 2D code
+    L = np.linalg.cholesky(np.linalg.inv(V.T @ V))
+    C = L.T @ V.T
+
+    # Store transformed points
+    cs = []
+
+    for _ in range(num_samples):
+        # Example: pick a random [0 or 1] for each dimension
+        # Replace this with your own 3D sample_vector() if preferred
+        t = [random.randint(0, 1),
+             random.randint(0, 1),
+             random.randint(0, 1)]
+        x = sample_vector(t)
+
+        cs.append(C.T @ x)  # 3D transformed point
+
+    points = np.array(cs)
+    x_vals = points[:, 0]
+    y_vals = points[:, 1]
+    z_vals = points[:, 2]
+
+    # Extract vectors from C
+    v1 = C[0, :]
+    v2 = C[1, :]
+    v3 = C[2, :]
+
+    # Create a 3D plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Plot the scatter of points
+    ax.scatter(x_vals, y_vals, z_vals, color="black", s=0.1)
+
+    # Draw the three vectors as arrows
+    ax.quiver(
+        0, 0, 0, 
+        v1[0], v1[1], v1[2],
+        length=1, color='red'
+    )
+    ax.quiver(
+        0, 0, 0, 
+        v2[0], v2[1], v2[2],
+        length=1, color='blue'
+    )
+    ax.quiver(
+        0, 0, 0, 
+        v3[0], v3[1], v3[2],
+        length=1, color='green'
+    )
+
+    # Label axes
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_zlabel("Z")
+
+    plt.title("3D Scatter Plot Example")
+    plt.show()
 
 getcontext().prec = 1000
 
@@ -235,29 +339,30 @@ def pdf(x, n):
             T = T1
 
     if abs(x) == 0:
-        return Decimal(1/2)*Decimal(1 - T[0])
+        return Decimal(1 / 2) * Decimal(1 - T[0])
 
     if abs(x) == 1:
-        return Decimal(1/4)*Decimal(1 - T[0])
+        return Decimal(1 / 4) * Decimal(1 - T[0])
 
-    if abs(x)-c == len(T)*2:
-        return Decimal(1/4)*Decimal(T[round(((abs(x)-c)/2)) - 1])
+    if abs(x) - c == len(T) * 2:
+        return Decimal(1 / 4) * Decimal(T[round(((abs(x) - c) / 2)) - 1])
 
-
-    return Decimal(1/4)*Decimal(T[round(((abs(x)-c)/2)) - 1] - T[round((abs(x)-c)/2)])
+    return Decimal(1 / 4) * Decimal(
+        T[round(((abs(x) - c) / 2)) - 1] - T[round((abs(x) - c) / 2)]
+    )
 
 
 def expectation_x(n):
     match n:
         case 256:
-            interval = 2*10 + 1
+            interval = 2 * 10 + 1
         case 512:
-            interval = 2*13 + 1
+            interval = 2 * 13 + 1
         case 1024:
-            interval = 2*13 + 1
+            interval = 2 * 13 + 1
     res = Decimal(0)
     for x in range(-interval, interval + 1):
-        temp = Decimal(x)*pdf(x, n)
+        temp = Decimal(x) * pdf(x, n)
         res += temp
     return res
 
@@ -265,33 +370,33 @@ def expectation_x(n):
 def variance_x(n):
     match n:
         case 256:
-            interval = 2*10 + 1
+            interval = 2 * 10 + 1
         case 512:
-            interval = 2*13 + 1
+            interval = 2 * 13 + 1
         case 1024:
-            interval = 2*13 + 1
+            interval = 2 * 13 + 1
     res = Decimal(0)
     for x in range(-interval, interval + 1):
-        temp = Decimal(x**2)*pdf(x, n)
+        temp = Decimal(x**2) * pdf(x, n)
         res += temp
     return res
 
 
 def sigma_x(n):
-    return variance_x(n)**Decimal(0.5)
+    return variance_x(n) ** Decimal(0.5)
 
 
 def kurtosis_x(n):
     match n:
         case 256:
-            interval = 2*10 + 1
+            interval = 2 * 10 + 1
         case 512:
-            interval = 2*13 + 1
+            interval = 2 * 13 + 1
         case 1024:
-            interval = 2*13 + 1
+            interval = 2 * 13 + 1
     res = Decimal(0)
     for x in range(-interval, interval + 1):
-        temp = Decimal(x**4)*pdf(x, n)
+        temp = Decimal(x**4) * pdf(x, n)
         res += temp
     return res
 
@@ -305,34 +410,33 @@ def variance_z(n):
 
 
 def sigma_z(n):
-    return variance_z(n)**Decimal(0.5)
+    return variance_z(n) ** Decimal(0.5)
 
 
 def kurtosis_z(n, sig4):
-    return kurtosis_x(n)/sig4
+    return kurtosis_x(n) / sig4
 
 
 def mom_k_x(n, k):
     match n:
         case 256:
-            interval = 2*10 + 1
+            interval = 2 * 10 + 1
         case 512:
-            interval = 2*13 + 1
+            interval = 2 * 13 + 1
         case 1024:
-            interval = 2*13 + 1
+            interval = 2 * 13 + 1
     res = Decimal(0)
     for x in range(-interval, interval + 1):
-        temp = Decimal(x**k)*pdf(x, n)
+        temp = Decimal(x**k) * pdf(x, n)
         res += temp
     return res
 
 
 def mom_k_z(n, k, sig_x):
-    return mom_k_x(n, k) / sig_x**Decimal(k)
+    return mom_k_x(n, k) / sig_x ** Decimal(k)
 
 
 if __name__ == "__main__":
-
     exp_x = expectation_x(256)
     sigma_x = sigma_x(256)
     var_x = variance_x(256)
@@ -340,8 +444,9 @@ if __name__ == "__main__":
     exp_z = expectation_z(256)
     sigma_z = sigma_z(256)
     var_z = variance_z(256)
-    kur_z = kurtosis_z(256, sigma_x**Decimal(4))
+    kur_z = kurtosis_z(256, sigma_x ** Decimal(4))
 
+    scatterplot()
     # print(kur_z)
     # print()
     # print(kur_z - Decimal(3))
@@ -349,13 +454,11 @@ if __name__ == "__main__":
     # print(f"\nExp x: {exp_x}\nSigma x: {sigma_x/Decimal(2)}\nVar x: {var_x}\nKur x: {kur_x}")
     # print(f"\nExp z: {exp_z}\nSigma z: {sigma_z}\nVar z: {var_z}\nKur z: {kur_z}")
 
-    
-    num = Decimal(0.68)*(Decimal(96)**Decimal(1/2))
-    den = Decimal(10)**Decimal(-14)
-
-    n = (num/den)**Decimal(2)
-    print(f"Required number of samples: {round(n)}")
-
+    # num = Decimal(0.68)*(Decimal(96)**Decimal(1/2))
+    # den = Decimal(10)**Decimal(-14)
+    #
+    # n = (num/den)**Decimal(2)
+    # print(f"Required number of samples: {round(n)}")
 
     # num_samples = 1000000
     # t = [random.randint(0, 1) for _ in range(num_samples)]

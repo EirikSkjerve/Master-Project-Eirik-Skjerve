@@ -28,9 +28,9 @@ samples = 1000
 for i in range(samples):
     u = random_unit_vector(n)
     # print(np.linalg.norm())
-    if np.sum(u.dot(C)**4) >= 1:
+    if np.sum(u.dot(C) ** 4) >= 1:
         print("Jasså")
-    avg += np.sum(u.dot(C)**4)
+    avg += np.sum(u.dot(C) ** 4)
 
 avg /= samples
 print()
