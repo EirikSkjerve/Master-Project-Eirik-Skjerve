@@ -263,6 +263,164 @@ pub fn hawksign(
     }
 }
 
+pub fn hawksign_total_h(
+    privkey: &(Vec<u8>, Vec<i64>, Vec<i64>),
+    msg: &[u8],
+    n: usize,
+) -> (Vec<i64>, Vec<i64>, Vec<i64>) {
+    //
+    // given secret key components and message, compute a signature
+    // unlike specification, return the entire w as signature
+    // so that one does not need to use "rebuild" function to get entire w
+
+    let (kgseed, bigf, bigg) = privkey;
+
+    assert_eq!(bigf.len(), n);
+    assert_eq!(bigg.len(), n);
+
+    // get the right parameters
+    let (lensalt, sigmaverify) = match n {
+        256 => (hawk256_params::LENSALT, hawk256_params::SIGMAVERIFY),
+        512 => (hawk512_params::LENSALT, hawk512_params::SIGMAVERIFY),
+        1024 => (hawk1024_params::LENSALT, hawk1024_params::SIGMAVERIFY),
+        _ => (hawk256_params::LENSALT, hawk256_params::SIGMAVERIFY),
+    };
+
+    // create new rng
+    let mut rng = RngContext::new(&get_random_bytes(10));
+
+    // regenerate part of secret key
+    let (f, g) = gen_f_g(&kgseed, n);
+
+    // compute hash of message
+    let mut shaker = Shake256::default();
+    shaker.update(msg);
+
+    // fixed size hash digest buffer
+    let mut m: [u8; 64] = [0; 64];
+
+    // compute digest in m and reset the shaker instance
+    shaker.finalize_xof_reset_into(&mut m);
+
+    // counter variable that helps make unique salts
+    let mut a: usize = 0;
+
+    // prime used for ntt computations
+    let p = (1 << 16) + 1;
+
+    // F and G mod 2
+    let bigf_mod2: Vec<i64> = poly_mod2(&bigf);
+    let bigg_mod2: Vec<i64> = poly_mod2(&bigg);
+
+    // start a loop that terminates when a valid signature is created
+    loop {
+        a += 2;
+
+        // compute salt
+        shaker.update(&m);
+        shaker.update(&kgseed);
+        shaker.update(&a.to_ne_bytes());
+        shaker.update(&rng.random(14));
+
+        // create salt buffer with length from parameter
+        let mut salt: Vec<u8> = vec![0; lensalt];
+        // create salt digest
+        shaker.finalize_xof_reset_into(&mut salt);
+
+        // create buffer for vector h whose length depends on degree n
+        let mut h: Vec<u8> = vec![0; n / 4];
+
+        // digest h is digest of message+salt
+        shaker.update(&m);
+        shaker.update(&salt);
+
+        // compute digest
+        shaker.finalize_xof_reset_into(&mut h);
+
+        // convert digest h to usable polynomials
+        // println!("Before bytes_to_poly: {:?}", h);
+        let (h0, h1) = (
+            &bytes_to_poly(&h[0..n / 8], n),
+            &bytes_to_poly(&h[n / 8..n / 4], n),
+        );
+        // println!("After bytes_to_poly: {:?}, \n{:?}", h0, h1);
+
+        // compute target vector t as B*h mod 2
+        let t0 = poly_add(
+            &poly_mult_ntt(&h0, &f, p),
+            &poly_mult_ntt(&h1, &bigf_mod2, p),
+        );
+
+        let t1 = poly_add(
+            &poly_mult_ntt(&h0, &g, p),
+            &poly_mult_ntt(&h1, &bigg_mod2, p),
+        );
+
+        // join t0 and t1 together as Vec<u8>
+        let t = concat_bytes(&vec![
+            poly_mod2(&t0).iter().map(|&x| x as u8).collect(),
+            poly_mod2(&t1).iter().map(|&x| x as u8).collect(),
+        ]);
+
+        // for testing purposes compute 2d
+        let bh0 = poly_add(
+            &poly_mult_ntt(&h0, &f, p),
+            &poly_mult_ntt(&h1, &bigf, p),
+        );
+
+        let bh1 = poly_add(
+            &poly_mult_ntt(&h0, &g, p),
+            &poly_mult_ntt(&h1, &bigg, p),
+        );
+
+        let mut bh = bh0.clone();
+        bh.append(&mut bh1.clone());
+        let d = poly_sub(&t.iter().map(|&x| x as i64).collect(), &bh).iter().map(|&x| x/2).collect();
+
+        // create seed for sampling of vector x
+        // M || kgseed || a+1 || rnd(320)
+        // here 320 bits <=> 80 bytes
+        let s = concat_bytes(&vec![
+            m.to_vec(),
+            kgseed.to_vec(),
+            (a + 1).to_ne_bytes().to_vec(),
+            rng.random(80).to_vec(),
+        ]);
+
+        // sample vector x = (x0, x1)
+        let x = sample(&s, t, n);
+
+        // split x into two vectors
+        let (x0, x1) = (&x[0..n].to_vec(), &x[n..].to_vec());
+
+        // check norm of vector x is not too high
+        // bounded by 8n*(sigma^2)
+        if (l2norm(&x) as f64) > (8 * n) as f64 * sigmaverify.powi(2) {
+            continue;
+        }
+
+        // compute one part of the signature
+        // w = B^-1 x, so w1 = g*x0 - f*x1
+        let mut w0 = poly_sub(&poly_mult_ntt(&bigg, &x0, p), &poly_mult_ntt(&bigf, &x1, p));
+        let mut w1 = poly_sub(&poly_mult_ntt(&f, &x1, p), &poly_mult_ntt(&g, &x0, p));
+
+        // check symbreak condition
+        if !symbreak(&w1) {
+            w0 = w0.iter().map(|&x| -x).collect();
+            w1 = w1.iter().map(|&x| -x).collect();
+        }
+
+        // in this version, return only w, not s=(h-w)/2
+        let mut w = w0.clone();
+        w.append(&mut w1.clone());
+
+        let mut h = h0.clone();
+        h.append(&mut h1.clone());
+
+        return (w, h, d);
+    }
+}
+
 pub fn hawksign_total(
     privkey: &(Vec<u8>, Vec<i64>, Vec<i64>),
     msg: &[u8],

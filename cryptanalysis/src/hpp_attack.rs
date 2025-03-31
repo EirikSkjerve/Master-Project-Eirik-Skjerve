@@ -85,6 +85,8 @@ pub fn run_hpp_attack(t: usize, n: usize) {
     println!("Var:  {}", variance);
     println!("Kur:  {}", kurtosis);
 
+    return;
+
     // STEP 2: Gradient Descent:
     // The final and main step is to do gradient descent on our (converted) samples to minimize the
     // fourth moment, and consequently reveal a row/column from +/- B
@@ -287,6 +289,7 @@ fn generate_samples_and_keys(
     } else {
         println!("{t}vectors_deg{degree}.bin does not exist");
     }
+
     let (signatures, privkey, pubkey) = match file_exists {
         false => collect_signatures_par(t, degree, false).unwrap(),
         true => read_vectors_from_file(&format!("{t}vectors_deg{degree}")).unwrap(),

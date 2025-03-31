@@ -132,7 +132,7 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
 
     // sample x-vectors in parallel
     (0..t).into_par_iter().for_each(|i| {
-        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(50), n, true);
+        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(50), n, false);
         temp.clone().into_iter().for_each(|x| {
             let mut freq_map = frequencies.lock().unwrap();
             *freq_map.entry(x).or_insert(0.0) += 1.0;
@@ -161,9 +161,9 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
     };
 
     // Print sorted relative frequencies
-    for (key, value) in sorted_frequencies {
-        println!("{}: {:.10}", key, value);
-    }
+    // for (key, value) in sorted_frequencies {
+    //     println!("{}: {:.10}", key, value);
+    // }
 
     let mu = *mu.lock().unwrap() / (2*t*n) as f64;
 
@@ -180,7 +180,7 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
 
     // sample x-vectors in parallel
     (0..t).into_par_iter().for_each(|i| {
-        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(50), n, true);
+        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(50), n, false);
         // possibly subtract mu from x
         let tempvar: f64 = temp.iter().map(|&x| (x as f64 - mu).powi(2)).sum();
 
@@ -211,7 +211,7 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
 
     // sample x-vectors in parallel
     (0..t).into_par_iter().for_each(|_| {
-        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(50), n, true);
+        let temp: Vec<i64> = hawksign_x_only(&privkey, &get_random_bytes(50), n, false);
 
         let (tempvar, tempkur): (f64, f64) = temp
             .iter()

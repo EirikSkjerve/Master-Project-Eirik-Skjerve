@@ -9,10 +9,20 @@ In section 4.3, we explain the procedure to transform the hidden parallelepiped 
 Section 4.4 will cover the main part of the attack, namely the gradient descent, which will in many ways be similar to the original attack.
 Lastly, section 4.5 will present the complete practical method and give details about its implementation.
 
-\section{Redefining the HPP problem statement}
-\todo{Maybe 'statement' is not quite the correct word??}
+\section{Redefining the problem}
 
-We now redefine the structure of the HPP to match that of Hawk.
+We now redefine the hidden parallelepiped problem in the Hawk setting.
+Recall in HPP that one observes $\vec{v} = \mat{V} \vec{x}$. In the Hawk setting, the observed signature is $\vec{w} = \mat{B}^{-1} \vec{x}$. 
+The problem now becomes: \\
+Given signature samples on the form $\vec{w} = \mat{B}^{-1} \vec{x}$ where only $\vec{w}$ is known, $\mat{B}$ is a Hawk private key and $\vec{x}$ is distributed according to the discrete Gaussian Distribution $\dgd_{2\bb{Z}^{2n} + \vec{t}, \sigma}$,
+recover columns of $\mat{B}$.
+The general steps in Hawk setting will be similar to that of the original HPP:
+\begin{itemize}
+    \item Compute Covariance Matrix $(\mat{B}^{-1})^T (\mat{B}^{-1})$
+    \item Transform the samples $\vec{w} \in \PP{\mat{B}^{-1}}$ to $\vec{c} \in \PP{C}$ where $\mat{C}$ is orthonormal
+    \item Deduce columns of $\mat{C}$ doing gradient descent of minimizing the 4th moment of one-dimensional projections of $\PP{C}$
+\end{itemize}
+
 
 Assume observed signatures on the form $\vec{c} = \mat{C} \vec{z}$ where $\mat{C}$ is orthonormal (columns are unit vectors and pairwise orthogonal). 
 Note that in this section we denote by $\vec{u}$ a vector on the unit sphere $\bb{R}^{2n}$ instead of $\vec{w}$ as in the previous section, to avoid confusion with the Hawk notation for $\vec{w} = \mat{B}^{-1} \vec{x}$.

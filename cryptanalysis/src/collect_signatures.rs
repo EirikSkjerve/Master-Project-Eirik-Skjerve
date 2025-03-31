@@ -1,5 +1,5 @@
 use hawklib::hawkkeygen::{gen_f_g, hawkkeygen};
-use hawklib::hawksign::hawksign_total;
+use hawklib::hawksign::{hawksign_total, hawksign_total_h};
 use hawklib::utils::rot_key;
 
 use crate::file_utils::{read_vectors_from_file, write_vectors_to_file};
@@ -17,7 +17,7 @@ use rayon::prelude::*;
 use peak_alloc::PeakAlloc;
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
-fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
+pub fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
     // return num_bytes random bytes in a Vec<u8>
     //
     // example: get_random_bytes(4) -> vec![100,200,33,99]
@@ -32,7 +32,11 @@ fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
     res
 }
 
-pub fn collect_signatures(t: usize, n: usize) {
+pub fn collect_signatures_wh(t: usize, n: usize) -> 
+    ((Vec<Vec<i16>>, Vec<Vec<i16>>),
+    (Vec<u8>, Vec<i64>, Vec<i64>),
+    (Vec<i64>, Vec<i64>))
+{
     // create t signatures with hawk degree n and store them in file
 
     println!("Collecting {t} signatures of Hawk degree {n}");
@@ -52,23 +56,33 @@ pub fn collect_signatures(t: usize, n: usize) {
     );
     // create collection of t signatures corresponding to the above messages
     println!("Generating {t} signatures...");
-    let mut signatures: Vec<Vec<i16>> = Vec::with_capacity(t);
-    for i in 0..t {
-        // sign each message
-        // now each signature is on the form w = B^-1 * x
-        // convert to Vec<i16> to save a lot of memory
-        let sig: Vec<i16> = hawksign_total(&privkey, &get_random_bytes(100), n)
-            .iter()
-            .map(|&x| x as i16)
-            .collect();
-        signatures.push(sig);
+    let mut ws: Arc<Mutex<Vec<Vec<i16>>>> = Arc::new(Mutex::new(Vec::with_capacity(t)));
+    let mut hs: Arc<Mutex<Vec<Vec<i16>>>> = Arc::new(Mutex::new(Vec::with_capacity(t)));
+
+    (0..t).into_par_iter().for_each(|x| {
+
+        let (w, h, _) = hawksign_total_h(&privkey, &get_random_bytes(100), n);
+        let w: Vec<i16>  = w.iter().map(|&x| x as i16).collect();
+        let h: Vec<i16>  = h.iter().map(|&x| x as i16).collect();
+
+        ws.lock().unwrap().push(w);
+        hs.lock().unwrap().push(h);
 
         pb.inc(1);
-    }
+    });
 
     pb.finish_with_message("Completed");
-    write_vectors_to_file(signatures, privkey, pubkey, &filename);
-    println!("\nWritten signatures to {}", filename);
+
+    let ws = Arc::try_unwrap(ws)
+        .expect("Could not unpack..")
+        .into_inner()
+        .unwrap();
+    let hs = Arc::try_unwrap(hs)
+        .expect("Could not unpack..")
+        .into_inner()
+        .unwrap();
+
+    ((ws, hs), privkey, pubkey)
 }
 
 pub fn collect_signatures_par(

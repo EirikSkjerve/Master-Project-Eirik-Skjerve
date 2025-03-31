@@ -436,17 +436,79 @@ def mom_k_z(n, k, sig_x):
     return mom_k_x(n, k) / sig_x ** Decimal(k)
 
 
-if __name__ == "__main__":
-    exp_x = expectation_x(256)
-    sigma_x = sigma_x(256)
-    var_x = variance_x(256)
-    kur_x = kurtosis_x(256)
-    exp_z = expectation_z(256)
-    sigma_z = sigma_z(256)
-    var_z = variance_z(256)
-    kur_z = kurtosis_z(256, sigma_x ** Decimal(4))
+def norm_mom_k(k):
+    import math
+    if k % 2 == 1:
+        return 0
 
-    scatterplot()
+    return (2**(-k/2)) * (math.factorial(k) / (math.factorial(round(k/2))))
+
+
+def pr_y_only(k, n):
+    return pdf(2*k, n) + pdf((2*k) + 1, n)
+
+
+def exp_y(n):
+    exp = 0
+    for i in range(-10, 11):
+        exp += i*pr_y_only(i, 256)
+
+    return exp
+
+
+def var_y(n):
+    var = 0
+    for i in range(-10, 11):
+        var += (i**2)*pr_y_only(i, 256)
+
+    return var
+
+
+def sig_y(n):
+    return math.sqrt(var_y(n))
+
+def kur_y(n):
+    kur = 0
+    for i in range(-10, 11):
+        kur += (i**4)*pr_y_only(i, 256)
+
+    return kur
+
+if __name__ == "__main__":
+
+    n = 256
+
+    exp_x = expectation_x(n)
+    sigma_x = sigma_x(n)
+    var_x = variance_x(n)
+    kur_x = kurtosis_x(n)
+    exp_z = expectation_z(n)
+    sigma_z = sigma_z(n)
+    var_z = variance_z(n)
+    kur_z = kurtosis_z(n, sigma_x ** Decimal(4))
+
+    random_mom = mom_k_z(n, 20, sigma_x)
+    # print(random_mom)
+    # print(norm_mom_k(20))
+
+    sum = 0
+    for i in range(-10, 11):
+        sum += pr_y_only(i, n)
+
+    print(sum)
+
+    expy = exp_y(n)
+    vary = var_y(n)
+    sigy = sig_y(n)
+    kury = kur_y(n)
+
+    print(f"E[y] = {expy}")
+    print(f"E[y^2] = {vary}")
+    print(f"Sigma = {sigy}")
+    print(f"E[y^4] = {kury}")
+    print(kury / (vary**2))
+
+    # scatterplot()
     # print(kur_z)
     # print()
     # print(kur_z - Decimal(3))
@@ -454,10 +516,10 @@ if __name__ == "__main__":
     # print(f"\nExp x: {exp_x}\nSigma x: {sigma_x/Decimal(2)}\nVar x: {var_x}\nKur x: {kur_x}")
     # print(f"\nExp z: {exp_z}\nSigma z: {sigma_z}\nVar z: {var_z}\nKur z: {kur_z}")
 
-    # num = Decimal(0.68)*(Decimal(96)**Decimal(1/2))
-    # den = Decimal(10)**Decimal(-14)
+    # num = (Decimal(0.68)**Decimal(2)) * Decimal(96)
+    # den = (Decimal(10)**Decimal(-14))**Decimal(2)
     #
-    # n = (num/den)**Decimal(2)
+    # n = (num/den)
     # print(f"Required number of samples: {round(n)}")
 
     # num_samples = 1000000

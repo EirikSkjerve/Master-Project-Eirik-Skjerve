@@ -1,0 +1,44 @@
+\chapter{Alternative method}
+
+We have established that the direct method of observing $\vec{w} = \mat{B}^{-1} \vec{x}$ will not lead to a successful attack.
+We now try an alternative method.
+
+Consider in Hawk signature generation as described in section 3.
+The secret vector $\vec{x}$ is sampled from $\dgd_{2\bb{Z}^{2n} + \vec{t}, \sigma}$.
+Since $\vec{t}$ is defined as $\mat{B}\vec{h}\mod 2$ (entrywise reduction$\mod 2$), we can rewrite $\vec{t}$ as $\vec{t} = \mat{B} \vec{h} + 2 \cdot \vec{d}$, 
+for an integer vector $\vec{d}$ such that adding $2 \cdot \vec{d}$ is equivalent to reducing $\mod 2$.
+
+Now, we also consider $\vec{x}$, which can be written as $\vec{x} = \vec{t} + 2 \cdot \vec{y}$ for some integer vector $\vec{y}$.
+
+Then we have the following: \\ 
+$\ \ \ \ \vec{w} = \mat{B}^{-1} \vec{x} = \mat{B}^{-1}(\vec{t} + 2 \cdot \vec{y}) =$ \\
+$\ \ \ \ \mat{B}^{-1}(\mat{B} \vec{h} + 2 \cdot \vec{d} + 2 \cdot \vec{y}) =$ \\
+$\ \ \ \ \vec{h} + 2\cdot \mat{B}^{-1}(\vec{d} + \vec{y}) $\\ 
+$\ \ \ \ \implies \mathlarger{ \frac{\vec{w} - \vec{h}}{2}} = \mat{B}^{-1}(\vec{d} + \vec{y})$
+
+Since both $\vec{w}$ and $\vec{h}$ is available to an attacker, we analyze the distribution of $\vec{x}_1 = (\vec{d} + \vec{y})$.
+If the distribution of $\vec{x}_1$ is far enough away from a perfect Gaussian distribution (which has kurtosis 3), then observing many $\vec{w}_1 = \mathlarger{ \frac{\vec{w} - \vec{h}}{2}} = \mat{B}^{-1} \vec{x}_1$
+might reveal the columns of $\mat{B}^{-1}$.
+
+We note that the distribution of $\vec{y}$ in this case will be related to the discrete Gaussian distribution $\dgd_{\bb{Z}^{2n}, sigma}$, which we have already analyzed.
+
+The next step is then to analyze the distribution that $\vec{d}$ follows. Note that the vector $\vec{h}$, which is originally a hash digest of length $n / 4$ of the message $\vec{m}$ and a salt $\mathsf{salt}$, is converted into
+a binary polynomial of length $2n$. If $\vec{h}$ is perfectly uniformly distributed, then the distribution of $\vec{d}$ depends about 50 \% on the distribution of $\vec{B}$.
+
+Luckily, the distribution of $\vec{y}$ is completely independent of the distribution of $\vec{d}$. \todo{I think this is right, but it should be shown}
+
+Firstly, we need to estimate (most probably experimentally by samples) the distribution that $\vec{d}$ follows.
+We do this experimentally by running the signature generation algorithm, modified in this case to return also $\vec{d} = \mathlarger{\frac{\vec{t}-\mat{B} \vec{h}}{2}}$.
+Note that $\vec{d}$ is not available information for an attacker in real life, and so we only use it now to estimate the distribution $\vec{d}$, not
+in the actual attack. From this we have $2 \cdot n\cdot t$ observed sample points. From such observed points $d_j$ we compute 
+$\mu = \mathlarger{\frac{1}{2nt} \sum_{j = 0}^{2nt}} d_j$ and similarly for its variance $\sigma^2 = \mathlarger{\frac{1}{2nt} \sum_{j = 0}^{2nt}} (d_j - \mu)^2$
+
+The question is, is its distribution possible to estimate, and how many samples do we actually need?
+Experiments show that $\vec{d}$ has an easily observable distribution (one needs few samples) for one fixed key. This is tested by measuring $\mu$ and $\sigma^2$ of independently generated samples with the
+same private key. The results show very close results for $\mu$ and $\sigma^2$ for the same key, even with few samples of $\vec{d}$ (say 100,000).
+
+Now, for different secret keys, the values for $\mu$ and $\sigma^2$ vary quite a lot.
+The hope now is that if we can estimate the distribution of $\vec{y}$, and then observe public signature samples on the form $\vec{w}_1 = \mat{B}^{-1} \vec{x}_1$, we can easily deduce the distribution of $\vec{d}$.
+
+Now on to the distribution of $\vec{y}$. We analyze the tables and algorithm to deduce the distribution.
+We can think that $Pr(y = k) = \frac{1}{2} (Pr(x=2k) + Pr(x = 2k + 1))$.
