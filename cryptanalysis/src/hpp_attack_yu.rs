@@ -36,8 +36,7 @@ static VAR_Y: f64 = 1.1451;
 static SIGMA_Y: f64 = 1.0701;
 pub fn run_hpp_attack_yu(t: usize, n: usize) {
 
-    // measure_d_distribution(t, n);
-    // return;
+    measure_d_distribution(t, n);
 
     println!("Running HPP attack with {t} samples against Hawk{n}");
 
@@ -58,6 +57,10 @@ pub fn run_hpp_attack_yu(t: usize, n: usize) {
         })
         .sum::<f64>()
         / total_num_elements;
+
+    let sigma = variance.sqrt();
+
+    samples /= sigma;
 
     let kurtosis = samples
         .iter()
@@ -127,33 +130,24 @@ pub fn run_hpp_attack_yu(t: usize, n: usize) {
 
         if min < tot_min { tot_min = min}
         if max > tot_max { tot_max = max}
-        // println!(
-        //     "Norm of res from gradient search: {}",
-        //     solution.map(|x| x as f64).norm()
-        // );
-        // println!("Norm of col0: {}", col0.map(|x| x as f64).norm());
-        // println!("Norm of coln: {}", coln.map(|x| x as f64).norm());
         println!("Result not in key... \n");
     }
-    // println!("Avg min: {avg_min} \n Avg max: {avg_max}");
-    // println!("Total min: {tot_min} \nTotal max: {tot_max}");
 }
 
 pub fn measure_d_distribution(t: usize, n: usize) {
 
-    let num_rounds = 10;
-
-    let pb = ProgressBar::new((t*num_rounds) as u64);
-    pb.set_style(
-        ProgressStyle::default_bar()
-            .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({per_sec})")
-            .unwrap()
-            .progress_chars("#>-"),
-    );
-
+    let num_rounds = 1;
     let (privkey, _) = hawkkeygen(n);
+    // println!("{:?}", privkey);
 
     for _ in 0..num_rounds {
+        let pb = ProgressBar::new(2*t as u64);
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({per_sec})")
+                .unwrap()
+                .progress_chars("#>-"),
+        );
         let mut mu = Arc::new(Mutex::new(0.0));
         let mut var = Arc::new(Mutex::new(0.0));
         // println!("Measuring µ...");
@@ -190,18 +184,13 @@ pub fn measure_d_distribution(t: usize, n: usize) {
 fn hypercube_transformation(
     samples: &mut DMatrix<f64>,
     q: DMatrix<f64>,
-    skey: &DMatrix<i32>,
+    skey: &DMatrix<i32>
 ) -> (DMatrix<f64>, DMatrix<f64>) {
     // given samples and and covariance matrix Q, return transformed
     // samples from hidden parallelepiped onto hidden hypercube
     // Also returns the l inverse so we don't have to recompute it later
 
     // get theoretical sigma here for scaling
-    let sigma = match q.nrows() / 2 {
-        256 => 2.0 * 1.001,
-        512 => 2.0 * 1.278,
-        _ => 2.0 * 1.299,
-    };
 
     let start = Instant::now();
 
@@ -221,9 +210,7 @@ fn hypercube_transformation(
     // this method is fast but nalgebra matrix multiplication makes an extra allocation
     // for the matrices involved
     // testing with rounded entries
-    // *samples = (&l.l().transpose() * &*samples).map(|x| x.round());
-    *samples = ((&l.l().transpose() / sigma) * &*samples);
-    // *samples = &l.l().transpose() * &*samples;
+    *samples = (&l.l().transpose()  * &*samples);
 
     // for reference, compute the matrix C
     let c = &l.l().transpose() * skey.map(|x| x as f64);
@@ -304,8 +291,6 @@ fn generate_samples_and_keys(
 
     let (ws, hs) = signatures;
 
-    // println!("{:?}", hs[13]);
-    
     let mut signatures: Vec<Vec<i16>> = Vec::new();
     for i in 0..t {
         let wh_2: Vec<i16> = (0..2*degree).into_iter().map(|j| (ws[i][j] - hs[i][j])/2).collect();
