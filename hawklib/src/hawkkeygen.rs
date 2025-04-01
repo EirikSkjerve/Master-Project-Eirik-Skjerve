@@ -127,7 +127,7 @@ fn hawkkeygen_inner(
     Some((private_key, public_key))
 }
 
-pub fn hawkkeygen(n: usize) -> ((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i64>)) {
+pub fn hawkkeygen(n: usize, seed: Option<Vec<u8>>) -> ((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i64>)) {
     // main function for generating hawk keypair
     // input degree n
     // outputs private key (kgseed, F, G)
@@ -162,7 +162,7 @@ pub fn hawkkeygen(n: usize) -> ((Vec<u8>, Vec<i64>, Vec<i64>), (Vec<i64>, Vec<i6
     };
 
     // initialize a new RngContext instance, used for generating random bits
-    let mut rng = RngContext::new(&get_random_bytes(10));
+    let mut rng = RngContext::new(&seed.unwrap_or(get_random_bytes(100)));
 
     // reset precomputed roots for usage in ntt
     res_z();

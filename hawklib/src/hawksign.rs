@@ -267,7 +267,7 @@ pub fn hawksign_total_h(
     privkey: &(Vec<u8>, Vec<i64>, Vec<i64>),
     msg: &[u8],
     n: usize,
-) -> (Vec<i64>, Vec<i64>, Vec<i64>) {
+) -> (Vec<i64>, Vec<i64>, Vec<i64>, Vec<i64>) {
     //
     // given secret key components and message, compute a signature
     // unlike specification, return the entire w as signature
@@ -338,22 +338,20 @@ pub fn hawksign_total_h(
         shaker.finalize_xof_reset_into(&mut h);
 
         // convert digest h to usable polynomials
-        // println!("Before bytes_to_poly: {:?}", h);
         let (h0, h1) = (
             &bytes_to_poly(&h[0..n / 8], n),
             &bytes_to_poly(&h[n / 8..n / 4], n),
         );
-        // println!("After bytes_to_poly: {:?}, \n{:?}", h0, h1);
 
         // compute target vector t as B*h mod 2
         let t0 = poly_add(
             &poly_mult_ntt(&h0, &f, p),
-            &poly_mult_ntt(&h1, &bigf_mod2, p),
+            &poly_mult_ntt(&h1, &bigf, p),
         );
 
         let t1 = poly_add(
             &poly_mult_ntt(&h0, &g, p),
-            &poly_mult_ntt(&h1, &bigg_mod2, p),
+            &poly_mult_ntt(&h1, &bigg, p),
         );
 
         // join t0 and t1 together as Vec<u8>
@@ -362,20 +360,17 @@ pub fn hawksign_total_h(
             poly_mod2(&t1).iter().map(|&x| x as u8).collect(),
         ]);
 
-        // for testing purposes compute 2d
-        let bh0 = poly_add(
-            &poly_mult_ntt(&h0, &f, p),
-            &poly_mult_ntt(&h1, &bigf, p),
-        );
 
-        let bh1 = poly_add(
-            &poly_mult_ntt(&h0, &g, p),
-            &poly_mult_ntt(&h1, &bigg, p),
-        );
+        let (bh0, bh1) = (t0.clone(), t1.clone());
 
+        // entire Bh vector in one vector
         let mut bh = bh0.clone();
         bh.append(&mut bh1.clone());
-        let d = poly_sub(&t.iter().map(|&x| x as i64).collect(), &bh).iter().map(|&x| x/2).collect();
+
+        // println!("\nBh: {:?}", bh);
+        // println!("t: {:?}", t);
+        
+        // println!("d: {:?}", d);
 
         // create seed for sampling of vector x
         // M || kgseed || a+1 || rnd(320)
@@ -388,8 +383,17 @@ pub fn hawksign_total_h(
         ]);
 
         // sample vector x = (x0, x1)
-        let x = sample(&s, t, n);
+        let x = sample(&s, t.clone(), n);
 
+        // let d = (0..d.len()).into_iter().map(|i| d[i] + ((x[i]-t[i] as i64)/2)).collect();
+        for i in 0..2*n {
+            if (x[i] - bh[i]).abs() % 2 == 1 {
+                println!("Jasså, fant luringen!");
+            }
+        }
+        let d = (0..2*n).into_iter().map(|i| (x[i] - bh[i])/2).collect();
+
+        // println!("d: {:?}\n", d);
         // split x into two vectors
         let (x0, x1) = (&x[0..n].to_vec(), &x[n..].to_vec());
 
@@ -417,7 +421,8 @@ pub fn hawksign_total_h(
         let mut h = h0.clone();
         h.append(&mut h1.clone());
 
-        return (w, h, d);
+        let w1: Vec<i64> = (0..2*n).into_iter().map(|i| (w[i] - h[i])/2).collect();
+        return (w, h, d, w1);
     }
 }
 
