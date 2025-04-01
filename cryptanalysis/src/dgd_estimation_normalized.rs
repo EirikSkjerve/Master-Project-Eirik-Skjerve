@@ -96,7 +96,7 @@ pub fn estimate_mem_norm_all(t: usize, store_file: bool) {
 }
 
 pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
-    let (privkey, _) = hawkkeygen(n);
+    let (privkey, _) = hawkkeygen(n, None);
     let start = Instant::now();
 
     // let mut min: i64 = 100;
@@ -255,7 +255,7 @@ pub fn estimate_mem_norm(t: usize, n: usize) -> (f64, f64, f64, f64, Duration) {
     //
 
     // generate a keypair
-    let (privkey, _) = hawkkeygen(n);
+    let (privkey, _) = hawkkeygen(n, None);
 
     assert!(n == 256 || n == 512 || n == 1024);
 

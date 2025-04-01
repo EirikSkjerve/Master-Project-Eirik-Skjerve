@@ -14,7 +14,7 @@ pub fn compare_keys(n: usize, binv: &DMatrix<i32>) {
     let iterations = 100;
     for _ in 0..iterations {
 
-        let (privkey, _) = hawkkeygen(n); 
+        let (privkey, _) = hawkkeygen(n, None); 
         let (b, binv2) = to_mat(&privkey);
 
         for i in 0..2 {

@@ -8,7 +8,7 @@ use rand::Rng;
 
 pub fn measure_uy_pipeline(n: usize, num_samples: usize) {
 
-    let (privkey, _) = hawkkeygen(n);
+    let (privkey, _) = hawkkeygen(n, None);
 
     for i in 0..num_samples {
     }

@@ -100,7 +100,7 @@ pub fn estimate_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
     //
 
     // generate a keypair
-    let (privkey, _) = hawkkeygen(n);
+    let (privkey, _) = hawkkeygen(n, None);
 
     assert!(n == 256 || n == 512 || n == 1024);
 

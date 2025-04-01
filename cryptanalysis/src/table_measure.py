@@ -308,6 +308,7 @@ def scatterplot_3d():
     plt.title("3D Scatter Plot Example")
     plt.show()
 
+
 getcontext().prec = 1000
 
 T0_256 = [Decimal(x) / Decimal(2**78) for x in Hawk256_T0]
@@ -466,6 +467,7 @@ def var_y(n):
 
 def sig_y(n):
     return math.sqrt(var_y(n))
+
 
 def kur_y(n):
     kur = 0

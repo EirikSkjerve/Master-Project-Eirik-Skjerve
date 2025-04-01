@@ -18,7 +18,7 @@ static EPSILON: f64 = 1e-10;
 static BETA1: f64 = 0.9;
 static BETA2: f64 = 0.999;
 static DELTA: f64 = 0.7;
-static VANILLA_DELTA: f64 = 0.1;
+static VANILLA_DELTA: f64 = 0.01;
 
 pub fn gradient_descent_vanilla(u: &DMatrix<f64>) -> Option<DVector<f64>> {
     let n = u.nrows();
@@ -51,7 +51,7 @@ pub fn gradient_descent_vanilla(u: &DMatrix<f64>) -> Option<DVector<f64>> {
     return None;
 }
 
-pub fn gradient_ascent_vanilla(u: &DMatrix<f64>, delta: f64) -> Option<DVector<f64>> {
+pub fn gradient_ascent_vanilla(u: &DMatrix<f64>) -> Option<DVector<f64>> {
     let n = u.nrows();
     let seed = rand::random::<u64>();
 

@@ -32,7 +32,7 @@ pub fn hpp_attack_online(t: usize, n: usize) {
         _ => 2.0 * 1.299,
     };
 
-    let keypair = hawkkeygen(n);
+    let keypair = hawkkeygen(n, None);
     let (privkey, pubkey) = keypair;
     let (b, binv) = to_mat_priv(&privkey);
     let q = to_mat_pub(&pubkey);
