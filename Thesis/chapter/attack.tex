@@ -109,12 +109,36 @@ In table \ref{z4 values} we show the value of $\mu_4$ and $\mu_4 - 3$ rounded at
     \end{tabular}
 \end{table}
 
-Using this measure we can estimate how many samples we need for $\mu_4 - 3$ to be detectable.
-We use the following equation from using the Central Limit Theorem (CLT): 
-\[
-    n \geq (\frac{z\cdot \sigma}{\mathsf{err}})^2
-\]
+% Using this measure we can estimate how many samples we need for $\mu_4 - 3$ to be detectable.
+% We use the following equation from using the Central Limit Theorem (CLT): 
+% \[
+%     n \geq (\frac{z\cdot \sigma}{\mathsf{err}})^2
+% \]
 
+We have computed $\mu_4$, i.e. the 4th moment of Z to be 2.999..., and that the difference ($\mu_4 - 3$) is about $2.1 \cdot 10^{-14}$ for parameter 256.
+Let us now compute how many samples one would need to successfully distinguish $mom_{4, \mat{C}}(\vec{u})$ when $\vec{u} \in \pm \mat{C}$ and when $\vec{u} \not\in\pm\mat{C}$.
+$mom_{4, \mat{C}}(\vec{u}) = \bb{E}[(\langle \vec{u}, \mat{C}\vec{x} \rangle ^4] = 3 + (\mu_4 - 3) \mathlarger{\sum_{i=1}^{n} \langle \vec{u}, \vec{c}_i \rangle ^4}$.
+If $\vec{u} = \vec{c}_i$, the entire expression is $3 + (\mu_4 - 3)\cdot 1 = \mu_4$ because $\langle \vec{c}_i, \vec{c}_i \rangle = 1$ and $\langle \vec{c}_i, \vec{c}_j \rangle = 0$ for $i \neq j$. 
+Otherwise, the sum $(\mathlarger{\sum_{i=1}^{n} \langle \vec{u}, \vec{c}_i \rangle ^4}) < 1$.
+
+Say one wants to distinguish $mom_{4, \mat{C}}(\vec{c}_i)$ and $mom_{4, \mat{C}}(\vec{u})$ for $\vec{u} \not\in\pm\mat{C}$.
+Let $y = \langle \vec{u}, \mat{C} \vec{x} \rangle$ and assume $y$ follows a standard normal distribution with $\mu = 0$ and $\sigma^2 = 1$.
+Then we approximate the variance $\sigma^2$ and standard deviation $\sigma$ for $\langle \vec{u}, \mat{C}\vec{x} \rangle ^4$ as $\bb{E}[y^8] - \bb{E}[y^4]^2$.
+Then $\sigma^2 \approx 105 - 9 = 96$ and $\sigma = \sqrt{96} \approx 9.79796$.
+
+Now, to estimate number of samples we use formula for confidence intervals and Central Limit Theorem. Let $s$ denote required number of samples. Then 
+\[
+    s \geq \mathlarger{(\frac{Z_{\alpha/2} \cdot \sigma}{\mathsf{err}})^2}
+\]
+Now, we want $\mathsf{err}$ to be smaller than $2.1 \cdot 10^{-14}$ for parameter 256.
+If we set $\mathsf{err}$ to be $10^{-14}$, and we want to determine a difference with, say, 75 \% confidence, we get:
+
+\[
+    s \geq (\frac{0.68 \cdot 9.79796}{10^{-14}})^2 \approx 4.439 \cdot 10^{29}
+\]
+where $0.68$ is from standard normal tables for 75 \%.
+This result is way beyond the limit of acceptable transcript size, which for parameter 256 is $2^{32} \approx 4.3 \cdot 10^{9}$ and for non-challenge parameters 512 and 1024 is $2^{64} \approx 2 \cdot 10^{19}$.
+One can therefore conclude that the attack will not be successful.
 \section{Covariance matrix and hypercube transformation}
 In the original HPP attack one has to estimate the matrix $\mat{G} \approx \mat{V} ^t \mat{V}$.
 For Hawk, the signatures are on the form $\vec{w} = \mat{B}^{-1} \vec{x}$. Then we would need to compute $\mat{G} = \mat{B}^{-1} \mat{B}^{-T}$ (the HPP paper uses row vectors while Hawk use columns vectors).
@@ -147,9 +171,7 @@ We summarize this step of the attack against Hawk in the following algorithm
 \section{Gradient search overview}
 
 Now, given samples $\vec{c} \in \PP{C}$, we run a gradient search to minimize or maximize the fourth moment of one-dimensional projections onto $\vec{u}$, as in the original attack. In addition to multiplying the samples by $\mat{L}^T$, we also divide them by the scalar $\sigma$, to normalize the samples
-so their variance is $1$. This also aligns with our theoretical analysis of $mom_{4,\mat{C}}(\vec{u})$. Even though the distribution $\dgdi$ is discrete, the shape of the samples $\vec{c} \in \PP{C}$ will still have a somewhat spherical shape,
-as illustrated in figures \ref{parallelepiped_normal_discrete} and \ref{hypercube_normal_discrete}.
-The hope is that the areas in the directions of the columns of $\pm \mat{C}$ will deviate just enough from a perfect spherical shape to give us a clear global minima/maxima in the gradient landscape.
+so their variance is $1$. This also aligns with our theoretical analysis of $mom_{4,\mat{C}}(\vec{u})$. 
 
 We evaluate the functions $mom_{4, \mat{C}}(\vec{u})$ as $\bb{E} [\langle \vec{c}, \vec{u} \rangle ^4]$ and $\nabla mom_{4,\mat{C}}(\vec{u})$ as $\bb{E} [\nabla \langle \vec{c}, \vec{u} \rangle ^4] = 4 \bb{E} [\langle \vec{c}, \vec{u} \rangle ^3 \vec{c}]$.
 These can be evaluated by precomputed samples $\{\vec{c}_1, \vec{c}_2, ..., \vec{c}_t\}$, or by continuously generating one and one signature sample since we have access to the signature generation algorithm.
@@ -229,51 +251,6 @@ A low value for this (this depends on the Hawk parameter $n$) would indicate a g
 % One can also take the average of the difference of the entries in the vectors, i.e. $ \mathsf{diff_{min}} = \mathsf{min} \{\frac{1}{2n} | \vec{b}' - \vec{b}_i | \mathbf{:} \vec{b}_i \in \pm \mat{B}^{-1}\}$.
 Alternatively, one can count entrywise how many entries out of $2n$ that matches between $\vec{b}'$ and $\vec{b}_i$, or use some other suitable measurement.
 
-A concern about this approach of attacking Hawk is the gradient search, as described in Algorithm 2 and 3. In the original HPP attack, they used a standard gradient descent with a constant stepsize/descent parameter $\delta$. This
-worked fine for attack on GGH and NTRU when the global minima (of which there are $2n$) of the gradient landscape was very obvious. In the gradient landscape of Hawk however, there is much more noise, and the global minima is
-not as clear, as it depends on the discrepancy $(\mu_4 - 3)$, which is quite small. Generally, a constant stepsize $\delta$ entails a tradeoff between slow convergence and the risk of "overshooting" the correct global extremum.  
-We therefore employ the method of ADAM-optimizer, as described in chapter 2.
-Below is a description of the gradient search using ADAM-optimizer in our setting.
-
-\begin{algorithm}[H]
-    \caption{$\mathsf{gradient \ descent \ ADAM}$}
-\begin{algorithmic}[1]
-    \Require{signatures $\vec{c} = \mat{C} \vec{x}$}
-    \Require{Stepsize $\delta$, decay rates $\beta_1, \beta_2$}
-    \State $\vec{u} \gets $ random vector on the unit sphere of $\bb{R}^{2n}$
-    \State $\vec{m}_0 \gets 0$ \Comment{Vector of 0's}
-    \State $\vec{v}_0 \gets 0$ \Comment{Vector of 0's}
-    \State $t \gets 0$ \Comment{Timestep}
-    \Loop
-    \State $t \gets t + 1$
-    \State $\vec{g}_t \gets \nabla mom_{4, \mat{C}}(\vec{u})$
-    \State $\vec{m}_t \gets \beta_1 \cdot \vec{m}_{t-1} + (1 - \beta_1) \cdot \vec{g}_t$
-    \State $\vec{v}_t \gets \beta_2 \cdot \vec{v}_{t-1} + (1 - \beta_2) \cdot \vec{g}_t^2$
-    \State $\hat{\vec{m}}_t \gets \vec{m}_t / (1 - \beta_1 ^t) $
-    \State $\hat{\vec{v}}_t \gets \vec{v}_t / (1 - \beta_2 ^t) $
-    \State $\vec{u}_{new} \gets \vec{u} - \delta \cdot \hat{\vec{m}}_t / (\sqrt{\hat{\vec{v}}_t + \epsilon})$ \Comment{Flip the $-$ sign for gradient ascent}
-    \State normalize $\vec{u}_{new}$ as $\frac{\vec{u}_{new}}{\lVert \vec{u}_{new} \rVert}$
-    \If{$mom_{4, \mat{C}}(\vec{u}_{new}) \geq mom_{4, \mat{C}}(\vec{u})$} \Comment{Flip the $\geq$ sign for gradient ascent}
-    \State \Return{$\vec{u}$}
-    \Else 
-    \State $\vec{u} \gets \vec{u}_{new}$
-    \State go to step 6
-    \EndIf
-    \EndLoop
-\end{algorithmic}
-\end{algorithm}
-
-The $\epsilon$ in step 12 of the algorithm is inserted to not divide by 0. Proposed value for $\epsilon = 10^{-8}$,
-and proposed good values for $\delta, \beta_1$ and $\beta_2$ are $0.001, 0.9$ and $0.999$ respectively.
-In this method, the stepsize then depends on $\delta, \vec{m}_t$ and $\vec{v}_t$.
-Explanation of variables:
-\begin{itemize}
-    \item $\vec{m}_t$ estimates an average of previous gradients, as to make movement in one iteration partially depend on the direction of previous iterations.
-    \item $\vec{v}_t$ estimates the variance of the previous gradients. Larger variance will reduce the stepsize to not overshoot possible extremum, while lower variance will increase the stepsize to speed up convergence.
-    \item $\hat{\vec{m}}_t$ and $\hat{\vec{v}}_t$ is bias-correction, so that the first iterations are not biased towards 0.
-\end{itemize}
-\todo{This should be in the theoretical background}
-
 Below is a more detailed version of the entire attack/experiment.
 \begin{algorithm}[H]
 \caption{Proposed version of attack with measuring}
@@ -283,7 +260,7 @@ Below is a more detailed version of the entire attack/experiment.
     \State Using public key $\mat{Q}$, compute $\mat{L}$ s.t. $\mat{Q} = \mat{L} \mat{L}^t$
     \State Transform samples s.t. $\vec{c} = \mat{L}^t \vec{w}$
     \Loop
-    \State Candidate $\vec{z}' \gets \mathsf{gradient \ search  \ ADAM}$ \Comment{Do both ascent and descent}
+    \State Candidate $\vec{z}' \gets \mathsf{gradient \ search}$ \Comment{Do both ascent and descent}
     \State Candidate $\vec{b}' \gets \lfloor \mat{L}^{-T} \vec{z}' \rceil$ \Comment{Entrywise rounding to nearest integer}
     \State Check if $\vec{b}' \in \mat{B}^{-1}$
     \State Measure $\mathsf{diff_{min}}(\vec{b}', \mat{B}^{-1})$
@@ -341,6 +318,28 @@ We then get that
 \end{itemize}
 
 \section{Conclusion}
-In conclusion, I think the reason the method has not worked is because of the small value of $(\mu_4 - 3)$, but importantly also because of the noisy nature of the distribution $\dgdi$. 
-The noise introduces too many "false" local minima/maxima in the gradient landscape such that it is difficult to find the correct \textit{global} minima/maxima.
-I do not claim that it is impossible, but my experiments show that it seems infeasible for this particular approach.
+We have computed $\mu_4$, i.e. the 4th moment of Z to be 2.999..., and that the difference ($\mu_4 - 3$) is about $2.1 \cdot 10^{-14}$ for parameter 256.
+Let us now compute how many samples one would need to successfully distinguish $mom_{4, \mat{C}}(\vec{u})$ when $\vec{u} \in \pm \mat{C}$ and when $\vec{u} \not\in\pm\mat{C}$.
+$mom_{4, \mat{C}}(\vec{u}) = \bb{E}[(\langle \vec{u}, \mat{C}\vec{x} \rangle ^4] = 3 + (\mu_4 - 3) \mathlarger{\sum_{i=1}^{n} \langle \vec{u}, \vec{c}_i \rangle ^4}$.
+If $\vec{u} = \vec{c}_i$, the entire expression is $3 + (\mu_4 - 3)\cdot 1 = \mu_4$ because $\langle \vec{c}_i, \vec{c}_i \rangle = 1$ and $\langle \vec{c}_i, \vec{c}_j \rangle = 0$ for $i \neq j$. 
+Otherwise, the sum $(\mathlarger{\sum_{i=1}^{n} \langle \vec{u}, \vec{c}_i \rangle ^4}) < 1$.
+
+
+Say one wants to distinguish $mom_{4, \mat{C}}(\vec{c}_i)$ and $mom_{4, \mat{C}}(\vec{u})$ for $\vec{u} \not\in\pm\mat{C}$.
+Let $y = \langle \vec{u}, \mat{C} \vec{x} \rangle$ and assume $y$ follows a standard normal distribution with $\mu = 0$ and $\sigma^2 = 1$.
+Then we approximate the variance $\sigma^2$ and standard deviation $\sigma$ for $\langle \vec{u}, \mat{C}\vec{x} \rangle ^4$ as $\bb{E}[y^8] - \bb{E}[y^4]^2$.
+Then $\sigma^2 \approx 105 - 9 = 96$ and $\sigma = \sqrt{96} \approx 9.79796$.
+
+Now, to estimate number of samples we use formula for confidence intervals and Central Limit Theorem. Let $s$ denote required number of samples. Then 
+\[
+    s \geq \mathlarger{(\frac{Z_{\alpha/2} \cdot \sigma}{\mathsf{err}})^2}
+\]
+Now, we want $\mathsf{err}$ to be smaller than $2.1 \cdot 10^{-14}$ for parameter 256.
+If we set $\mathsf{err}$ to be $10^{-14}$, and we want to determine a difference with, say, 75 \% confidence, we get:
+
+\[
+    s \geq (\frac{0.68 \cdot 9.79796}{10^{-14}})^2 \approx 4.439 \cdot 10^{29}
+\]
+where $0.68$ is from standard normal tables for 75 \%.
+This result is way beyond the limit of acceptable transcript size, which for parameter 256 is $2^{32} \approx 4.3 \cdot 10^{9}$ and for non-challenge parameters 512 and 1024 is $2^{64} \approx 2 \cdot 10^{19}$.
+One can therefore conclude that the attack will not be successful.
