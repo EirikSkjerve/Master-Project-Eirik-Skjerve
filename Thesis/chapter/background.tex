@@ -14,11 +14,12 @@ Lastly, we introduce the notion of Gradient Descent, which will be a central too
 Cryptography is the study of tools and techniques that enable secure and, in part, reliable communication. For centuries, this entailed creative systems of codes and techniques used predominantly by military and governments,
 and the creation and breaking of such systems were considered an art. % based on creativity and \todo{Find a source that backs the linguistics claim} linguistics, as cryptography then were used mostly on natural language. 
 From the 1970s and onwards, however, mathematics increasingly becomes the backbone of cryptography, as mathematical theory provides provable security (and insecurity) of cryptographic systems. 
-In the recent 50 years or so, cryptography has become an enabler of secure communication, verification, and integrity of information, all of which are integral \todo{find better word than 'parts' here}parts of our digital world. \cite{KL20}
+In the recent 50 years or so, cryptography has become an enabler of secure communication, verification, and integrity of information, all of which are integral aspects in our digital world. \cite{KL20}
 
-Symmetric key cryptography enables secure communication between two parties and utilizes a shared secret key, denoted $\privkey$. The system defines two functions,
-$\enc{\mathcal{M}}$ and $\dec{\mathcal{C}}$ that encrypt and decrypt a message, respectively. These functions depend on the input message and the secret key. 
-For a proper system these functions are inverse of each other, i.e. $\dec{\enc{\mathcal{M}}} = \mathcal{M}$. Anyone without knowledge of $\privkey$ should be unable to
+Symmetric key cryptography enables secure communication between two or more parties and utilizes a shared secret key, denoted $\privkey$. 
+The system defines two functions, $\enc{\mathcal{M}}$ and $\dec{\mathcal{C}}$ that encrypt and decrypt a message, respectively. These functions depend on the input message and the secret key. 
+% For a proper system these functions are inverse of each other, i.e. $\dec{\enc{\mathcal{M}}} = \mathcal{M}$. 
+Anyone without knowledge of $\privkey$ should be unable to
 extract any meaningful information about either $\privkey$ or $\mathcal{M}$ based only on observing $\mathcal{C}$.
 
 Asymmetric key cryptography on the other hand utilizes two related, but distinct keys; one private and one public, denoted $\privkey$ and $\pubkey$.
@@ -27,13 +28,12 @@ as $\mathcal{M} = \dec{\mathcal{C}}$. A crucial security property of such a syst
 
 The security of asymmetric cryptography is usually based on hard mathematical problems for which an effective algorithm to solve is either unknown to exist, or proven \textit{not} to exist. 
 For example, to decrypt a message encrypted in the RSA scheme \cite{RSA78} without possession of the secret key, one would need to find two large prime numbers $p$ and $q$ such that 
-$p \cdot q = n$, where $n$ is the RSA modulus used for encryption. For specific and large enough values of $n$, this is considered a hard problem. \cite{ENCYCLOPEDIA}
-Other asymmetric cryptography schemes may utilize different hard problems as a basis for their security, such as the Discrete Logarithm Problem, Closest Vector Problem, and Learning With Errors, to name a few.
-
+$p \cdot q = n$, where $n$ is the RSA modulus used in its encryption algorithm. For specific and large enough values of $n$, this is considered a hard problem. \cite{ENCYCLOPEDIA}
+Other asymmetric cryptography schemes may utilize different hard problems as a basis for their security, such as the "Discrete Logarithm Problem", "Closest Vector Problem", and "Learning With Errors", to name a few.
 
 One of the main applications of asymmetric cryptography are digital signatures. A digital signature $\mathcal{S}$ computed from a message $\mathcal{M}$ enable a receiver of the 
 message-signature pair $(\mathcal{M}, \mathcal{S})$ to mathematically verify that the sender is in possession of the private key $\privkey$ that relates to the receivers public key $\pubkey$.
-In addition, a signature $\mathcal{S}$ provides a way to ensure that the original message $\mathcal{M}$ is intact and has not changed since the computation of $\mathcal{S}$.
+In addition, a signature $\mathcal{S}$ guarantees that the original message $\mathcal{M}$ is intact and has not changed since the computation of $\mathcal{S}$.
 Section 2.4 will go in further detail about the building blocks for digital signature schemes, and what constitutes a secure or insecure scheme.
 
 % An important application for asymmetric cryptography includes:
@@ -50,19 +50,19 @@ Section 2.4 will go in further detail about the building blocks for digital sign
 
 \section{Cryptanalysis}
 Cryptanalysis is the study of analyzing and breaking cryptographic systems, and it plays an important role in strengthening the cryptography we use today.
-By analyzing a system and exposing potential flaws and weaknesses, the designers of such as system can make suitable changes to (or even discard) it to further 
+By analyzing a system and exposing potential flaws and weaknesses, the designers of such as system can make suitable changes to it (or in extreme cases, discard it entirely) to further 
 increase its security against adversaries with malicious intent, or altogether avoid the release of an insecure piece of technology.
 
 The notion of a cryptanalytic \textit{attack} refers to a methodical attempt of retrieving secret information from an instance of a cryptographic scheme.
 This can be either attempting to recover parts of, or the entire, secret key, deduce some information about an encrypted message, or somehow produce 
 some information (e.g. creating a valid digital signature) as if one possesses the secret key. Generally, if any degree of the mentioned points is possible for a scheme, 
-the scheme should be considered insecure (or broken), and the attack can be considered successful.
+the scheme should be considered insecure or broken, and the attack can be considered successful.
 
 An important consideration when designing and analyzing the security of an asymmetric crypto-system, is that a scheme is generally only as strong as its weakest part. \todo{Maybe find some direct source for this?}
-What this means in practice is that even if the scheme is based on a provably hard problem, there may be other components of the scheme that renders it unsafe.
-As an example, (and which we will see in much more detail later in section 3), the security of the NTRU-sign digital signature scheme is based upon the CVP. 
-In practice this means that without possession of the secret key, forging a signature would require one to solve an instance of CVP. 
-However, as we will see, each generated signature leaks some information about the secret key, which ultimately enables signature forgeries, regardless of whether one can 
+In practice, even if a scheme is based on a provably hard problem, there may be other components of the scheme that renders it unsafe.
+As an example, the security of the NTRU-sign digital signature scheme is based upon the CVP. 
+This means that without possession of the secret key, forging a signature would require one to solve an instance of CVP, which is generally considered hard. 
+However, as we will see in section 3, each generated signature leaks some information about the secret key, which ultimately enables signature forgeries, regardless of whether one can 
 solve the CVP or not. 
 
 \section{Digital Signatures}

@@ -45,7 +45,7 @@ pub fn collect_signatures_wh(t: usize, n: usize) ->
 
     // generate a keypair
     // let (privkey, pubkey) = hawkkeygen(n, Some(vec![1,3,3,7]));
-    let (privkey, pubkey) = hawkkeygen(n, Some(vec![13, 11, 21]));
+    let (privkey, pubkey) = hawkkeygen(n, Some(vec![1,2,3]));
 
     let pb = ProgressBar::new(t as u64);
 
@@ -69,30 +69,12 @@ pub fn collect_signatures_wh(t: usize, n: usize) ->
         pb.inc(1);
     });
 
-    // let mut ws : Vec<Vec<i16>> = Vec::with_capacity(t);
-    // let mut hs : Vec<Vec<i16>> = Vec::with_capacity(t);
-    //
-    // (0..t).into_iter().for_each(|x| {
-    //
-    //     let (w, h, _) = hawksign_total_h(&privkey, &get_random_bytes(100), n);
-    //     let w: Vec<i16>  = w.iter().map(|&x| x as i16).collect();
-    //     let h: Vec<i16>  = h.iter().map(|&x| x as i16).collect();
-    //
-    //     ws.push(w);
-    //     hs.push(h);
-    //     pb.inc(1);
-    // });
-
     pb.finish_with_message("Completed");
 
     let ws = Arc::try_unwrap(ws)
         .expect("Could not unpack..")
         .into_inner()
         .unwrap();
-    // let hs = Arc::try_unwrap(hs)
-    //     .expect("Could not unpack..")
-    //     .into_inner()
-    //     .unwrap();
 
     (ws, privkey, pubkey)
 }

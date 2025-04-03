@@ -367,6 +367,7 @@ pub fn hawksign_total_h(
         let mut bh = bh0.clone();
         bh.append(&mut bh1.clone());
 
+
         // println!("\nBh: {:?}", bh);
         // println!("t: {:?}", t);
         
@@ -385,13 +386,8 @@ pub fn hawksign_total_h(
         // sample vector x = (x0, x1)
         let x = sample(&s, t.clone(), n);
 
-        // let d = (0..d.len()).into_iter().map(|i| d[i] + ((x[i]-t[i] as i64)/2)).collect();
-        for i in 0..2*n {
-            if (x[i] - bh[i]).abs() % 2 == 1 {
-                println!("Jasså, fant luringen!");
-            }
-        }
-        let d = (0..2*n).into_iter().map(|i| (x[i] - bh[i])/2).collect();
+        let d = (0..2*n).into_iter().map(|i| (t[i] as i64 - bh[i])/2).collect();
+        // let d = (0..2*n).into_iter().map(|i| (x[i] - bh[i])/2).collect();
 
         // println!("d: {:?}\n", d);
         // split x into two vectors

@@ -37,11 +37,11 @@ static SIGMA_Y: f64 = 1.0701;
 pub fn run_hpp_attack_yu(t: usize, n: usize) {
 
     println!("Running HPP attack with {t} samples against Hawk{n}");
-    // measure_d_distribution(t, n);
+    measure_d_distribution(t, n);
     let (mut samples, (b, binv), q) = generate_samples_and_keys(t, n).unwrap();
 
     // eprintln!("Before: {samples}");
-    let (linv, c) = hypercube_transformation(&mut samples, q.map(|x| x as f64), &binv);
+    let (linv, c) = hypercube_transformation(&mut samples, q.map(|x| x as f64), &binv, &b);
     // eprintln!("After: {samples}");
     println!("Samples transformed");
 
@@ -52,23 +52,30 @@ pub fn run_hpp_attack_yu(t: usize, n: usize) {
     let variance = samples
         .iter()
         .map(|&x| {
-            let diff = (x - mean).powi(2);
-            diff
+            (x - mean).powi(2)
         })
         .sum::<f64>()
         / total_num_elements;
 
     let sigma = variance.sqrt();
 
-    samples /= sigma;
+    println!("Mean: {}", mean);
+    println!("Var:  {}", variance);
+    println!("Sigma: {}", sigma);
 
-    let mean = samples.iter().sum::<f64>() / total_num_elements;
+    // center the samples
+    // samples = samples.map(|x| x - mean);
+
+    // normalize the samples
+    // samples /= sigma;
+
+
+    let mean = samples.iter().sum::<f64>() / (total_num_elements * sigma);
 
     let variance = samples
         .iter()
         .map(|&x| {
-            let diff = (x - mean).powi(2);
-            diff
+            ((x/sigma) - mean).powi(2)
         })
         .sum::<f64>()
         / total_num_elements;
@@ -76,8 +83,7 @@ pub fn run_hpp_attack_yu(t: usize, n: usize) {
     let kurtosis = samples
         .iter()
         .map(|&x| {
-            let diff = (x - mean).powi(4);
-            diff
+            ((x / sigma) - mean).powi(4)
         })
         .sum::<f64>()
         / total_num_elements;
@@ -87,16 +93,17 @@ pub fn run_hpp_attack_yu(t: usize, n: usize) {
     // println!("Sigma: {}", sigma);
     println!("Kur:  {}", kurtosis);
 
+    return;
     
-    // loop {
-    //     let res = (&linv * gradient_descent_vanilla(&samples).unwrap()).map(|x| x.round() as i32);
-    //
-    //     eprintln!("{res}");
-    //     if vec_in_key(&res, &binv) {
-    //         println!("FOUND! Result is in key based on direct checking");
-    //         // return;
-    //     }
-    // }
+    loop {
+        let res = (&linv * gradient_ascent_vanilla(&samples).unwrap()).map(|x| x.round() as i32);
+
+        // eprintln!("{res}");
+        if vec_in_key(&res, &binv) {
+            println!("FOUND! Result is in key based on direct checking");
+            return;
+        }
+    }
 
 }
 
@@ -104,7 +111,8 @@ pub fn run_hpp_attack_yu(t: usize, n: usize) {
 fn hypercube_transformation(
     samples: &mut DMatrix<f64>,
     q: DMatrix<f64>,
-    skey: &DMatrix<i32>
+    skey: &DMatrix<i32>,
+    b: &DMatrix<i32>
 ) -> (DMatrix<f64>, DMatrix<f64>) {
     // given samples and and covariance matrix Q, return transformed
     // samples from hidden parallelepiped onto hidden hypercube
@@ -130,6 +138,7 @@ fn hypercube_transformation(
     // this method is fast but nalgebra matrix multiplication makes an extra allocation
     // for the matrices involved
     *samples = (&l.l().transpose() * &*samples);
+    // *samples = b.map(|x| x as f64) * &*samples;
 
     // for reference, compute the matrix C
     let c = &l.l().transpose() * skey.map(|x| x as f64);
@@ -142,11 +151,10 @@ fn hypercube_transformation(
 
 pub fn measure_d_distribution(t: usize, n: usize) {
 
-    let num_rounds = 1;
-
-    let (privkey, _) = hawkkeygen(n, Some(vec![9, 11, 20]));
-    for _ in 0..num_rounds {
-        let pb = ProgressBar::new(2*t as u64);
+    let num_rounds = 10;
+    for i in 0..num_rounds {
+        let (privkey, _) = hawkkeygen(n, None);
+        let pb = ProgressBar::new(3*t as u64);
         pb.set_style(
             ProgressStyle::default_bar()
                 .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({per_sec})")
@@ -178,11 +186,30 @@ pub fn measure_d_distribution(t: usize, n: usize) {
         let var = *var.lock().unwrap() / (2*t*n) as f64;
         let sigma = var.sqrt();
 
-        pb.finish_with_message("Estimation completed");
+        let mut kur = Arc::new(Mutex::new(0.0));
 
         println!("Mu: {mu}");
         println!("Var: {var}");
         println!("Sigma: {sigma}");
+
+        let mu = mu/sigma;
+
+        (0..t).into_par_iter().for_each(|i| {
+            let (_, _, d, _) = hawksign_total_h(&privkey, &get_random_bytes(100), n);
+            let temp_kur: f64 = d.iter().map(|&x| ((x as f64 / sigma) - mu).powi(4)).sum();
+            *kur.lock().unwrap() += temp_kur;
+
+            pb.inc(1);
+
+        });
+
+        pb.finish_with_message("Estimation completed");
+
+        let kur = *kur.lock().unwrap() / (2*t*n) as f64;
+
+
+        println!("Norm. mu: {mu}");
+        println!("Norm. kur: {kur}");
     }
 }
 

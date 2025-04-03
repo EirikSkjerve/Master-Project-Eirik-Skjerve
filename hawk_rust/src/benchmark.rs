@@ -38,7 +38,7 @@ pub fn hawkrun(table: &mut Table, n: usize) {
     let kgen_time_start = Instant::now();
 
     // generate keypair
-    let (privkey, pubkey) = hawkkeygen(n);
+    let (privkey, pubkey) = hawkkeygen(n, None);
 
     // end time for key generation
     let kgen_time_end = kgen_time_start.elapsed();

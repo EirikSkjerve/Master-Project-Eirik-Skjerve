@@ -220,7 +220,8 @@ fn hypercube_transformation(
 
     *samples = q * &*samples;
     // now samples are on the form w = B^T x
-    *samples = ((&l.l().transpose()) * &*samples) / SIGMA;
+    // *samples = ((&l.l().transpose()) * &*samples) / SIGMA;
+    *samples = ((&l.l().transpose()) * &*samples) / 10.0;
     // let min_value = samples.iter().cloned().min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
     // let max_value = samples.iter().cloned().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
     // println!("Min: {min_value}");
