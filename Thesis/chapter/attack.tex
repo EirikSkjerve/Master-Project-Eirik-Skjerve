@@ -82,19 +82,16 @@ optimizing the $mom_{4, \mat{C}}(\vec{u})$ function w.r.t. the vector $\vec{w}$ 
 Note that if $(\mu_4 - 3) < 0$ we have the same case as in the original attack, where minimization of the entire term entails maximization of $\mathlarger{\sum_{i=1}^{n} \langle c_i, \vec{u} \rangle^4}$, which gives us a row of $\pm \mat{C}$.
 If $(\mu_4 - 3) > 0$, we need to maximize the entire term $3 \lVert \vec{u} \rVert ^4 + \mathlarger{\sum_{i=1}^{n} \langle c_i, \vec{u} \rangle^4}$, which is achieved by doing a gradient \textit{ascent} instead of a gradient \textit{descent}.
 
-\subsection{Gradient search overview}
+We approximate the functions $mom_{4, \mat{C}}(\vec{u})$ as $\bb{E} [\langle \vec{c}, \vec{u} \rangle ^4]$ and $\nabla mom_{4,\mat{C}}(\vec{u})$ as $\bb{E} [\nabla \langle \vec{c}, \vec{u} \rangle ^4] = 4 \bb{E} [\langle \vec{c}, \vec{u} \rangle ^3 \vec{c}]$.
 
-Now, given samples $\vec{c} \in \PP{C}$, we run a gradient search to minimize or maximize the fourth moment of one-dimensional projections onto $\vec{u}$, as described above. 
-
-We evaluate the functions $mom_{4, \mat{C}}(\vec{u})$ as $\bb{E} [\langle \vec{c}, \vec{u} \rangle ^4]$ and $\nabla mom_{4,\mat{C}}(\vec{u})$ as $\bb{E} [\nabla \langle \vec{c}, \vec{u} \rangle ^4] = 4 \bb{E} [\langle \vec{c}, \vec{u} \rangle ^3 \vec{c}]$.
-These can be evaluated by precomputed samples $\{\vec{c}_1, \vec{c}_2, ..., \vec{c}_t\}$, or by continuously generating one and one signature sample since we have access to the signature generation algorithm.
-
-\todo{This might be redundant, as the method will be described in chapter on HPP}
+% These can be evaluated by precomputed samples $\{\vec{c}_1, \vec{c}_2, ..., \vec{c}_t\}$, or by continuously generating one and one signature sample since we have access to the signature generation algorithm.
 % Below, gradient descent adapted to is described as an algorithm, similar to . Note that the only difference is in what direction to move and the condition for termination, on lines 4 and 6 respectively.
+In Algorithm \ref{hawk_gradient_search} the basic gradient descent is described for the Hawk setting. Note that 
+for a gradient \textit{ascent} one only needs to flip the sign and inequality sign on lines 4 and 6, respectively.
 \begin{algorithm}[H]
-    \caption{Gradient descent on $\PP{C}$}
+    \caption{Gradient descent on $\PP{C}$}\label{hawk_gradient_search}
 \begin{algorithmic}[1]
-    \Require{Samples on the form $\vec{c} = \mat{C}\vec{x}$, descent parameter $\delta$}
+    \Require{Samples on the form $\vec{c} = \mat{C}\vec{z}$, descent parameter $\delta$}
     \State $\vec{u} \gets \text{ random vector on unit sphere in } \bb{R}^{2n}$
     \Loop
     \State $\vec{g} \gets \nabla \mom{4}{C}$
@@ -110,25 +107,23 @@ These can be evaluated by precomputed samples $\{\vec{c}_1, \vec{c}_2, ..., \vec
 \end{algorithmic}
 \end{algorithm}
 
-For a gradient \textit{ascent} one can flip the sign and inequality sign on lines 4 and 6, respectively.
-
 \section{Practical method}
 
 Below is a basic description of the approach.
 \begin{algorithm}[H]
-\caption{Proposed basic version of attack}
+\caption{Proposed high-level version of attack}
 \begin{algorithmic}[1]
     \State Collect signatures $\vec{w} = \mat{B}^{-1} \vec{x}$
     \State Using public key $\mat{Q}$, find $\mat{L}$ s.t. $\mat{Q} = \mat{L} \mat{L}^T$
-    \State Transform samples s.t. $\vec{c} = \mat{L}^T \vec{w}$
+    \State Transform samples s.t. $\vec{c} = \mat{L}^T \mathlarger{\frac{\vec{w}}{\sigma}}$
     \State Find columns of $\pm \mat{C}$ by doing gradient search over $\PP{C}$
     \State Multiply columns of $\pm \mat{C}$ by $\mat{L}^{-T}$ on the left and round the result to get columns in $\pm \mat{B}^{-1}$
 \end{algorithmic}
 \end{algorithm}
 
-After having transformed the samples $\vec{w} \in \PP{\mat{B}^{-1}}$ to $\vec{c} \in \PP{\mat{C}}$ we want to recover columns of $\pm \mat{C}$ and transform them back to columns of $\pm \mat{B}^{-1}$ by multiplying by $\mat{L}^{-T}$ on the left.
+% After having transformed the samples $\vec{w} \in \PP{\mat{B}^{-1}}$ to $\vec{c} \in \PP{\mat{C}}$ we want to recover columns of $\pm \mat{C}$ and transform them back to columns of $\pm \mat{B}^{-1}$ by multiplying by $\mat{L}^{-T}$ on the left.
 Due to the special structure of Hawk private keys, finding one column of $\mat{B}$ automatically gives $n$ columns.
-Unfortunately, since revealing a single column of $ \mat{B}^{-1}$ reveals a "shift" of either the two polynomials $G$ and $ g$ \textit{or} $F$ and $f$,
+Since revealing a single column of $ \mat{B}^{-1}$ reveals a "shift" of either the two polynomials $G$ and $ g$ \textit{or} $F$ and $f$,
 this is not enough to disclose the entire matrix. If samples were on the form $\vec{w} = \mat{B} \vec{x}$, a single column would reveal $f$ and $g$ (or $F$ and $G$), and one could simply reconstruct $F$ and $G$ (or $f$ and $g$)
 by solving the NTRU-equation as in the key generation step of Hawk.
 Nevertheless, if one finds two columns of $\mat{B}^{-1}$, it is easy to check if they are shifts of each other. If they are not, one has found shifts of all four polynomials in the secret key, 
@@ -139,6 +134,7 @@ After each gradient ascent and/or descent returns a possible solution $\vec{z}'$
 we multiply it to the left as $\vec{b}' = \mat{L}^{-T} \vec{z}'$ where $\vec{b}'$ is a possible column of $\pm \mat{B}^{-1}$ as $\vec{z}'$ is a possible column of $\pm \mat{C} = \mat{L}^T \cdot (\pm \mat{B}^{-1})$.
 Since in experiments we have access to the correct secret key, we simply check directly if $\mat{b}' \in \pm \mat{B}^{-1}$.
 In a real word attack however, one would, as described above, have to compute candidate $\mat{B}'$ and check if $\mat{B}'^T\mat{B}' = \mat{Q}$.
+\todo{What to do with this paragraph}
 
 \subsection{Measuring method}
 Having access to the correct $\mat{B}^{-1}$ we can do measures on how close a proposed solution $\vec{b}'$ is to one of the columns of $\mat{B}^{-1}$.

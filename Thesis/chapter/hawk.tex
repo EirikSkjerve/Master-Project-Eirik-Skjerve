@@ -1,8 +1,8 @@
 \section{Hawk}
 In this section we introduce the digital signature scheme Hawk \cite{HawkSpec24}.
 As mentioned in the introduction, Hawk is a lattice based signature scheme that shares some key points with the digital signature scheme NTRU-sign \cite{HHPSW03}, the target for the original HPP attack.
-The first part of this chapter, section 3.2, will give an introduction on how the Hawk scheme works on a high level. After this, the implementation of Hawk will be described in section 3.3, where more detail about 
-specific subroutines and parts of the procedures will be given.
+% The first part of this chapter, section 3.2, will give an introduction on how the Hawk scheme works on a high level. After this, the implementation of Hawk will be described in section 3.3, where more detail about 
+% specific subroutines and parts of the procedures will be given.
 
 In these sections, some parts of Hawk as described in \cite{HawkSpec24} are left out due to the focus of this thesis. For example, Hawk utilizes compression of keys and signatures, 
 % (which influence the key generation and signature generation procedures),
@@ -27,7 +27,7 @@ the \textit{One More Shortest Vector Problem}), which, again, is not the focus o
 % \]
 \subsection{Overview}
 In Hawk, we work with polynomials defined over the cyclotomic number field $\mathcal{K}_n = \bb{Q}[X]/(X^n +1)$ and its corresponding ring of integers
-$\bb{Z}[X] / (X^n + 1)$. Such a polynomial $f \in \mathcal{K}_n$ can also be represented by a (column) vector of its coefficients in $\bb{Q}^n$ (in practical setting, coefficients are in $\bb{Z}$ instead of $\bb{Q}$), 
+$\bb{Z}[X] / (X^n + 1)$. Such a polynomial $f \in \mathcal{K}_n$ can also be represented by a (column) vector of its coefficients in $\bb{Q}^n$, 
 denoted $\mathsf{vec}(f)$, where the index of each coefficient corresponds to its power of $X$ in $f$. 
 \footnote{This is a polynomial representation that is frequent in programming implementations when a dedicated algebra library is not used.}
 Explicitly, if $f = a_0 X^0 + a_1 X^1 + \cdots + a_{n-1} X^{n-1}$
@@ -55,7 +55,7 @@ The hash function used in Hawk is SHAKE256, an extendable output function (XOF) 
 has a static output size of 256 bits. This property is useful since SHAKE256 can be used in all three degrees of Hawk.
 
 \subsection{Parameters}
-Below is the parameters for Hawk degree 256, 512, and 1024. Note that this list only contains the relevant parameters for this thesis, and that many parameters relevant to 
+Below are some of the parameters for Hawk degree 256, 512, and 1024. Note that this list only contains the relevant parameters for this thesis, and that many parameters relevant to 
 compression and decompression are omitted.
 
 \begin{table}[h]
@@ -158,8 +158,20 @@ A simplified version of the key generation is described in the following algorit
     \State \Return private key $\mat{B}$, public key $\mat{Q}$
 \end{algorithmic}
 \end{algorithm}
-Polynomials $f$ and $g$ are sampled from a centered binomial distribution with $\eta$ depending on Hawk degree (see table \ref{tab:hawk-parameters})
-
+Polynomials $f$ and $g$ are sampled from a centered binomial distribution with $\eta$ depending on Hawk degree (see table \ref{tab:hawk-parameters}).
+The sampling procedure for $f$ and $g$ is shown in Algorithm \ref{sample_fg}
+\begin{algorithm}[H]
+\caption{Sample $f$ and $g$} \label{sample_fg}
+\begin{algorithmic}[1]
+    \Require{Parameters $n$, $\eta$}
+    \State $f \gets [0, 0, ..., 0]$
+    \State $g \gets [0, 0, ..., 0]$
+    % \For{$i = 0, 1,..., n-1}
+    % \State Sample $\{x_1, x_2, ... x_{2 \eta}\}$ bits from a uniform source 
+    % \State Compute $\mathlarger{(\sum_{i=1}^{2 \eta} x_i) - \eta}$
+\end{algorithmic}
+\end{algorithm}
+\todo{Finish this}
 \subsection{Solving the NTRU-equation}
 An important point in the key generation process is finding proper polynomials $F$ and $G$ that satisfy the NTRU-equation $fG - Fg = 1 \mod \bb{Z}[X] / (X^n + 1)$.
 Importantly, coefficients of $F$ and $G$ need to be rather small, and the procedure of solving the equation is a time-consuming part of the key generation process. 
@@ -221,16 +233,27 @@ We can extend this to generate vectors of length $n$ where each entry is distrib
 In this manner, one can sample a lattice point $\vec{x}$ which is relatively close to a target lattice point $\vec{t}$, which will be used in the signature generation step.
 
 \subsection{Hawk signature generation}
-To generate a Hawk signature of a message $\vec{m}$, one computes a hash digest $\vec{h}$ of the message, and samples a point $\vec{x}$ from $\dgd_{2\bb{Z}^{2n} + \vec{t}, \sigma_{sign}}$ that is close to $\vec{h}$ in the 
+To generate a Hawk signature of a message $\vec{m}$, one computes a hash digest $\vec{h}'$ of the message from which a binary polynomial $\vec{h}$ is constructed, 
+and samples a point $\vec{x}$ from $\dgd_{2\bb{Z}^{2n} + \vec{t}, \sigma_{sign}}$ that is close to $\vec{h}$ in the 
 private lattice generated by $\mathsf{rot}(\mat{B})$. By transforming the point $\vec{x}$ back to the lattice $\bb{Z}^{2n}$ via $\mat{B}^{-1}$ one has a signature that can be verified 
 by anyone that has access to the public key $\mat{Q}$.
-Below is the (simplified) procedure formulated in Algorithm \ref{simple_hawksign}:
+The (simplified) procedure formulated in Algorithm \ref{simple_hawksign}.
+First, Algorithm \ref{bytes_to_poly} shows the conversion from $\vec{h}'$ to a binary polynomial $\vec{h}$ as a helper function for Algorithm \ref{simple_hawksign}.
+
+\begin{algorithm}
+    \caption{$\mathsf{bytes \ to \ poly}$}\label{bytes_to_poly}
+\begin{algorithmic}[]
+    \State convert input hash digest to binary polynomial :)
+\end{algorithmic}
+\end{algorithm}
+
 \begin{algorithm}
     \caption{Simplified Hawk Signature Generation}\label{simple_hawksign}
 \begin{algorithmic}[1]
     \Require{Message $\vec{m}$, private key $\mat{B}$}
     \State $M \gets H(\vec{m})$ \Comment{H is a hash function}
-    \State $\vec{h} \gets H(M || \mathsf{salt})$ \Comment{$\mathsf{salt}$ is a randomly generated value and $||$ denotes concatenation}
+    \State $\vec{h}' \gets H(M || \mathsf{salt})$ \Comment{$\mathsf{salt}$ is a randomly generated value and $||$ denotes concatenation}
+    \State $\vec{h} \gets \mathsf{bytes \ to \ poly}(\vec{h}')$
     \State $\vec{t} \gets \mat{B} \vec{h} \mod 2$ \Comment{Reduction $\mod 2$ is done entrywise}
     \State $\vec{x} \gets \mathsf{sample}(\vec{t})$
     \If{$\lVert \vec{x} \rVert ^2 \geq 4 \cdot \sigma_{\text{sign}}^2 \cdot 2n$}
@@ -243,6 +266,8 @@ Below is the (simplified) procedure formulated in Algorithm \ref{simple_hawksign
     % \State restart if $\lVert \vec{x} \rVert ^2$ is too high
 \end{algorithmic}
 \end{algorithm}
+
+
 \subsection{Hawk signature verification}
 To verify a Hawk signature, one simply recomputes the vector $\vec{h}$ from $\vec{m}$ and $\mathsf{salt}$ and in turn the vector $\vec{w}$, and check if the $\mat{Q}$-norm of $\vec{w}$,
 $\lVert \vec{w} \rVert_{\mat{Q}}^2$ is not too high. A signature with $\mat{Q}$-norm of appropriately short length will be considered valid.
