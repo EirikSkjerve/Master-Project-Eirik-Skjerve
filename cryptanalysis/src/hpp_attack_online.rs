@@ -1,13 +1,13 @@
 use hawklib::hawkkeygen::{gen_f_g, hawkkeygen};
 use hawklib::hawksign::hawksign_total;
-use hawklib::utils::rot_key;
 use hawklib::ntru_solve::ntrusolve;
+use hawklib::utils::rot_key;
 
 use nalgebra::*;
 
-use rand_distr::{Distribution, Normal, Uniform};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
+use rand_distr::{Distribution, Normal, Uniform};
 
 use std::io::{stdout, Write};
 use std::sync::{Arc, Mutex};
@@ -20,13 +20,11 @@ use rayon::prelude::*;
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 static DELTA: f64 = 0.75;
 
-
 pub fn hpp_attack_online(t: usize, n: usize) {
-
     // STEP 1: generate hawk keypair
     // compute L from public Q via cholesky decomposition
 
-    let sigma = match n{
+    let sigma = match n {
         256 => 2.0 * 1.001,
         512 => 2.0 * 1.278,
         _ => 2.0 * 1.299,
@@ -52,27 +50,27 @@ pub fn hpp_attack_online(t: usize, n: usize) {
     let c = &l.l().transpose() * binv.map(|x| x as f64);
 
     // STEP 2: gradient search
-    let candidate = (&linv * gradient_search("descent", &lt, &privkey, t)).map(|x| x.round() as i32);
+    let candidate =
+        (&linv * gradient_search("descent", &lt, &privkey, t)).map(|x| x.round() as i32);
     if vec_in_key(&candidate, &binv) {
         println!("FOUND!");
     }
 }
 
 fn gradient_search(
-    dir: &str, 
-    lt: &DMatrix<f64>, 
-    privkey: &(Vec<u8>, Vec<i64>, Vec<i64>), 
-    t: usize
-    ) -> DVector<f64> {
-
+    dir: &str,
+    lt: &DMatrix<f64>,
+    privkey: &(Vec<u8>, Vec<i64>, Vec<i64>),
+    t: usize,
+) -> DVector<f64> {
     println!("Doing gradient {dir}");
     let n = privkey.1.len();
 
     let seed = rand::random::<u64>();
 
-    let mut rng = StdRng::seed_from_u64(seed); 
+    let mut rng = StdRng::seed_from_u64(seed);
     // random starting point
-    let mut w = get_rand_w(2*n, &mut rng);    
+    let mut w = get_rand_w(2 * n, &mut rng);
 
     let mut counter = 0;
     // let mut mom4 = estimate_mom4_par(lt, t, privkey, &w);
@@ -81,8 +79,8 @@ fn gradient_search(
         counter += 1;
         let (mut mom4, gradmom4) = estimate_mom4_gradmom4_par(lt, t, privkey, &w);
         let mut wnew = match dir {
-            "ascent" => &w + DELTA*&gradmom4,
-            "descent" => &w - DELTA*&gradmom4,
+            "ascent" => &w + DELTA * &gradmom4,
+            "descent" => &w - DELTA * &gradmom4,
             _ => DVector::zeros(n),
         };
 
@@ -98,7 +96,7 @@ fn gradient_search(
         println!("Mom4(w_new): {mom4_new}");
         println!("Diff       : {}", mom4 - mom4_new);
 
-        if (dir=="ascent" && mom4_new < mom4) || (dir=="descent" && mom4_new > mom4) {
+        if (dir == "ascent" && mom4_new < mom4) || (dir == "descent" && mom4_new > mom4) {
             println!("Direction has changed. Possibly at extremum");
             return w;
         }
@@ -108,16 +106,14 @@ fn gradient_search(
     }
 
     DVector::<f64>::zeros(n)
-    
 }
 
 fn estimate_mom4_gradmom4_par(
-    lt: &DMatrix<f64>, 
+    lt: &DMatrix<f64>,
     t: usize,
     privkey: &(Vec<u8>, Vec<i64>, Vec<i64>),
-    w: &DVector<f64>
-    ) -> (f64, DVector<f64>){
-
+    w: &DVector<f64>,
+) -> (f64, DVector<f64>) {
     let n = lt.ncols();
     let mut gradmom4 = Arc::new(Mutex::new(DVector::<f64>::zeros(n)));
     let mut mom4 = Arc::new(Mutex::new(0.0));
@@ -127,15 +123,15 @@ fn estimate_mom4_gradmom4_par(
         // generate random message
         let msg = get_random_bytes(30);
         // compute a Hawk signature given private key
-        let signature: DVector<f64> = DVector::from_vec(hawksign_total(&privkey, &msg, n/2)).map(|x| x as f64);
+        let signature: DVector<f64> =
+            DVector::from_vec(hawksign_total(&privkey, &msg, n / 2)).map(|x| x as f64);
         // transform signature by multiplying on the left with L^t
         let transig = lt * signature;
-        
+
         // update mom4 and gradmom4
         *gradmom4.lock().unwrap() += transig.dot(w).powi(3) * &transig;
         *mom4.lock().unwrap() += transig.dot(w).powi(4);
     }
-
 
     let mut gradmom4 = gradmom4.lock().unwrap().clone();
 
@@ -147,15 +143,13 @@ fn estimate_mom4_gradmom4_par(
 
     // return values
     (mom4, gradmom4)
-
 }
 fn estimate_gradmom4_par(
-    lt: &DMatrix<f64>, 
+    lt: &DMatrix<f64>,
     t: usize,
     privkey: &(Vec<u8>, Vec<i64>, Vec<i64>),
-    w: &DVector<f64>
-    ) -> DVector<f64>{
-
+    w: &DVector<f64>,
+) -> DVector<f64> {
     let n = lt.ncols();
     let mut gradmom4 = Arc::new(Mutex::new(DVector::<f64>::zeros(n)));
 
@@ -164,10 +158,11 @@ fn estimate_gradmom4_par(
         // generate random message
         let msg = get_random_bytes(30);
         // compute a Hawk signature given private key
-        let signature: DVector<f64> = DVector::from_vec(hawksign_total(&privkey, &msg, n/2)).map(|x| x as f64);
+        let signature: DVector<f64> =
+            DVector::from_vec(hawksign_total(&privkey, &msg, n / 2)).map(|x| x as f64);
         // transform signature by multiplying on the left with L^t
         let transig = lt * signature;
-        
+
         // update mom4 and gradmom4
         *gradmom4.lock().unwrap() += transig.dot(w).powi(3) * transig;
     }
@@ -180,16 +175,14 @@ fn estimate_gradmom4_par(
 
     // return value
     gradmom4
-
 }
 
 fn estimate_gradmom4(
-    lt: &DMatrix<f64>, 
+    lt: &DMatrix<f64>,
     t: usize,
     privkey: &(Vec<u8>, Vec<i64>, Vec<i64>),
-    w: &DVector<f64>
-    ) -> DVector<f64>{
-
+    w: &DVector<f64>,
+) -> DVector<f64> {
     let n = lt.ncols();
     let mut mom4: f64 = 0.0;
     let mut gradmom4: DVector<f64> = DVector::<f64>::zeros(n);
@@ -199,10 +192,11 @@ fn estimate_gradmom4(
         // generate random message
         let msg = get_random_bytes(30);
         // compute a Hawk signature given private key
-        let signature: DVector<f64> = DVector::from_vec(hawksign_total(&privkey, &msg, n/2)).map(|x| x as f64);
+        let signature: DVector<f64> =
+            DVector::from_vec(hawksign_total(&privkey, &msg, n / 2)).map(|x| x as f64);
         // transform signature by multiplying on the left with L^t
         let transig = lt * signature;
-        
+
         // update mom4 and gradmom4
         gradmom4 += transig.dot(w).powi(3) * transig;
     }
@@ -213,16 +207,14 @@ fn estimate_gradmom4(
 
     // return value
     gradmom4
-
 }
 
 fn estimate_mom4_par(
-    lt: &DMatrix<f64>, 
+    lt: &DMatrix<f64>,
     t: usize,
     privkey: &(Vec<u8>, Vec<i64>, Vec<i64>),
-    w: &DVector<f64>
-    ) -> f64 {
-
+    w: &DVector<f64>,
+) -> f64 {
     let n = lt.ncols();
     let mut mom4 = Arc::new(Mutex::new(0.0));
 
@@ -230,7 +222,8 @@ fn estimate_mom4_par(
         // generate random message
         let msg = get_random_bytes(30);
         // compute a Hawk signature given private key
-        let signature: DVector<f64> = DVector::from_vec(hawksign_total(&privkey, &msg, n/2)).map(|x| x as f64);
+        let signature: DVector<f64> =
+            DVector::from_vec(hawksign_total(&privkey, &msg, n / 2)).map(|x| x as f64);
         // transform signature by multiplying on the left with L^t
         let transig = lt * signature;
 
@@ -243,12 +236,11 @@ fn estimate_mom4_par(
 }
 
 fn estimate_mom4(
-    lt: &DMatrix<f64>, 
+    lt: &DMatrix<f64>,
     t: usize,
     privkey: &(Vec<u8>, Vec<i64>, Vec<i64>),
-    w: &DVector<f64>
-    ) -> f64 {
-
+    w: &DVector<f64>,
+) -> f64 {
     let n = lt.ncols();
     let mut mom4: f64 = 0.0;
 
@@ -257,7 +249,8 @@ fn estimate_mom4(
         // generate random message
         let msg = get_random_bytes(30);
         // compute a Hawk signature given private key
-        let signature: DVector<f64> = DVector::from_vec(hawksign_total(&privkey, &msg, n/2)).map(|x| x as f64);
+        let signature: DVector<f64> =
+            DVector::from_vec(hawksign_total(&privkey, &msg, n / 2)).map(|x| x as f64);
         // transform signature by multiplying on the left with L^t
         let transig = lt * signature;
 
@@ -269,7 +262,6 @@ fn estimate_mom4(
     mom4 /= t as f64;
     // return value
     mom4
-
 }
 
 fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
@@ -290,10 +282,10 @@ fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
 
     // sample n times
     // n/2 for each distribution
-    for _ in 0..n/2 {
+    for _ in 0..n / 2 {
         rnd_bytes.push(dist3.sample(rng));
     }
-    for _ in 0..n/2 {
+    for _ in 0..n / 2 {
         rnd_bytes.push(dist3.sample(rng));
     }
 
@@ -304,7 +296,6 @@ fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
     w
 }
 fn to_mat_pub(pubkey: &(Vec<i64>, Vec<i64>)) -> DMatrix<f64> {
-
     // use ntrusolve to get q01 and q11, and convert it into a DMatrix
     let (q00, q01) = pubkey;
     let n = q00.len();

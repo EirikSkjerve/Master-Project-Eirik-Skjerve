@@ -7,12 +7,12 @@ use hawklib::parameters::{hawk1024_params, hawk256_params, hawk512_params};
 
 use rand::Rng;
 
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{stdout, Write};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use std::collections::HashMap;
 
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
@@ -112,12 +112,11 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
 
     // println!("Min: {min} \nMax: {max}");
 
-
     // thread safe variable
     let mut mu: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
     let mut var: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
 
-    let mut frequencies: Arc<Mutex<HashMap<i64, f64>>>= Arc::new(Mutex::new(HashMap::new()));
+    let mut frequencies: Arc<Mutex<HashMap<i64, f64>>> = Arc::new(Mutex::new(HashMap::new()));
 
     // make progressbar with style
     let pb = ProgressBar::new(t as u64);
@@ -127,8 +126,6 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
             .unwrap()
             .progress_chars("#>-"),
     );
-
-
 
     // sample x-vectors in parallel
     (0..t).into_par_iter().for_each(|i| {
@@ -145,14 +142,14 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
         pb.inc(1);
     });
 
-        // Normalize frequencies (convert counts to relative frequencies)
+    // Normalize frequencies (convert counts to relative frequencies)
     {
         let mut freq_map = frequencies.lock().unwrap();
         for value in freq_map.values_mut() {
-            *value /= (2*t*n) as f64;
+            *value /= (2 * t * n) as f64;
         }
     }
-        // Sort by key before printing
+    // Sort by key before printing
     let mut sorted_frequencies: Vec<(i64, f64)> = {
         let freq_map = frequencies.lock().unwrap();
         let mut vec: Vec<_> = freq_map.iter().map(|(&k, &v)| (k, v)).collect();
@@ -165,7 +162,7 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
     //     println!("{}: {:.10}", key, value);
     // }
 
-    let mu = *mu.lock().unwrap() / (2*t*n) as f64;
+    let mu = *mu.lock().unwrap() / (2 * t * n) as f64;
 
     pb.finish_with_message("Mu estimation completed");
 
@@ -202,8 +199,7 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
     );
 
     let sigma_sq: f64 = *var.lock().unwrap();
-    let sigma = (sigma_sq / (2*t*n) as f64).sqrt();
-
+    let sigma = (sigma_sq / (2 * t * n) as f64).sqrt();
 
     // thread-safe variables
     let mut normvar: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
@@ -239,9 +235,9 @@ pub fn estimate_mem_norm_par(t: usize, n: usize) -> (f64, f64, f64, f64, Duratio
     let end = start.elapsed();
 
     // unpack the thread-safe variables into normal variables to return them
-    let res_var = *var.lock().unwrap() / (2*t*n) as f64;
-    let res_normvar = *normvar.lock().unwrap() / (2*t*n) as f64;
-    let res_normkur = *normkur.lock().unwrap() / (2*t*n) as f64;
+    let res_var = *var.lock().unwrap() / (2 * t * n) as f64;
+    let res_normvar = *normvar.lock().unwrap() / (2 * t * n) as f64;
+    let res_normkur = *normkur.lock().unwrap() / (2 * t * n) as f64;
     (mu, res_var, res_normvar, res_normkur, end)
 }
 

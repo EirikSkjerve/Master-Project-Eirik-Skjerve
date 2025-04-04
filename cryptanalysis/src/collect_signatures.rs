@@ -32,11 +32,14 @@ pub fn get_random_bytes(num_bytes: usize) -> Vec<u8> {
     res
 }
 
-pub fn collect_signatures_wh(t: usize, n: usize) -> 
-    (Vec<Vec<i16>>,
+pub fn collect_signatures_wh(
+    t: usize,
+    n: usize,
+) -> (
+    Vec<Vec<i16>>,
     (Vec<u8>, Vec<i64>, Vec<i64>),
-    (Vec<i64>, Vec<i64>))
-{
+    (Vec<i64>, Vec<i64>),
+) {
     // create t signatures with hawk degree n and store them in file
 
     println!("Collecting {t} signatures of Hawk degree {n}");
@@ -45,7 +48,7 @@ pub fn collect_signatures_wh(t: usize, n: usize) ->
 
     // generate a keypair
     // let (privkey, pubkey) = hawkkeygen(n, Some(vec![1,3,3,7]));
-    let (privkey, pubkey) = hawkkeygen(n, Some(vec![1,2,3]));
+    let (privkey, pubkey) = hawkkeygen(n, Some(vec![1, 2, 3]));
 
     let pb = ProgressBar::new(t as u64);
 
@@ -59,15 +62,31 @@ pub fn collect_signatures_wh(t: usize, n: usize) ->
     println!("Generating {t} signatures...");
     let mut ws: Arc<Mutex<Vec<Vec<i16>>>> = Arc::new(Mutex::new(Vec::with_capacity(t)));
 
+    let mut zeros = Arc::new(Mutex::new(0));
+    let mut ones = Arc::new(Mutex::new(0));
     (0..t).into_par_iter().for_each(|x| {
+        let (_, h, _, w1) = hawksign_total_h(&privkey, &get_random_bytes(100), n);
+        let w1: Vec<i16> = w1.iter().map(|&x| x as i16).collect();
 
-        let (_, _, _, w1) = hawksign_total_h(&privkey, &get_random_bytes(100), n);
-        let w1: Vec<i16>  = w1.iter().map(|&x| x as i16).collect();
+        for i in h {
+            if i == 0 {
+                *zeros.lock().unwrap() += 1
+            }
+            if i == 1 {
+                *ones.lock().unwrap() += 1
+            }
+        }
 
         ws.lock().unwrap().push(w1);
 
         pb.inc(1);
     });
+
+    println!(
+        "Zeros: {}\nOnes:  {}",
+        *zeros.lock().unwrap(),
+        *ones.lock().unwrap()
+    );
 
     pb.finish_with_message("Completed");
 

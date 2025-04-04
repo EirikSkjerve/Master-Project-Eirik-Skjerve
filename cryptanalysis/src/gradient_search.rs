@@ -1,9 +1,9 @@
 use nalgebra::*;
 use rayon::prelude::*;
 
-use rand_distr::{Distribution, Normal, Uniform};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
+use rand_distr::{Distribution, Normal, Uniform};
 
 use std::io::{stdout, Write};
 use std::sync::{Arc, Mutex};
@@ -84,7 +84,11 @@ pub fn gradient_ascent_vanilla(u: &DMatrix<f64>) -> Option<DVector<f64>> {
     return None;
 }
 
-fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<f64>>) -> Option<DVector<f64>> {
+fn gradient_optimize(
+    u: &DMatrix<f64>,
+    descent: bool,
+    solution: Option<&DVector<f64>>,
+) -> Option<DVector<f64>> {
     // perform gradient descent if parameter <descent> is set to true
     // otherwise do gradient ascent.
 
@@ -173,14 +177,20 @@ fn gradient_optimize(u: &DMatrix<f64>, descent: bool, solution: Option<&DVector<
     }
 }
 
-pub fn gradient_descent(samples: &DMatrix<f64>, solution: Option<&DVector<f64>>) -> Option<DVector<f64>> {
+pub fn gradient_descent(
+    samples: &DMatrix<f64>,
+    solution: Option<&DVector<f64>>,
+) -> Option<DVector<f64>> {
     if let result = gradient_optimize(samples, true, solution) {
         return result;
     }
     None
 }
 
-pub fn gradient_ascent(samples: &DMatrix<f64>, solution: Option<&DVector<f64>>) -> Option<DVector<f64>> {
+pub fn gradient_ascent(
+    samples: &DMatrix<f64>,
+    solution: Option<&DVector<f64>>,
+) -> Option<DVector<f64>> {
     if let result = gradient_optimize(samples, false, solution) {
         return result;
     }
@@ -199,7 +209,6 @@ fn mom4_par(w: &DVector<f64>, samples: &DMatrix<f64>) -> f64 {
         .collect();
 
     DVector::<f64>::from_vec(uw3).mean()
-
 }
 
 fn grad_mom4(w: &DVector<f64>, samples: &DMatrix<f64>) -> DVector<f64> {
@@ -256,10 +265,10 @@ fn get_rand_w(n: usize, rng: &mut StdRng) -> DVector<f64> {
 
     // sample n times
     // n/2 for each distribution
-    for _ in 0..n/2 {
+    for _ in 0..n / 2 {
         rnd_bytes.push(dist3.sample(rng));
     }
-    for _ in 0..n/2 {
+    for _ in 0..n / 2 {
         rnd_bytes.push(dist3.sample(rng));
     }
 

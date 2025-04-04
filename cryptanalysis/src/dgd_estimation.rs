@@ -6,11 +6,11 @@ use hawklib::hawksign::{hawksign_total, hawksign_x_only};
 use hawklib::parameters::{hawk1024_params, hawk256_params, hawk512_params};
 
 use rand::Rng;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{stdout, Write};
 use std::path::Path;
 use std::time::{Duration, Instant};
-use std::collections::HashMap;
 
 use prettytable::{color, Attr, Cell, Row, Table};
 
@@ -142,11 +142,11 @@ pub fn estimate_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
     }
     // Convert to relative frequencies
     for value in frequency.values_mut() {
-        *value /= (t*2*n);
+        *value /= (t * 2 * n);
     }
     println!("Frequencies: {:?}", frequency);
 
-    mu /= (t*2*n) as f64;
+    mu /= (t * 2 * n) as f64;
 
     println!("");
 
@@ -169,8 +169,8 @@ pub fn estimate_mem(t: usize, n: usize) -> (f64, f64, f64, Duration) {
         kur += tempkur;
     }
 
-    var /= (t*2*n) as f64;
-    kur /= (t*2*n) as f64;
+    var /= (t * 2 * n) as f64;
+    kur /= (t * 2 * n) as f64;
 
     let end = start.elapsed();
 

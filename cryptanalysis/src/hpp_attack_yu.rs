@@ -1,5 +1,7 @@
 use crate::file_utils::read_vectors_from_file;
-use crate::gradient_search::{gradient_ascent, gradient_descent, gradient_descent_vanilla, gradient_ascent_vanilla};
+use crate::gradient_search::{
+    gradient_ascent, gradient_ascent_vanilla, gradient_descent, gradient_descent_vanilla,
+};
 
 use crate::collect_signatures::{collect_signatures_wh, get_random_bytes};
 
@@ -18,12 +20,12 @@ use hawklib::utils::rot_key;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
-use rayon::prelude::*;
 use indicatif::{ProgressBar, ProgressStyle};
+use rayon::prelude::*;
 
 use std::io::{stdout, Write};
 use std::sync::{Arc, Mutex};
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 use peak_alloc::PeakAlloc;
 
@@ -35,9 +37,8 @@ static MU_Y: f64 = -0.25;
 static VAR_Y: f64 = 1.1451;
 static SIGMA_Y: f64 = 1.0701;
 pub fn run_hpp_attack_yu(t: usize, n: usize) {
-
     println!("Running HPP attack with {t} samples against Hawk{n}");
-    measure_d_distribution(t, n);
+    // measure_d_distribution(t, n);
     let (mut samples, (b, binv), q) = generate_samples_and_keys(t, n).unwrap();
 
     // eprintln!("Before: {samples}");
@@ -49,13 +50,7 @@ pub fn run_hpp_attack_yu(t: usize, n: usize) {
     let total_num_elements = (samples.nrows() * samples.ncols()) as f64;
     let mean = samples.iter().sum::<f64>() / total_num_elements;
 
-    let variance = samples
-        .iter()
-        .map(|&x| {
-            (x - mean).powi(2)
-        })
-        .sum::<f64>()
-        / total_num_elements;
+    let variance = samples.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / total_num_elements;
 
     let sigma = variance.sqrt();
 
@@ -67,34 +62,23 @@ pub fn run_hpp_attack_yu(t: usize, n: usize) {
     // samples = samples.map(|x| x - mean);
 
     // normalize the samples
-    // samples /= sigma;
 
+    samples /= sigma;
 
     let mean = samples.iter().sum::<f64>() / (total_num_elements * sigma);
 
     let variance = samples
         .iter()
-        .map(|&x| {
-            ((x/sigma) - mean).powi(2)
-        })
+        .map(|&x| ((x / sigma) - mean).powi(2))
         .sum::<f64>()
         / total_num_elements;
 
     let kurtosis = samples
         .iter()
-        .map(|&x| {
-            ((x / sigma) - mean).powi(4)
-        })
+        .map(|&x| ((x / sigma) - mean).powi(4))
         .sum::<f64>()
         / total_num_elements;
 
-    println!("Mean: {}", mean);
-    println!("Var:  {}", variance);
-    // println!("Sigma: {}", sigma);
-    println!("Kur:  {}", kurtosis);
-
-    return;
-    
     loop {
         let res = (&linv * gradient_ascent_vanilla(&samples).unwrap()).map(|x| x.round() as i32);
 
@@ -104,15 +88,13 @@ pub fn run_hpp_attack_yu(t: usize, n: usize) {
             return;
         }
     }
-
 }
-
 
 fn hypercube_transformation(
     samples: &mut DMatrix<f64>,
     q: DMatrix<f64>,
     skey: &DMatrix<i32>,
-    b: &DMatrix<i32>
+    b: &DMatrix<i32>,
 ) -> (DMatrix<f64>, DMatrix<f64>) {
     // given samples and and covariance matrix Q, return transformed
     // samples from hidden parallelepiped onto hidden hypercube
@@ -150,11 +132,10 @@ fn hypercube_transformation(
 }
 
 pub fn measure_d_distribution(t: usize, n: usize) {
-
     let num_rounds = 10;
     for i in 0..num_rounds {
         let (privkey, _) = hawkkeygen(n, None);
-        let pb = ProgressBar::new(3*t as u64);
+        let pb = ProgressBar::new(3 * t as u64);
         pb.set_style(
             ProgressStyle::default_bar()
                 .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({per_sec})")
@@ -172,7 +153,7 @@ pub fn measure_d_distribution(t: usize, n: usize) {
             pb.inc(1);
         });
 
-        let mu = *mu.lock().unwrap() / (2*t*n) as f64;
+        let mu = *mu.lock().unwrap() / (2 * t * n) as f64;
 
         let mut var = Arc::new(Mutex::new(0.0));
         (0..t).into_par_iter().for_each(|i| {
@@ -183,7 +164,7 @@ pub fn measure_d_distribution(t: usize, n: usize) {
             pb.inc(1);
         });
 
-        let var = *var.lock().unwrap() / (2*t*n) as f64;
+        let var = *var.lock().unwrap() / (2 * t * n) as f64;
         let sigma = var.sqrt();
 
         let mut kur = Arc::new(Mutex::new(0.0));
@@ -192,7 +173,7 @@ pub fn measure_d_distribution(t: usize, n: usize) {
         println!("Var: {var}");
         println!("Sigma: {sigma}");
 
-        let mu = mu/sigma;
+        let mu = mu / sigma;
 
         (0..t).into_par_iter().for_each(|i| {
             let (_, _, d, _) = hawksign_total_h(&privkey, &get_random_bytes(100), n);
@@ -200,13 +181,11 @@ pub fn measure_d_distribution(t: usize, n: usize) {
             *kur.lock().unwrap() += temp_kur;
 
             pb.inc(1);
-
         });
 
         pb.finish_with_message("Estimation completed");
 
-        let kur = *kur.lock().unwrap() / (2*t*n) as f64;
-
+        let kur = *kur.lock().unwrap() / (2 * t * n) as f64;
 
         println!("Norm. mu: {mu}");
         println!("Norm. kur: {kur}");
@@ -223,7 +202,7 @@ fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
     as_column || as_column_neg
 }
 
-pub fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) -> (f64, f64){
+pub fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) -> (f64, f64) {
     // given a solution, measure how far the solution is away from each column of the secret key
     let mut min = f64::INFINITY;
     let mut max = f64::NEG_INFINITY;
@@ -246,7 +225,6 @@ pub fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) -> (f64, f64){
     // println!("Min norm of diff: {min} \nMax norm of diff: {max}");
     (min, max)
 }
-
 
 pub fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64>) {
     // given private key, reconstruct entire secret matrix B and B inverse
@@ -278,7 +256,6 @@ fn generate_samples_and_keys(
     t: usize,
     degree: usize,
 ) -> Option<(DMatrix<f64>, (DMatrix<i32>, DMatrix<i32>), DMatrix<i64>)> {
-
     let (signatures, privkey, pubkey) = collect_signatures_wh(t, degree);
 
     println!("{}, {}", signatures.len(), signatures[0].len());
@@ -287,7 +264,7 @@ fn generate_samples_and_keys(
     let sig_flat: Vec<i16> = signatures.into_iter().flatten().collect();
 
     // construct nalgebra matrix from this
-    let signature_matrix = DMatrix::from_column_slice(2*degree, t, &sig_flat);
+    let signature_matrix = DMatrix::from_column_slice(2 * degree, t, &sig_flat);
 
     // convert to f64
     let signature_matrix = signature_matrix.map(|x| x as f64);
@@ -296,7 +273,7 @@ fn generate_samples_and_keys(
 
     // convert the private key (i.e. f and g) to the entire matrix B and B inverse
     let (b, binv) = to_mat(&privkey);
-    // unpack 
+    // unpack
     let (q00, q01) = pubkey;
 
     // use ntrusolve to get q01 and q11, and convert it into a DMatrix

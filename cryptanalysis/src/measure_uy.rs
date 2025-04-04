@@ -1,5 +1,5 @@
-use hawklib::hawksign::hawksign_total_h;
 use hawklib::hawkkeygen::hawkkeygen;
+use hawklib::hawksign::hawksign_total_h;
 
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
@@ -7,12 +7,9 @@ use rayon::prelude::*;
 use rand::Rng;
 
 pub fn measure_uy_pipeline(n: usize, num_samples: usize) {
-
     let (privkey, _) = hawkkeygen(n, None);
 
-    for i in 0..num_samples {
-    }
-
+    for i in 0..num_samples {}
 }
 
 fn get_random_bytes(num_bytes: usize) -> Vec<u8> {

@@ -1,21 +1,19 @@
 use crate::rngcontext::{get_random_bytes, shake256x4, RngContext};
+use hawklib::hawksign::sample;
 use hawklib::ntru_solve::ntrusolve;
 use hawklib::utils::rot_key;
-use hawklib::hawksign::sample;
 
-use rand::{thread_rng, Rng};
-use rand::seq::SliceRandom;
-use rand::distributions::Uniform;
 use nalgebra::*;
+use rand::distributions::Uniform;
+use rand::seq::SliceRandom;
+use rand::{thread_rng, Rng};
 use rand_distr::{Bernoulli, Distribution};
 
-pub fn hawk_sim_keygen(n: usize) -> ((DMatrix<i64>, DMatrix<i64>), DMatrix<i64>){
-
+pub fn hawk_sim_keygen(n: usize) -> ((DMatrix<i64>, DMatrix<i64>), DMatrix<i64>) {
     loop {
-
         let rndbytes = get_random_bytes(20);
         let (f, g) = gen_f_g(n);
-        if let Some((bigf, bigg)) = ntrusolve(&f, &g){
+        if let Some((bigf, bigg)) = ntrusolve(&f, &g) {
             let (b, binv) = to_mat_priv(&f, &g, &bigf, &bigg);
             let q = &b.transpose() * &b;
             return ((b, binv), q);
@@ -30,22 +28,27 @@ fn random_uniform_vector(n: usize) -> DVector<i64> {
 }
 pub fn hawk_sim_sign(n: usize, binv: &DMatrix<i64>) -> DVector<i64> {
     let seed = get_random_bytes(40);
-    let mut t = get_random_bytes(2*n);
+    let mut t = get_random_bytes(2 * n);
     t = t.iter().map(|&x| x % 2).collect();
     let x = DVector::<i64>::from_vec(sample(&seed, t, n));
 
-    // as a test, use a uniform distribution here instead 
-    let x = random_uniform_vector(2*n);
+    // as a test, use a uniform distribution here instead
+    let x = random_uniform_vector(2 * n);
     let w = binv * x;
     w
 }
 
 pub fn hawk_sim_verify(n: usize, sig: &DVector<i64>, q: &DMatrix<i64>) {
-    let qnorm = (*(((1/2*n as i64) * sig.transpose() * q * sig).get((0,0))).unwrap() as f64).sqrt();
+    let qnorm =
+        (*(((1 / 2 * n as i64) * sig.transpose() * q * sig).get((0, 0))).unwrap() as f64).sqrt();
 }
 
-fn to_mat_priv(f: &Vec<i64>, g: &Vec<i64>, bigf: &Vec<i64>, bigg: &Vec<i64>) -> (DMatrix<i64>, DMatrix<i64>){
-
+fn to_mat_priv(
+    f: &Vec<i64>,
+    g: &Vec<i64>,
+    bigf: &Vec<i64>,
+    bigg: &Vec<i64>,
+) -> (DMatrix<i64>, DMatrix<i64>) {
     let n = f.len();
 
     let b = rot_key(&f, &g, &bigf, &bigg);
@@ -65,7 +68,7 @@ fn to_mat_priv(f: &Vec<i64>, g: &Vec<i64>, bigf: &Vec<i64>, bigg: &Vec<i64>) -> 
     (b, binv)
 }
 
-fn gen_f_g(n: usize) -> (Vec<i64>, Vec<i64>){
+fn gen_f_g(n: usize) -> (Vec<i64>, Vec<i64>) {
     let (mut f, mut g) = (Vec::<i64>::new(), Vec::<i64>::new());
 
     let eta = 2;
@@ -75,9 +78,8 @@ fn gen_f_g(n: usize) -> (Vec<i64>, Vec<i64>){
     let mut rng = thread_rng();
 
     for _ in 0..n {
-
         let mut sample = 0;
-        for i in 0..2*eta {
+        for i in 0..2 * eta {
             if dist.sample(&mut rng) {
                 sample += 1;
             }
@@ -85,9 +87,8 @@ fn gen_f_g(n: usize) -> (Vec<i64>, Vec<i64>){
         f.push(sample - eta);
     }
     for _ in 0..n {
-
         let mut sample = 0;
-        for i in 0..2*eta {
+        for i in 0..2 * eta {
             if dist.sample(&mut rng) {
                 sample += 1;
             }

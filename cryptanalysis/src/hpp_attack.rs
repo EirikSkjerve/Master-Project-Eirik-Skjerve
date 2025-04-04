@@ -20,7 +20,7 @@ use rayon::prelude::*;
 
 use std::io::{stdout, Write};
 use std::sync::{Arc, Mutex};
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 use peak_alloc::PeakAlloc;
 
@@ -147,14 +147,17 @@ pub fn run_hpp_attack(t: usize, n: usize) {
             // return;
         }
 
-
         // do a measurement of the result vector up against secret key if it was not the correct one
         let (min, max) = measure_res(&solution, &binv);
         avg_min += min / MAX_RETRIES as f64;
         avg_max += max / MAX_RETRIES as f64;
 
-        if min < tot_min { tot_min = min}
-        if max > tot_max { tot_max = max}
+        if min < tot_min {
+            tot_min = min
+        }
+        if max > tot_max {
+            tot_max = max
+        }
         // println!(
         //     "Norm of res from gradient search: {}",
         //     solution.map(|x| x as f64).norm()
@@ -224,7 +227,7 @@ fn vec_in_key(vec: &DVector<i32>, key: &DMatrix<i32>) -> bool {
     as_column || as_column_neg
 }
 
-pub fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) -> (f64, f64){
+pub fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) -> (f64, f64) {
     // given a solution, measure how far the solution is away from each column of the secret key
     let mut min = f64::INFINITY;
     let mut max = f64::NEG_INFINITY;
@@ -247,7 +250,6 @@ pub fn measure_res(res: &DVector<i32>, binv: &DMatrix<i32>) -> (f64, f64){
     // println!("Min norm of diff: {min} \nMax norm of diff: {max}");
     (min, max)
 }
-
 
 pub fn to_mat(privkey: &(Vec<u8>, Vec<i64>, Vec<i64>)) -> (DMatrix<i64>, DMatrix<i64>) {
     // given private key, reconstruct entire secret matrix B and B inverse
@@ -310,7 +312,7 @@ fn generate_samples_and_keys(
 
     // convert the private key (i.e. f and g) to the entire matrix B and B inverse
     let (b, binv) = to_mat(&privkey);
-    // unpack 
+    // unpack
     let (q00, q01) = pubkey;
 
     // use ntrusolve to get q01 and q11, and convert it into a DMatrix

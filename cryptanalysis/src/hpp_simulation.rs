@@ -1,5 +1,7 @@
 use crate::file_utils::read_vectors_from_file;
-use crate::gradient_search::{gradient_ascent, gradient_descent, gradient_descent_vanilla, gradient_ascent_vanilla};
+use crate::gradient_search::{
+    gradient_ascent, gradient_ascent_vanilla, gradient_descent, gradient_descent_vanilla,
+};
 use crate::hpp_attack::measure_res;
 use nalgebra::*;
 
@@ -8,8 +10,8 @@ use hawklib::utils::rot_key;
 
 use hawklib::ntru_solve::ntrusolve;
 
-use crate::hawk_sim::*;
 use crate::compare_keys::compare_keys_simulated;
+use crate::hawk_sim::*;
 
 use rand::prelude::*;
 use rand::rngs::StdRng;
@@ -43,7 +45,7 @@ pub fn run_hpp_sim(t: usize, n: usize) {
     // and directly return the entire signature w which we use to deduce information about B
 
     println!("Running HPP attack with {t} samples against Hawk{n} simulation");
-    let ((b, binv), q) = hawk_sim_keygen(n); 
+    let ((b, binv), q) = hawk_sim_keygen(n);
     let bt = b.transpose();
     println!("Key generated");
     // eprintln!("B: {b}");
@@ -66,7 +68,7 @@ pub fn run_hpp_sim(t: usize, n: usize) {
     let mut samples_cols: Vec<DVector<i64>> = Vec::new();
     let mut signatures: Arc<Mutex<Vec<DVector<i64>>>> = Arc::new(Mutex::new(Vec::with_capacity(t)));
     // let mut rng = StdRng::seed_from_u64(rand::random::<u64>());
-    (0..t).into_par_iter().for_each(|_|{
+    (0..t).into_par_iter().for_each(|_| {
         let sig = hawk_sim_sign(n, &binv);
         signatures.lock().unwrap().push(sig);
         pb.inc(1);
@@ -173,8 +175,12 @@ pub fn run_hpp_sim(t: usize, n: usize) {
         let (min, max) = measure_res(&solution, &bt.map(|x| x as i32));
         avg_min += min / MAX_RETRIES as f64;
         avg_max += max / MAX_RETRIES as f64;
-        if min < tot_min { tot_min = min}
-        if max > tot_max { tot_max = max}
+        if min < tot_min {
+            tot_min = min
+        }
+        if max > tot_max {
+            tot_max = max
+        }
         // println!(
         //     "Norm of res from gradient search: {}",
         //     solution.map(|x| x as f64).norm()
@@ -200,7 +206,8 @@ fn hypercube_transformation(
     // get theoretical sigma here for scaling
 
     // compute L = Cholesky decomposition of Q^-1
-    let l = Cholesky::new(q.clone().try_inverse().expect("Could not take inverse")).expect("Couldn't do Cholesky decomposition of qinv");
+    let l = Cholesky::new(q.clone().try_inverse().expect("Could not take inverse"))
+        .expect("Couldn't do Cholesky decomposition of qinv");
 
     // compute inverse of Lt for later transformation back to parallelepiped
     let linv = l
@@ -237,7 +244,7 @@ fn hypercube_transformation(
     // // // remove outlier samples to create a more cubic shape of the samples
     // *samples = norm_shaving(samples, threshold) / max_value;
     // println!("After: {}", samples.ncols());
-   
+
     // *samples = ((&l.l().transpose()) * &*samples) / 10.0;
 
     let c = &l.l().transpose() * skey.map(|x| x as f64);
@@ -253,9 +260,9 @@ fn norm_shaving(samples: &DMatrix<f64>, threshold: f64) -> DMatrix<f64> {
     let mut result = Vec::new();
 
     for c in 0..samples.ncols() {
-        let col = samples.column(c);  // Get the c-th column
+        let col = samples.column(c); // Get the c-th column
         if col.norm() <= threshold {
-            result.push(col.clone());  // If the norm is less than or equal to threshold, keep the column
+            result.push(col.clone()); // If the norm is less than or equal to threshold, keep the column
         }
     }
 
@@ -273,10 +280,13 @@ fn norm_shaving(samples: &DMatrix<f64>, threshold: f64) -> DMatrix<f64> {
 /// # Returns
 /// A DMatrix<i64> containing only the retained column vectors.
 fn rectangular_clipping(w: &DMatrix<f64>, threshold: f64) -> DMatrix<f64> {
-
     // Collect columns that satisfy the threshold condition
     let retained_columns: Vec<_> = (0..w.ncols())
-        .filter(|&j| w.column(j).iter().all(|&val| (val.abs() as f64) < threshold))
+        .filter(|&j| {
+            w.column(j)
+                .iter()
+                .all(|&val| (val.abs() as f64) < threshold)
+        })
         .flat_map(|j| w.column(j).iter().copied().collect::<Vec<f64>>())
         .collect();
 
@@ -284,7 +294,7 @@ fn rectangular_clipping(w: &DMatrix<f64>, threshold: f64) -> DMatrix<f64> {
     if retained_columns.is_empty() {
         return DMatrix::<f64>::zeros(w.nrows(), 0); // Return empty matrix if nothing remains
     }
-    
+
     let num_rows = w.nrows();
     let num_cols = retained_columns.len() / num_rows;
     DMatrix::from_vec(num_rows, num_cols, retained_columns)
@@ -299,7 +309,7 @@ fn z_score_clipping(w: &DMatrix<f64>, k: f64) -> DMatrix<f64> {
 
         // Check each dimension of the column (each point)
         for i in 0..w.nrows() {
-            let z_score = (w[(i, j)] - 0.0) / 2.0*SIGMA;
+            let z_score = (w[(i, j)] - 0.0) / 2.0 * SIGMA;
 
             if z_score.abs() > k {
                 valid = false;
