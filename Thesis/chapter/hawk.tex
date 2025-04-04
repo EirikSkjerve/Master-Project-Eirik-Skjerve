@@ -1,12 +1,12 @@
 \section{Hawk}
-In this section we introduce the digital signature scheme Hawk \cite{HawkSpec24}, which will later be the target for our cryptanalysis.
-As mentioned in the introduction, Hawk is a lattice based signature scheme that shares some key points with that of NTRU-sign \cite{HHPSW03}, the target for the original HPP attack.
-The first part of this chapter/section will give an introduction on how the Hawk scheme works on a high level. After this, the implementation of Hawk will be described, where more detail about 
+In this section we introduce the digital signature scheme Hawk \cite{HawkSpec24}.
+As mentioned in the introduction, Hawk is a lattice based signature scheme that shares some key points with the digital signature scheme NTRU-sign \cite{HHPSW03}, the target for the original HPP attack.
+The first part of this chapter, section 3.2, will give an introduction on how the Hawk scheme works on a high level. After this, the implementation of Hawk will be described in section 3.3, where more detail about 
 specific subroutines and parts of the procedures will be given.
 
-In this section, quite a few parts of Hawk as described in \cite{HawkSpec24} are left out due to the focus of this thesis. For example, Hawk utilizes compression of keys and signatures 
-(which influence the key generation and signature generation procedures),
-and some of their security considerations regarding a practical implementation is based on side channel attacks, both of which is not a concern in this thesis.
+In these sections, some parts of Hawk as described in \cite{HawkSpec24} are left out due to the focus of this thesis. For example, Hawk utilizes compression of keys and signatures, 
+% (which influence the key generation and signature generation procedures),
+and some of their security considerations regarding a practical implementation are based on side channel attacks, both of which is not a concern in this thesis.
 Moreover, their security analysis is based on experimental lattice reduction and security proofs of the underlying hard problems (namely the \textit{Lattice Isomorphism Problem} and 
 the \textit{One More Shortest Vector Problem}), which, again, is not the focus of this thesis. 
 

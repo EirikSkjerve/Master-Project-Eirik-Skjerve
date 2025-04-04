@@ -24,7 +24,7 @@ In the following, each of these steps will be covered in detail.
 \begin{figure}[H]
     \centering
     \includegraphics[scale=0.5]{hpp_parallelepiped_uniform.png}
-    \caption{Hidden parallelepiped problem in dimension 2}
+    \caption{Hidden parallelepiped problem in dimension 2. Given only signature samples, recover rows of $\mat{V}$, here marked as vectors in red and blue}
   	\medskip 
 	% \hspace*{15pt}\hbox{\scriptsize Credit: Acme company makes everything \url{https://acme.com/}}
     \label{hpp_parallelepiped_uniform}
@@ -36,9 +36,11 @@ This is achieved as $\vec{v}^t \vec{v} = ( \vec{x}\mat{V})^t(\vec{x}\mat{V}) = \
 Now, by taking the expectation of the inner term we get $\bb{E}[\vec{x}^t \vec{x}] = \mat{I}_n / 3$ where $\mat{I}_n$ is the $n \times n$ identity matrix because of the following:
 Since all $x_i \in \vec{x}$ are distributed according to the uniform distribution over $[-1, 1]$ and each $x_i$ are independent, 
 we have that $\bb{E}[x_i] = 0$ and $\bb{E}[x_i x_j] = \bb{E}[x_i] \bb{E}[x_j] = 0$ when $i \neq j$.
-\todo{Rewrite this computation: not quite correct notation for integration}
-For the case when $i = j$, we have \[\bb{E}[x_i x_j] = \bb{E}[x ^2] = \int_{a}^{b} x^2 \frac{1}{b-a} dx = \int_{-1}^{1} x^2 \frac{1}{2} dx = \frac{1}{3}\]
-Therefore, $\bb{E}[\vec{x}^t \vec{x}]$ is an $n \times n$ matrix with $\frac{1}{3}$ down the diagonal and is 0 otherwise, i.e. $\mat{I}_n / 3$.
+For the case when $i = j$, we have 
+
+\[\bb{E}[x_i x_j] = \bb{E}[x ^2] = \int_{a}^{b} x^2 \frac{1}{b-a} dx = \int_{-1}^{1} x^2 \frac{1}{2} dx = \frac{1}{3}\]
+
+Therefore, $\bb{E}[\vec{x}^t \vec{x}]$ is an $n \times n$ matrix with $\mathlarger{\frac{1}{3}}$ down the diagonal and is 0 otherwise, i.e. $\mat{I}_n / 3$.
 Thus, as number of samples grow, $\vec{v} ^t \vec{v} \rightarrow \mat{V}^t (\mat{I}_n / 3) \mat{V}$, and therefore $\vec{v}^t \vec{v} \cdot 3 \rightarrow \mat{V}^t \mat{V}$.
 In conclusion: by taking the average of $\vec{v}^t \vec{v}$ for all collected samples, and multiplying the resulting $n \times n$ matrix with $3$, one 
 has a good approximation of the covariance matrix $\vec{V}^t \vec{V}$.
@@ -64,7 +66,7 @@ Since $\mat{G}$ is symmetric positive definite we can do decomposition to get $\
 \begin{enumerate}
     \item if $\mat{C} = \mat{V} \mat{L}$, then $\mat{C} \mat{C}^t = \mat{V} \mat{L} \mat{L}^t \mat{V}^t = \mat{V} \mat{G}^{-1} \mat{V}^t = \mat{V} (\mat{V^t}\mat{V})^{-1} \mat{V}^t
         = \mat{V} \mat{V}^{-1} \mat{V}^{-t} \mat{V}^t = \mat{I}$
-    \item since entries in $\vec{x}$ are uniformly distributed, $\vec{c} = \mat{C} \vec{x}$ is uniformly distributed over $\PP{C}$
+    \item since entries in $\vec{v} = \vec{x} \mat{V}$ is uniformly distributed over $\PP{V}$, $\vec{c} = \mat{C} \vec{x}$ is uniformly distributed over $\PP{C}$
 \end{enumerate}
 
 By multiplying our samples $\vec{v}$ by $\mat{L}$ on the right, we transform them from the hidden parallelepiped to the hidden hypercube. 
@@ -84,15 +86,16 @@ The last major step in the attack is to measure and minimize the fourth moment o
 Let $mom_{k, \mat{C}}(\vec{w})$ be defined as the $k$-th moment of $\PP{C}$ projected onto $\vec{w}$, i.e. 
 $\bb{E}[\langle \vec{c}, \vec{w} \rangle ^k]$ where $\vec{c} = \vec{x} \mat{C}$ for $\vec{x}$ uniformly distributed and $\vec{w} \in \bb{R}^n$.
 Looking at the term $\langle \vec{c}, \vec{w} \rangle$, we have $\langle \vec{x} \mat{C}, \vec{w} \rangle = \langle \sum_{i=1}^{n} x_i c_i, \vec{w} \rangle$
-where $c_i$ is the $i$-th row of $\mat{C}$. Since $x_i$ is a scalar, we can move it out of the dot-product brackets. $\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle $ .
-Evaluating this inside the $\bb{E}[ \ ]$ we have $\bb{E}[\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle ^k ]$.
-We look at the two cases when $k = 2$ and $k=4$.
+where $c_i$ is the $i$-th row of $\mat{C}$. Since $x_i$ is a scalar, we can move it out of the dot-product brackets as $\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle $ .
+Evaluating this inside the expectation operator $\bb{E}[ \ ]$ we have $\bb{E}[\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle ^k ]$.
+We consider the two cases when $k = 2$ and $k=4$.
 \begin{itemize}
     \item $\mathbf{k = 2: }$
-        $\bb{E}[(\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle ) ^2] = \bb{E}[\sum_{i}^{n} \sum_{j}^{n} x_i x_j \langle c_i, \vec{w} \rangle \langle c_j, \vec{w} \rangle]$.
-        As seen before in section 3.3.2, $\bb{E}[x_i x_j] = \frac{1}{3}$ when $i = j$ and $0$ otherwise. Thus, we have the final expression 
+        $\bb{E}[(\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle ) ^2] \text{ expands to } \bb{E}[\sum_{i}^{n} \sum_{j}^{n} x_i x_j \langle c_i, \vec{w} \rangle \langle c_j, \vec{w} \rangle]$.
+        As seen before in section 3.4.2, $\bb{E}[x_i x_j] = \frac{1}{3}$ when $i = j$ and $0$ otherwise. Thus, we have the expression 
         $mom_{2, C}(\vec{w}) = \frac{1}{3} \sum_{i}^{n} \langle c_i, \vec{w} \rangle ^2$ which can also be written as
-        $ = \frac{1}{3} \vec{w} \mat{C}^t \mat{C} \vec{w}^t$
+        $ = \frac{1}{3} \vec{w} \mat{C}^t \mat{C} \vec{w}^t$ \todo{Should show why this is}
+
     \item $\mathbf{k = 4: }$
         \[ \bb{E}[(\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle ) ^4] = 
         \bb{E}[\sum_{i}^{n} \sum_{j}^{n} \sum_{k}^{n} \sum_{l}^{n} x_i x_j x_k x_l 
@@ -116,47 +119,62 @@ We look at the two cases when $k = 2$ and $k=4$.
             and the final expression becomes 
             \[ mom_{4, \mat{C}} (\vec{w}) = \frac{1}{5} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4 + \frac{1}{3} \sum_{i \neq j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2\]
     \end{enumerate}
+    \end{itemize}
 
-    Now, since $\mat{C}$ is orthonormal, and by restricting $\vec{w}$ to the unit sphere in $\bb{R}^n$, we can simplify the expressions further.
-    The second moment becomes $mom_{2, C}(\vec{w}) = \frac{1}{3} \vec{w} \mat{C}^t \mat{C} \vec{w}^t = \frac{1}{3}\vec{w} \mat{I} \vec{w}^t 
-    = \frac{1}{3} \vec{w}\vec{w}^t = \frac{1}{3} \lVert \vec{w} \rVert ^2 = \frac{1}{3}$. \\
-    By rewriting and expanding the fourth moment:
-    \[ mom_{4, \mat{C}} (\vec{w}) = \frac{1}{5} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4 + \frac{1}{3} \sum_{i \neq j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2\]
-    \[ mom_{4, \mat{C}} (\vec{w}) = \frac{1}{5} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4 + 
-        \frac{1}{3} \sum_{i=1}^{n} \sum_{j=1}^n \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2 -
-    \frac{1}{3}\sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^2 \langle c_i, \vec{w} \rangle ^2\]
-    \[ mom_{4, \mat{C}} (\vec{w}) = \frac{1}{5} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4 + 
-    \frac{1}{3} \sum_{i=1}^n \sum_{j=1}^n \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2 -
+Now, since $\mat{C}$ is orthonormal, and by restricting $\vec{w}$ to the unit sphere in $\bb{R}^n$, we can simplify the expressions further.
+The second moment becomes $mom_{2, C}(\vec{w}) = \frac{1}{3} \vec{w} \mat{C}^t \mat{C} \vec{w}^t = \frac{1}{3}\vec{w} \mat{I} \vec{w}^t 
+= \frac{1}{3} \vec{w}\vec{w}^t = \frac{1}{3} \lVert \vec{w} \rVert ^2 = \frac{1}{3}$. 
+
+By rewriting and expanding the fourth moment:
+\[ mom_{4, \mat{C}} (\vec{w}) = \frac{1}{5} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4 + \frac{1}{3} \sum_{i \neq j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2\]
+\[ mom_{4, \mat{C}} (\vec{w}) = \frac{1}{5} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4 + 
+    \frac{1}{3} \sum_{i=1}^{n} \sum_{j=1}^n \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2 -
+\frac{1}{3}\sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^2 \langle c_i, \vec{w} \rangle ^2\]
+\[ mom_{4, \mat{C}} (\vec{w}) = \frac{1}{5} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4 + 
+\frac{1}{3} \sum_{i=1}^n \sum_{j=1}^n \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2 -
 \frac{1}{3}\sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4 \]
-    \[ mom_{4, \mat{C}} (\vec{w}) = \frac{1}{3} \lVert \vec{w} \rVert ^4 - 
-        \frac{2}{15}\sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4 = \frac{1}{3} - 
-    \frac{2}{15}\sum_{i=1}^n \langle c_i, \vec{w} \rangle ^4\]
+\[ mom_{4, \mat{C}} (\vec{w}) = \frac{1}{3} \lVert \vec{w} \rVert ^4 - 
+    \frac{2}{15}\sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4 = \frac{1}{3} - 
+\frac{2}{15}\sum_{i=1}^n \langle c_i, \vec{w} \rangle ^4\]
 
-\end{itemize}
 
-We also need to compute the gradient of the fourth moment, $\nabla mom_{4, \mat{C}} (\vec{w})$.
+The key observation is that to minimize $mom_{4, \mat{C}(\vec{w})}$ one has to maximize the term 
+$ \mathlarger{-\frac{2}{15}\sum_{i=1}^{n}} \langle c_i, \vec{w} \rangle ^4$. Since $c_i$ and $\vec{w}$ are both on the unit circle, and
+all $c_i$ are orthogonal to each other, the term is maximized whenever $\vec{w} = c_i$ since $\langle c_i, \pm c_i \rangle = \langle \vec{w}, \pm \vec{w} \rangle = 1$.
+Using this observation, we employ a gradient descent to minimize $mom_{4, \mat{C}}(\vec{w})$ w.r.t the input vector $\vec{w}$, and the global minima is in $\pm \mat{C}$.
+The expression when $\vec{w} = \pm c_i$ is 
+\[
+    mom_{4, \mat{C}}(\pm c_i) = \frac{1}{3} - \frac{2}{15} \mathlager{\sum_{i=1}^{n} \langle c_i, \pm c_i \rangle ^4}
+    = \frac{1}{3} - \frac{2}{15} = \frac{1}{5}
+\]
+
+To do a gradient descent we need to compute the gradient of the fourth moment, $\nabla mom_{4, \mat{C}} (\vec{w})$.
 \begin{itemize}
     \item The gradient of the first term, $\frac{1}{3} \lVert \vec{w} \rVert ^4$, is computed as follows: \\
-        We rewrite $\lVert \vec{w} \rVert ^4$ as $(\vec{w}\vec{w}^t)^2$. Using the chain rule we have that \\
-        $\nabla ((\vec{w}\vec{w}^t)^2) = 2(\vec{w}\vec{w}^t) \cdot \frac{\partial}{\partial \vec{w}_j}(\vec{w}\vec{w}^t)$
-        $= 2(\vec{w}\vec{w}^t) \cdot 2 \vec{w}$. \\ 
-        The gradient of the first term is then $\frac{1}{3} \cdot 2(\vec{w}\vec{w}^t) \cdot 2 \vec{w} = \frac{4}{3} \lVert \vec{w} \rVert ^2 \vec{w}$.
-    \item For the second term, $\frac{2}{15} \mathlarger{\sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4}$ we have the following:
+        We rewrite $\lVert \vec{w} \rVert ^4$ as $(\vec{w}\vec{w}^T)^2$. Using the chain rule we have that \\
+        $\nabla ((\vec{w}\vec{w}^T)^2) = 2(\vec{w}\vec{w}^T) \cdot \frac{\partial}{\partial \vec{w}_j}(\vec{w}\vec{w}^T)$
+        $= 2(\vec{w}\vec{w}^T) \cdot 2 \vec{w}$. \\ 
+        The gradient of the first term is then $\frac{1}{3} \cdot 2(\vec{w}\vec{w}^T) \cdot 2 \vec{w} = \frac{4}{3} \lVert \vec{w} \rVert ^2 \vec{w}$.
+    \item For the second term, $\frac{2}{15} \mathlarger{\sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^4}$ we use the fact that the gradient is a linear operator:
         \[\nabla \sum_{i=1}^{n}\langle c_i, \vec{w} \rangle ^4 = \sum_{i=1}^{n}\nabla (\langle c_i, \vec{w} \rangle ^4)\]
         Looking at just the inner term, $\nabla (\langle c_i, \vec{w} \rangle ^4) = 4 \langle c_i, \vec{w} \rangle ^3 
         \cdot \frac{\partial}{\partial w_j} (\langle c_i, \vec{w} \rangle) = 4 \langle c_i, \vec{w} \rangle ^3 \cdot c_i$
         The gradient of the second term is therefore $\mathlarger{\frac{8}{15} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^3 c_i}$
 \end{itemize}
 Putting together the terms we get
-\[ \nabla mom_{4, \mat{C}}(\vec{w}) =  \frac{4}{3} \lVert \vec{w} \rVert ^2 \vec{w} - \frac{8}{15} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^3 c_i\] \\
-The key observation is that by minimizing $mom_{4, \mat{C}(\vec{w})}$ one has to maximize the term 
-$ \mathlarger{-\frac{2}{15}\sum_{i=1}^{n}} \langle c_i, \vec{w} \rangle ^4$. Since $c_i$ and $\vec{w}$ are both on the unit circle, and
-all $c_i$ are orthogonal to each other, the term is maximized whenever $\vec{w} = c_i$ since $\langle c_i, \pm c_i \rangle = \langle \vec{w}, \pm \vec{w} \rangle = 1$.
-Using this observation, we can run a gradient descent to minimize $mom_{4, \mat{C}}(\vec{w})$ and find rows of $\pm \mat{C}$.
-A simple gradient descent in this setting is described in the following algorithm:
+\[ \nabla mom_{4, \mat{C}}(\vec{w}) =  \frac{4}{3} \lVert \vec{w} \rVert ^2 \vec{w} - \frac{8}{15} \sum_{i=1}^{n} \langle c_i, \vec{w} \rangle ^3 c_i\]
 
+\todo{Should prove that there are no other local minima somehow}
+
+In a practical attack, one simply approximates $mom_{4, \mat{C}}(\vec{w})$ as $\bb{E}[\langle \vec{c}, \vec{w} \rangle ^4]$ by averaging over all available samples $\vec{c}$.
+Similarly, to approximate the gradient of the 4th moment, $\nabla mom_{4, \mat{C}}(\vec{w})$, again, using the linearity of the gradient operator, 
+we can compute $\bb{E} [\nabla \langle \vec{c}, \vec{w} \rangle ^4] = \bb{E} [4 \langle \vec{c}, \vec{w} \rangle ^3 \vec{c}] = 4 \bb{E} [\langle \vec{c}, \vec{w} \rangle ^3 \vec{c}]$
+by averaging the expression over all available samples $\vec{c}$.
+
+% Now that the gradient of $mom_{4, \mat{C}}(\vec{w})$ is well-defined, we continue with the gradient descent.
+In Algorithm \ref{HPPGradientDescentAlg}, a simple gradient descent for minimization of $mom_{4, \mat{C}}(\vec{w})$ is described.
 \begin{algorithm}
-\caption{Gradient descent}
+    \caption{Gradient descent}\label{HPPGradientDescentAlg}
 \begin{algorithmic}[1]
 % \Procedure{Euclid}{$a,b$}\Comment{The g.c.d. of a and b}
     \Require{Parameter $\delta$, samples $\vec{c}$}
@@ -172,16 +190,29 @@ A simple gradient descent in this setting is described in the following algorith
         \EndIf
 \end{algorithmic}
 \end{algorithm}
-This procedure is repeated until all rows of $\pm \mat{C}$ is found. Each row is transformed by $\mat{L}^{-1}$ to get the row in $ \pm \mat{V}$.
+One such descent will return one a candidate row $c_i$ of $\pm \mat{C}$ that is a minimum in the gradient landscape.
+By multiplying this row with $\mat{L}^{-1}$ on the right and rounding the entries one has a candidate row $v_i$ in $\pm \mat{V}$.
+This procedure can be repeated until all rows of $\pm \mat{C}$ are found. 
 
-If all rows of $\mat{C}$ are independent of each other, one has to find the correct combination of the rows that constitutes $\mat{C}$. This requires at most $2 \cdot n!$ attempts, which quickly becomes an impossibly large number as $n$ grows. 
-The secret key of the prey for the HPP-attack, NTRU-sign, however, does not have independent rows. In fact, finding any one row of $\mat{C}$ reveals the remaining rows with a polynomial number of different combinations.
-As we will show, this is in part also the case for Hawk.
+Depending on the specific signature scheme one attacks, knowing when
+all correct rows have been found can be a tricky task. For example, if all rows of $\mat{C}$ are independent of each other, one 
+has to find the correct combination of the rows that constitutes $\mat{C}$. This requires at most $2 \cdot n!$ attempts, which quickly becomes an impossibly large number as $n$ grows. 
+In the case of NTRU-sign, however, the rows are not independent. In fact, finding any \textit{one} single row of $\mat{C}$ reveals all the remaining rows,
+up to a polynomial number of different ordered permutations. Thus, one successful descent effectively breaks the scheme.
 
-\section{HPP against the Normal Distribution}
+\todo{Discuss the attack in practice, i.e. the attack against discrete uniform distribution etc.}
 
-Assume now that the signatures on the form $\vec{v} = \vec{x} \mat{V}$ where $x_i \sim \normdist{0}{\sigma}$. After converting $\PP{V}$ to $\PP{C}$, 
-the fourth moment of $\PP{C}$ is constant over $\vec{w}$ on the unit circle.
+\section{HPP against a non-uniform distribution}
+The success of the HPP attack is in part based on the assumption of an underlying uniform distribution of the vector $\vec{x}$.
+We now investigate how the method would work against a different underlying distribution.
+
+Assume now that observed signatures are on the form $\vec{c} = \vec{x} \mat{V}$ where $x_i \sim \mathcal{D}(0, \sigma)$, i.e. some distribution with expectation 0 and some standard deviance $\sigma$.
+For this theoretical work we assume the distribution $\mathcal{D}(0, \sigma)$ is continuous as in the idealized version of HPP in section 3.4.
+
+\section{HPP against normal distribution}
+Assume now that the signatures on the form $\vec{v} = \vec{x} \mat{V}$ where $x_i \sim \normdist{0}{\sigma}$, the continuous normal distribution with $\mu = 0$ and std.dev. $\sigma$. 
+After converting $\PP{V}$ to $\PP{C}$, the fourth moment of $\PP{C}$ is constant over $\vec{w}$ on the unit circle.
+
     To show this, we simply do the same calculations as in the previous section, with the difference that $x$ follows a normal distribution.
     Considering
     \[ mom_{4, \mat{C}}(\vec{w}) = \bb{E}[(\sum_{i=1}^{n} x_i \langle c_i, \vec{w} \rangle ) ^4] = 
@@ -193,7 +224,7 @@ the fourth moment of $\PP{C}$ is constant over $\vec{w}$ on the unit circle.
     \begin{itemize}
         \item \textbf{All equal: } If $i = j = k = l$, we simply have $\sum_i^n \bb{E}[x_i^4] \langle c_i, \vec{w} \rangle ^4 = 3 \sigma ^4 \sum_i \langle c_i, \vec{w} \rangle ^4$
             due to the well known fact that $\bb{E}[x^4] = 3 \sigma ^4$ for $x$ distributed according to $\normdist{0}{\sigma}$.
-        \item \textbf{None equal:} Since $\bb{E}[x] = 0$ as in the case of the uniform distribution, this results in zero.
+        \item \textbf{None equal:} Since $\bb{E}[x] = 0$ and $x_i, x_j, x_k, x_l$ are independent, this results in zero.
         \item \textbf{Pairwise equal:} If either 
             \begin{itemize}
                 \item $i = j \neq k = l$
@@ -204,25 +235,18 @@ the fourth moment of $\PP{C}$ is constant over $\vec{w}$ on the unit circle.
             $= \sigma^4 \sum_{i \neq j}\langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2$ since $\bb{E}[x^2] = \sigma^2$.
     \end{itemize}
 
-    Putting together expressions we get 
+    Putting together expressions like in section 3.4.4 we get 
     \[
         mom_{4, \mat{C}}(\vec{w}) = 3 \sigma ^4 \sum_i \langle c_i, \vec{w} \rangle ^4 + 3(\sigma^4 \sum_{i \neq j}\langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2)
     \]
-
     \[
         mom_{4, \mat{C}}(\vec{w}) = 3 \sigma ^4 \sum_i \langle c_i, \vec{w} \rangle ^4 
         + 3\sigma^4 \sum_{i} \sum_{j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2
         - 3\sigma^4 \sum_{i} \langle c_i, \vec{w} \rangle ^4
     \]
-
     \[
         mom_{4, \mat{C}}(\vec{w}) = 3\sigma^4 \sum_{i} \sum_{j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2
     \]
-
-    % \[
-    %     mom_{4, \mat{C}}(\vec{w}) = 3\sigma^4 \sum_{i} \sum_{j} \langle c_i, \vec{w} \rangle ^2 \langle c_j, \vec{w} \rangle ^2
-    % \]
-
     \[
         mom_{4, \mat{C}}(\vec{w}) = 3\sigma^4 (\lVert \vec{w} \rVert ^2 ) ^2 = 3 \sigma ^4
     \]

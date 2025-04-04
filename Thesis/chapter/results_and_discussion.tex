@@ -1,3 +1,73 @@
-\chapter{Results}
+\chapter{Results and discussion}
 
-\chapter{Discussion}
+\section{Results}
+
+The method has unfortunately not proven to work, as no correct key has been found in any of the runs. It seems that regardless of number of signatures (above a certain point, e.g. one million), the method cannot give candidate solutions with
+better comparison than random guessing. Random guessing in this case is assuming one knows what type of distribution the columns of a secret key is. One knows the distribution that $f, g$ follows, but $F$ and $G$ depends on $f$ and $g$.
+
+For reference, I ran a test using the closeness measure $ \mathsf{diff_{min}} = \mathsf{min} \{\lVert \lvert \vec{b}' \rvert - \lvert \vec{b}_i \rvert \rVert \ \mathbf{:} \ \vec{b}_i \in \pm \mat{B}^{-1}\}$ by fixing one private key $(\mat{B}^{-1})$, 
+and generating random keys $\mat{B}^{'-1}$ (which will serve as random guesses), to check if the attack on average gives better results than random
+guessing. Table 1 shows the result of comparing a key with 100 random keys, and the result of 100 random starting points for the gradient search (both ascent and descent).
+
+One thing to note is that Hawk does not specify parameters (such as width $\sigma$ of $\dgdi$) for lower values of $n$ than 256. Therefore, when sampling signatures for $n=32, 64$ and $128$, I use the same tables, i.e. same $\sigma$ for $\dgdi$, as in Hawk 256.
+
+\begin{table}[H]
+    \centering
+    \caption{Closeness measure for Hawk attack}
+    % \label{tab:hawk-parameters}
+    \begin{tabular}{lcccc}
+        \toprule
+        \textbf{Type} & $\mathsf{diff_{min}}$ & $\mathsf{diff_{max}}$ & \textbf{Avg $\mathsf{diff_{min}}$} & \textbf{Avg $\mathsf{diff_{max}}$} \\
+        \midrule
+        Key comparison degree 32 & 6.25 & 15.81 & 7.74 & 11.22 \\
+        Attack on Hawk 32 (1m samples) & 7.14 & 16.24 & 8.50 & 12.87 \\
+        \midrule
+        Key comparison degree 64 & 10.77 & 26.51 & 13.96 & 22.18 \\
+        Attack on Hawk 64 (1m samples) & 13.49 & 26.00 & 16.25 & 22.59 \\
+        \midrule
+        Key comparison degree 128 & 25.33 & 47.26 & 30.00 & 41.60 \\
+        Attack on Hawk 128(1m samples) & 24.27 & 46.91 & 29.61 & 46.91 \\
+        \midrule
+
+        Key comparison degree 256 & 56.33 & 82.34 & 61.02 & 75.02 \\
+        Attack on Hawk 256 (1m samples) & 54.50 & 84.07 & 59.20 & 71.09 \\ 
+        Attack on Hawk 256 (10m samples) & 57.72 & 77.54 & 62.37 & 77.54 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+Lastly, I include values from sampling points from $\dgdi$ for Hawk 256. 100 million vectors $\vec{x}$ were sampled, resulting in $2 \cdot 256 \cdot 100$ million independently sampled points from $\dgdi$.
+First, I compute $\sigma^2$ and $\sigma$, then compute $\mu_4$ of normalized samples on the form $z = \frac{x}{\sigma}$.
+We then get that 
+\begin{itemize}
+    \item $\sigma^2 = 4.080429335$
+    \item $\sigma = 2.020007261$
+    \item Normalized $\mu_4 = \bb{E} (z^4) = 3.000007624$
+    \item $(\mu_4 - 3) = 0.000007624$
+\end{itemize}
+
+\section{Conclusion}
+We have computed $\mu_4$, i.e. the 4th moment of Z to be 2.999..., and that the difference ($\mu_4 - 3$) is about $2.1 \cdot 10^{-14}$ for parameter 256.
+Let us now compute how many samples one would need to successfully distinguish $mom_{4, \mat{C}}(\vec{u})$ when $\vec{u} \in \pm \mat{C}$ and when $\vec{u} \not\in\pm\mat{C}$.
+$mom_{4, \mat{C}}(\vec{u}) = \bb{E}[(\langle \vec{u}, \mat{C}\vec{x} \rangle ^4] = 3 + (\mu_4 - 3) \mathlarger{\sum_{i=1}^{n} \langle \vec{u}, \vec{c}_i \rangle ^4}$.
+If $\vec{u} = \vec{c}_i$, the entire expression is $3 + (\mu_4 - 3)\cdot 1 = \mu_4$ because $\langle \vec{c}_i, \vec{c}_i \rangle = 1$ and $\langle \vec{c}_i, \vec{c}_j \rangle = 0$ for $i \neq j$. 
+Otherwise, the sum $(\mathlarger{\sum_{i=1}^{n} \langle \vec{u}, \vec{c}_i \rangle ^4}) < 1$.
+
+
+Say one wants to distinguish $mom_{4, \mat{C}}(\vec{c}_i)$ and $mom_{4, \mat{C}}(\vec{u})$ for $\vec{u} \not\in\pm\mat{C}$.
+Let $y = \langle \vec{u}, \mat{C} \vec{x} \rangle$ and assume $y$ follows a standard normal distribution with $\mu = 0$ and $\sigma^2 = 1$.
+Then we approximate the variance $\sigma^2$ and standard deviation $\sigma$ for $\langle \vec{u}, \mat{C}\vec{x} \rangle ^4$ as $\bb{E}[y^8] - \bb{E}[y^4]^2$.
+Then $\sigma^2 \approx 105 - 9 = 96$ and $\sigma = \sqrt{96} \approx 9.79796$.
+
+Now, to estimate number of samples we use formula for confidence intervals and Central Limit Theorem. Let $s$ denote required number of samples. Then 
+\[
+    s \geq \mathlarger{(\frac{Z_{\alpha/2} \cdot \sigma}{\mathsf{err}})^2}
+\]
+Now, we want $\mathsf{err}$ to be smaller than $2.1 \cdot 10^{-14}$ for parameter 256.
+If we set $\mathsf{err}$ to be $10^{-14}$, and we want to determine a difference with, say, 75 \% confidence, we get:
+
+\[
+    s \geq (\frac{0.68 \cdot 9.79796}{10^{-14}})^2 \approx 4.439 \cdot 10^{29}
+\]
+where $0.68$ is from standard normal tables for 75 \%.
+This result is way beyond the limit of acceptable transcript size, which for parameter 256 is $2^{32} \approx 4.3 \cdot 10^{9}$ and for non-challenge parameters 512 and 1024 is $2^{64} \approx 2 \cdot 10^{19}$.
+One can therefore conclude that the attack will not be successful.
