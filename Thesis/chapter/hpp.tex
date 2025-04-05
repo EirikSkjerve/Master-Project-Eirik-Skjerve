@@ -144,7 +144,9 @@ all $c_i$ are orthogonal to each other, the term is maximized whenever $\vec{w} 
 Using this observation, we employ a gradient descent to minimize $mom_{4, \mat{C}}(\vec{w})$ w.r.t the input vector $\vec{w}$, and the global minima is in $\pm \mat{C}$.
 The expression when $\vec{w} = \pm c_i$ is 
 \[
-    mom_{4, \mat{C}}(\pm c_i) = \frac{1}{3} - \frac{2}{15} \mathlager{\sum_{i=1}^{n} \langle c_i, \pm c_i \rangle ^4}
+    % mom_{4, \mat{C}}(\pm c_i) = \frac{1}{3} - \frac{2}{15} \mathlager{\sum_{i=1}^{n} \langle c_i, \pm c_i \rangle ^4}
+    % = \frac{1}{3} - \frac{2}{15} = \frac{1}{5}
+    mom_{4, \mat{C}}(\pm c_i) = \frac{1}{3} - \frac{2}{15} \mathlarger{\sum_{i=1}^{n}} \langle c_i, \pm c_i \rangle ^4
     = \frac{1}{3} - \frac{2}{15} = \frac{1}{5}
 \]
 

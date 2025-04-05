@@ -109,6 +109,9 @@ for a gradient \textit{ascent} one only needs to flip the sign and inequality si
 
 \section{Practical method}
 
+Before analyzing the discrete Gaussian Distribution to determine the value $\mu_4$ which will provide a theoretical answer for whether the method will work or not, we present the attack against Hawk in a practical setting.
+We also present a simple method for measuring this method experimentally.
+
 Below is a basic description of the approach.
 \begin{algorithm}[H]
 \caption{Proposed high-level version of attack}
@@ -120,6 +123,24 @@ Below is a basic description of the approach.
     \State Multiply columns of $\pm \mat{C}$ by $\mat{L}^{-T}$ on the left and round the result to get columns in $\pm \mat{B}^{-1}$
 \end{algorithmic}
 \end{algorithm}
+
+Step 1 of the algorithm is concerned with collecting a number of signatures. We will use the variable $t$ to denote number of signature samples used.
+Recall that a proper signature is on the form $\vec{s} = \frac{1}{2}(\vec{h} - \vec{w})$ where $\vec{w} = \mat{B}^{-1} \vec{x}$. Since anyone is able to recompute $\vec{w}$ by observing a message signature pair 
+($\vec{m}, \vec{s}$ and a salt $\mathsf{salt}$), for our experiments we run a version of the signature generation algorithm that directly returns the vector $\vec{w}$.
+Also, each signature needs some input message. In the implementation an array of 100 random bytes ($256^{100}$ different combinations) is used as a message, which is sufficient to have unique message inputs.
+For each message we store the signature $\vec{w}$ and discard the message $\vec{m}$, since we only need $\vec{w}$.
+
+Each signature sample is originally stored as a vector of signed 16-bit integers. Then to store $t$ signature samples one would need $t \cdot 2n \cdot 16$ bits $= t \cdot 2n \cdot 2$ bytes.
+However, in the next step of the algorithm we need to transform the samples on to the hidden hypercube, using the matrix $\mat{L}^{T}$. This matrix is not an integer matrix, and thus we need to use floating point numbers 
+to represent it. Consequently, the signature samples would also need to be represented by floating point numbers.
+Using the Rust programming language and a linear algebra crate Nalgebra \cite{Nalgebra} it quickly became evident that the standard 32-bit floating point numbers were not well enough supported in this library.
+So, using 64-bit floating point numbers, each signature sample now takes $t \cdot 2n \cdot 8$ bytes. For example, for $t = 10^6$ and challenge parameter $n=256$ one needs about $4.096 \cdot 10^{9}$ bytes, i.e. 4GB of memory purely
+for the storage of the samples.
+
+An alternative to storing signature samples from the start of the attack, is to simply generate new independent signature samples on demand when approximating $mom_{4, \mat{C}}(\vec{u})$ and its gradient. 
+This removes the requirement for memory, but this tradeoff imposes a much slower running time on the entire attack. Luckily, for the purposes of this thesis, I obtained access to a cloud computer through NREC (Nordic Research and Education Cloud)
+with 512 GB RAM. This made experiments much less cumbersome when memory was practically not a concern, as opposed to running experiments on a personal computer with 16 GB RAM. Nevertheless, the fact that the attack \textit{can} theoretically
+be memory-efficient is a big advantage of the attack.
 
 % After having transformed the samples $\vec{w} \in \PP{\mat{B}^{-1}}$ to $\vec{c} \in \PP{\mat{C}}$ we want to recover columns of $\pm \mat{C}$ and transform them back to columns of $\pm \mat{B}^{-1}$ by multiplying by $\mat{L}^{-T}$ on the left.
 Due to the special structure of Hawk private keys, finding one column of $\mat{B}$ automatically gives $n$ columns.
@@ -193,8 +214,8 @@ The probability that one can discern $mom_{4, \mat{C}}(\vec{u})$ when $\vec{u} \
 % If we can upper estimate the variance of $mom_{4, \mat{C}}(\vec{u})$ and $\nabla mom_{4, \mat{C}}(\vec{u})$ one can get an idea of how many samples one needs to do this distinguishment.
 
 For implementation of Hawk, they provide tables which along with an algorithm determines the distribution $\dgdi_{2\bb{Z} + c, \sigma}$. Based on the tables one can reconstruct a 
-Probability Mass Function (PMF) $Pr(X = x)$ for $X \sim \dgdi_{\bb{Z}, \sigma$.
-    The PMF of $\dgdi_{\bb{Z}, \sigma$ from tables is:
+Probability Mass Function (PMF) $Pr(X = x)$ for $X \sim \dgdi_{\bb{Z}, \sigma}$.
+The PMF of $\dgdi_{\bb{Z}, \sigma}$ from tables is:
 \[
     Pr(X=x) = \frac{1}{2} \cdot
 \begin{cases}
@@ -232,7 +253,14 @@ In table \ref{z4 values} we show the value of $\mu_4$ and $\mu_4 - 3$ rounded at
     \end{tabular}
 \end{table}
 
+\section{Alternative method}
+An observation about the Hawk signatures is that one can collect some $\vec{w}_1 = \mat{B}^{-1} \vec{x}_1$ where $\vec{x}_1$ may have a different distribution than $\vec{x}$.
+Recall that in the signature generation algorithm one computes $\vec{t} = \mat{B} \vec{h}$ mod 2. This is equivalent to taking $\vec{t} = \mat{B} \vec{h} + 2 \vec{d}$ where $\vec{d}$ is some integer vector.
+Moreover, $\vec{x} = \vec{t} + 2 \vec{y}$ where $\vec{y}$ is some integer vector as well.
+Now, $\vec{w} = \mat{B}^{-1} \vec{x} = \mat{B}^{-1}(\mat{B} \vec{h} + 2 \vec{d} + 2 \vec{y})$. Simplifying, we get that $\mathlarger{\frac{\vec{w} - \vec{h}}{2}} = \mat{B}^{-1}(\vec{d} + \vec{y})$.
 
+We can easily deduce the distribution that $\vec{y}$ follows.
+If we can somehow determine what distribution the vector $(\vec{d} + \vec{y})$, and show that it is not too close to normal, one may recover columns of $\mat{B}^{-1}$ this way.
 
 \begin{figure}[H]
     \centering
